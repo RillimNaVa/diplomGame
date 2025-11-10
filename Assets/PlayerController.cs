@@ -67,7 +67,7 @@ public class PlayerController : MonoBehaviour
         controller.Move(move * moveSpeed * Time.deltaTime);
 
         // Dash (только ОДИН раз)
-        if (dashPressed && !isDashing && move.magnitude > 0.1f && isGrounded)
+        if (dashPressed && !isDashing)
         {
             StartDash(move.normalized);
             dashPressed = false; // ← КРИТИЧНЫЙ ФИКС
