@@ -1,4 +1,4 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
@@ -15,11 +15,14 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 2f;
     public Transform cameraTransform;
 
+    [Header("Debug")]
+    public bool isGrounded;
+    public bool isDashing;
+
     private CharacterController controller;
     private Vector3 velocity;
-    private bool isGrounded;
-    private bool isDashing;
     private Vector3 dashDirection;
+    private float xRotation = 0f; // Р¤РёРєСЃ РєР°РјРµСЂС‹!
 
     // Input
     private Vector2 moveInput;
@@ -27,24 +30,20 @@ public class PlayerController : MonoBehaviour
     private bool jumpPressed;
     private bool dashPressed;
 
-    // Components
-    private PlayerInput playerInput;
-
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        playerInput = GetComponent<PlayerInput>();
 
-        // Блокировка и сокрытие курсора
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // Создаём камеру, если нет
+        // РЎРѕР·РґР°С‘Рј РєР°РјРµСЂСѓ
         if (cameraTransform == null)
         {
             GameObject cam = new GameObject("PlayerCamera");
             cam.transform.SetParent(transform);
-            cam.transform.localPosition = new Vector3(0, 1.5f, 0);
+            cam.transform.localPosition = new Vector3(0.5f, 1.5f, -2f); // Over-shoulder
+            cam.transform.localRotation = Quaternion.Euler(5f, 0, 0);
             cameraTransform = cam.transform;
             cam.AddComponent<Camera>();
         }
@@ -63,14 +62,15 @@ public class PlayerController : MonoBehaviour
         if (isGrounded && velocity.y < 0)
             velocity.y = -2f;
 
-        // Движение
+        // Р”РІРёР¶РµРЅРёРµ
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * moveSpeed * Time.deltaTime);
 
-        // Dash
-        if (dashPressed && !isDashing && move.magnitude > 0.1f)
+        // Dash (С‚РѕР»СЊРєРѕ РћР”РРќ СЂР°Р·)
+        if (dashPressed && !isDashing && move.magnitude > 0.1f && isGrounded)
         {
             StartDash(move.normalized);
+            dashPressed = false; // в†ђ РљР РРўРР§РќР«Р™ Р¤РРљРЎ
         }
 
         if (isDashing)
@@ -78,26 +78,27 @@ public class PlayerController : MonoBehaviour
             controller.Move(dashDirection * dashSpeed * Time.deltaTime);
         }
 
-        // Прыжок
+        // РџСЂС‹Р¶РѕРє (С‚РѕР»СЊРєРѕ РћР”РРќ СЂР°Р·)
         if (jumpPressed && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            jumpPressed = false; // в†ђ РљР РРўРР§РќР«Р™ Р¤РРљРЎ
         }
 
-        // Гравитация
+        // Р“СЂР°РІРёС‚Р°С†РёСЏ
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
 
     void HandleLook()
     {
-        // Поворот персонажа
+        // РџРѕРІРѕСЂРѕС‚ РїРµСЂСЃРѕРЅР°Р¶Р° (Y-РѕСЃСЊ)
         transform.Rotate(Vector3.up * lookInput.x * mouseSensitivity);
 
-        // Поворот камеры по вертикали
-        float pitch = cameraTransform.localEulerAngles.x - lookInput.y * mouseSensitivity;
-        pitch = Mathf.Clamp(pitch, -80f, 80f); // Ограничение вверх/вниз
-        cameraTransform.localRotation = Quaternion.Euler(pitch, 0, 0);
+        // РџРѕРІРѕСЂРѕС‚ РєР°РјРµСЂС‹ (X-РѕСЃСЊ) вЂ” Р¤РРљРЎ GIMBAL LOCK
+        xRotation -= lookInput.y * mouseSensitivity;
+        xRotation = Mathf.Clamp(xRotation, -80f, 80f);
+        cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
     }
 
     void StartDash(Vector3 direction)
@@ -112,7 +113,7 @@ public class PlayerController : MonoBehaviour
         isDashing = false;
     }
 
-    // Input System callbacks
+    // Input Callbacks (РќР• С‚СЂРѕРіР°С‚СЊ)
     public void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
@@ -120,16 +121,16 @@ public class PlayerController : MonoBehaviour
 
     public void OnLook(InputValue value)
     {
-        lookInput = value.Get<Vector2>();
+        lookInput = value.Get<Vector2>() * 0.01f; // РЎРіР»Р°Р¶РёРІР°РЅРёРµ РјС‹С€Рё
     }
 
     public void OnJump(InputValue value)
     {
-        jumpPressed = value.isPressed;
+        jumpPressed = value.isPressed; // РќР°Р¶Р°С‚РёРµ
     }
 
     public void OnDash(InputValue value)
     {
-        dashPressed = value.isPressed;
+        dashPressed = value.isPressed; // РќР°Р¶Р°С‚РёРµ
     }
 }

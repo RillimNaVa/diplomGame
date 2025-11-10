@@ -182,7 +182,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": true
                 },
                 {
-                    ""name"": ""left"",
+                    ""name"": ""Right"",
                     ""id"": ""d0210259-b416-4b9e-a028-09accbdfff23"",
                     ""path"": ""<Keyboard>/d"",
                     ""interactions"": """",
@@ -193,7 +193,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": true
                 },
                 {
-                    ""name"": ""right"",
+                    ""name"": ""Left"",
                     ""id"": ""8d4c5e10-86cd-4fcd-8d01-016e0b95ab58"",
                     ""path"": ""<Keyboard>/a"",
                     ""interactions"": """",
