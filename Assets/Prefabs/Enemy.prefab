@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 294540229039829930}
   - component: {fileID: 799114856587047617}
   - component: {fileID: 6804003795426128739}
-  - component: {fileID: 3411833604213368326}
+  - component: {fileID: 6210549524348337771}
   m_Layer: 6
   m_Name: Enemy
   m_TagString: Untagged
@@ -156,7 +156,7 @@ MonoBehaviour:
   onTakeDamage:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &3411833604213368326
+--- !u!114 &6210549524348337771
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -165,9 +165,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3069127475456496353}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 69fc53193a3dfc94c976d5fa8cbba355, type: 3}
+  m_Script: {fileID: 11500000, guid: f90acca97def22e4bb255d7795fc8413, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleEnemyAI
   player: {fileID: 0}
   damage: 10
+  attackRange: 1.5
   attackCooldown: 1
