@@ -15,10 +15,18 @@ public class Health : MonoBehaviour
     public UnityEvent<float> onTakeDamage;
     public HealthChangedEvent onHealthChanged;
 
+    void EnsureEventsInitialized()
+    {
+        onDeath ??= new UnityEvent();
+        onTakeDamage ??= new UnityEvent<float>();
+        onHealthChanged ??= new HealthChangedEvent();
+    }
+
     void Awake()
     {
+        EnsureEventsInitialized();
         currentHealth = maxHealth;
-        onHealthChanged?.Invoke(currentHealth, maxHealth);
+        onHealthChanged.Invoke(currentHealth, maxHealth);
     }
 
     public void TakeDamage(float damage)

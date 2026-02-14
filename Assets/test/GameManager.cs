@@ -85,6 +85,11 @@ public class GameManager : MonoBehaviour
 
         if (playerHealth != null)
         {
+            if (playerHealth.onHealthChanged == null)
+            {
+                playerHealth.onHealthChanged = new HealthChangedEvent();
+            }
+
             playerHealth.onHealthChanged.AddListener(UpdatePlayerHealth);
             UpdatePlayerHealth(playerHealth.currentHealth, playerHealth.maxHealth);
         }
