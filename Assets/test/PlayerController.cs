@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
@@ -20,6 +21,10 @@ public class PlayerController : MonoBehaviour
     public float damage = 25f;
     public LayerMask enemyLayer = -1;
     public Transform firePoint;
+    public LineRenderer shotTracerPrefab;
+    public ParticleSystem muzzleFlash;
+    public ParticleSystem hitEffectPrefab;
+    public float tracerDuration = 0.05f;
     public Projectile projectilePrefab;
     public Transform shootOrigin;
 
@@ -137,6 +142,53 @@ public class PlayerController : MonoBehaviour
 
     void Shoot()
     {
+        const float maxDistance = 100f;
+        Vector3 origin = firePoint != null ? firePoint.position : cameraTransform.position;
+        Vector3 direction = cameraTransform.forward;
+        Vector3 endPoint = origin + direction * maxDistance;
+
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.Play();
+        }
+
+        Debug.DrawRay(origin, direction * maxDistance, Color.red, 0.5f);
+
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, maxDistance, enemyLayer))
+        {
+            endPoint = hit.point;
+
+            Health target = hit.collider.GetComponent<Health>();
+            if (target != null)
+            {
+                target.TakeDamage(damage);
+            }
+
+            if (hitEffectPrefab != null)
+            {
+                ParticleSystem hitFx = Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+                Destroy(hitFx.gameObject, hitFx.main.duration + hitFx.main.startLifetime.constantMax);
+            }
+        }
+
+        if (shotTracerPrefab != null)
+        {
+            StartCoroutine(PlayTracer(origin, endPoint));
+        }
+    }
+
+    private IEnumerator PlayTracer(Vector3 origin, Vector3 endPoint)
+    {
+        LineRenderer tracer = Instantiate(shotTracerPrefab, origin, Quaternion.identity);
+        tracer.positionCount = 2;
+        tracer.SetPosition(0, origin);
+        tracer.SetPosition(1, endPoint);
+
+        yield return new WaitForSeconds(tracerDuration);
+
+        if (tracer != null)
+        {
+            Destroy(tracer.gameObject);
         if (projectilePrefab == null || shootOrigin == null || cameraTransform == null)
         {
             return;
