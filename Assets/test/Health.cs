@@ -26,13 +26,12 @@ public class Health : MonoBehaviour
         if (currentHealth <= 0) return;
 
         currentHealth -= damage;
+        currentHealth = Mathf.Max(0f, currentHealth);
         onTakeDamage?.Invoke(damage);
         onHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (currentHealth <= 0)
         {
-            currentHealth = 0;
-            onHealthChanged?.Invoke(currentHealth, maxHealth);
             Die();
         }
     }
