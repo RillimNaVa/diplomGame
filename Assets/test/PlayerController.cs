@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -36,7 +36,7 @@ public class PlayerController : MonoBehaviour
     private CharacterController controller;
     private Vector3 velocity;
     private Vector3 dashDirection;
-    private float xRotation = 0f;
+    private float xRotation;
     private float nextFireTime;
     private float nextMeleeTime;
 
@@ -45,7 +45,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 lookInput;
     private bool jumpPressed;
     private bool dashPressed;
-    private bool firePressed;
+    private bool fireRequested;
     private bool meleePressed;
 
     void Start()
@@ -59,8 +59,8 @@ public class PlayerController : MonoBehaviour
         {
             GameObject cam = new GameObject("PlayerCamera");
             cam.transform.SetParent(transform);
-            cam.transform.localPosition = new Vector3(0.5f, 1.5f, -2f);
-            cam.transform.localRotation = Quaternion.Euler(5f, 0, 0);
+            cam.transform.localPosition = new Vector3(0f, 1.6f, 0f);
+            cam.transform.localRotation = Quaternion.identity;
             cameraTransform = cam.transform;
             cam.AddComponent<Camera>();
         }
@@ -69,7 +69,7 @@ public class PlayerController : MonoBehaviour
         {
             GameObject fp = new GameObject("FirePoint");
             fp.transform.SetParent(cameraTransform);
-            fp.transform.localPosition = new Vector3(0.3f, -0.2f, 1f);
+            fp.transform.localPosition = new Vector3(0.2f, -0.15f, 0.5f);
             firePoint = fp.transform;
         }
 
@@ -126,10 +126,15 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombat()
     {
-        if (firePressed && Time.time >= nextFireTime)
+        if (fireRequested)
         {
-            Shoot();
-            nextFireTime = Time.time + fireRate;
+            if (Time.time >= nextFireTime)
+            {
+                Shoot();
+                nextFireTime = Time.time + fireRate;
+            }
+
+            fireRequested = false;
         }
 
         if (meleePressed && Time.time >= nextMeleeTime)
@@ -144,12 +149,27 @@ public class PlayerController : MonoBehaviour
     {
         const float maxDistance = 100f;
         Vector3 origin = firePoint != null ? firePoint.position : cameraTransform.position;
-        Vector3 direction = cameraTransform.forward;
-        Vector3 endPoint = origin + direction * maxDistance;
+        Vector3 endPoint = origin + cameraTransform.forward * maxDistance;
 
         if (muzzleFlash != null)
         {
             muzzleFlash.Play();
+        }
+
+        Ray centerRay = new Ray(cameraTransform.position, cameraTransform.forward);
+        if (Physics.Raycast(centerRay, out RaycastHit centerHit, maxDistance))
+        {
+            endPoint = centerHit.point;
+        }
+
+        Vector3 direction = (endPoint - origin).normalized;
+
+        if (projectilePrefab != null && shootOrigin != null)
+        {
+            Quaternion shotRotation = Quaternion.LookRotation(direction);
+            Projectile projectile = Instantiate(projectilePrefab, shootOrigin.position, shotRotation);
+            projectile.Launch(direction, damage);
+            return;
         }
 
         Debug.DrawRay(origin, direction * maxDistance, Color.red, 0.5f);
@@ -189,26 +209,7 @@ public class PlayerController : MonoBehaviour
         if (tracer != null)
         {
             Destroy(tracer.gameObject);
-        if (projectilePrefab == null || shootOrigin == null || cameraTransform == null)
-        {
-            return;
         }
-
-        Ray centerRay = Camera.main != null
-            ? Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
-            : new Ray(cameraTransform.position, cameraTransform.forward);
-
-        Vector3 targetPoint = centerRay.origin + centerRay.direction * 100f;
-        if (Physics.Raycast(centerRay, out RaycastHit hit, 100f))
-        {
-            targetPoint = hit.point;
-        }
-
-        Vector3 shotDirection = (targetPoint - shootOrigin.position).normalized;
-        Quaternion shotRotation = Quaternion.LookRotation(shotDirection);
-
-        Projectile projectile = Instantiate(projectilePrefab, shootOrigin.position, shotRotation);
-        projectile.Launch(shotDirection, damage);
     }
 
     void MeleeAttack()
@@ -228,7 +229,14 @@ public class PlayerController : MonoBehaviour
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>() * 0.01f;
     public void OnJump(InputValue value) => jumpPressed = value.isPressed;
     public void OnDash(InputValue value) => dashPressed = value.isPressed;
-    public void OnFire(InputValue value) => firePressed = value.isPressed;
+
+    public void OnFire(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            fireRequested = true;
+        }
+    }
 
     public void OnMelee(InputValue value)
     {
