@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
     public float damage = 25f;
     public LayerMask enemyLayer = -1;
     public Transform firePoint;
+    public Projectile projectilePrefab;
+    public Transform shootOrigin;
 
     [Header("Melee")]
     public float meleeDamage = 40f;
@@ -64,6 +66,11 @@ public class PlayerController : MonoBehaviour
             fp.transform.SetParent(cameraTransform);
             fp.transform.localPosition = new Vector3(0.3f, -0.2f, 1f);
             firePoint = fp.transform;
+        }
+
+        if (shootOrigin == null)
+        {
+            shootOrigin = firePoint;
         }
     }
 
@@ -130,16 +137,26 @@ public class PlayerController : MonoBehaviour
 
     void Shoot()
     {
-        Debug.DrawRay(cameraTransform.position, cameraTransform.forward * 100f, Color.red, 0.5f);
-
-        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, 100f, enemyLayer))
+        if (projectilePrefab == null || shootOrigin == null || cameraTransform == null)
         {
-            Health target = hit.collider.GetComponent<Health>();
-            if (target != null)
-            {
-                target.TakeDamage(damage);
-            }
+            return;
         }
+
+        Ray centerRay = Camera.main != null
+            ? Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
+            : new Ray(cameraTransform.position, cameraTransform.forward);
+
+        Vector3 targetPoint = centerRay.origin + centerRay.direction * 100f;
+        if (Physics.Raycast(centerRay, out RaycastHit hit, 100f))
+        {
+            targetPoint = hit.point;
+        }
+
+        Vector3 shotDirection = (targetPoint - shootOrigin.position).normalized;
+        Quaternion shotRotation = Quaternion.LookRotation(shotDirection);
+
+        Projectile projectile = Instantiate(projectilePrefab, shootOrigin.position, shotRotation);
+        projectile.Launch(shotDirection, damage);
     }
 
     void MeleeAttack()
