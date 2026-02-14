@@ -12,26 +12,34 @@ public class PlayerController : MonoBehaviour
     public float gravity = -20f;
 
     [Header("Mouse Look")]
-    public float mouseSensitivity = 1.5f;   // ← ИСПРАВЛЕНО
+    public float mouseSensitivity = 1.5f;
     public Transform cameraTransform;
 
     [Header("Shooting")]
     public float fireRate = 0.2f;
     public float damage = 25f;
-    public LayerMask enemyLayer = -1; // Все слои
+    public LayerMask enemyLayer = -1;
     public Transform firePoint;
+
+    [Header("Melee")]
+    public float meleeDamage = 40f;
+    public float meleeRange = 2f;
+    public float meleeCooldown = 0.6f;
 
     private CharacterController controller;
     private Vector3 velocity;
     private Vector3 dashDirection;
     private float xRotation = 0f;
     private float nextFireTime;
+    private float nextMeleeTime;
 
     // Input
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpPressed;
     private bool dashPressed;
+    private bool firePressed;
+    private bool meleePressed;
 
     void Start()
     {
@@ -40,7 +48,6 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // Создаём камеру
         if (cameraTransform == null)
         {
             GameObject cam = new GameObject("PlayerCamera");
@@ -51,7 +58,6 @@ public class PlayerController : MonoBehaviour
             cam.AddComponent<Camera>();
         }
 
-        // Создаём точку выстрела
         if (firePoint == null)
         {
             GameObject fp = new GameObject("FirePoint");
@@ -59,14 +65,13 @@ public class PlayerController : MonoBehaviour
             fp.transform.localPosition = new Vector3(0.3f, -0.2f, 1f);
             firePoint = fp.transform;
         }
-
     }
 
     void Update()
     {
         HandleMovement();
         HandleLook();
-        HandleShooting();
+        HandleCombat();
     }
 
     void HandleMovement()
@@ -77,13 +82,13 @@ public class PlayerController : MonoBehaviour
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * moveSpeed * Time.deltaTime);
 
-        if (dashPressed && !isDashing() && move.magnitude > 0.1f && isGrounded)
+        if (dashPressed && !IsDashing() && move.magnitude > 0.1f && isGrounded)
         {
             StartDash(move.normalized);
             dashPressed = false;
         }
 
-        if (isDashing())
+        if (IsDashing())
         {
             controller.Move(dashDirection * dashSpeed * Time.deltaTime);
         }
@@ -107,12 +112,19 @@ public class PlayerController : MonoBehaviour
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
     }
 
-    void HandleShooting()
+    void HandleCombat()
     {
-        if (Mouse.current.leftButton.wasPressedThisFrame && Time.time >= nextFireTime)
+        if (firePressed && Time.time >= nextFireTime)
         {
             Shoot();
             nextFireTime = Time.time + fireRate;
+        }
+
+        if (meleePressed && Time.time >= nextMeleeTime)
+        {
+            MeleeAttack();
+            nextMeleeTime = Time.time + meleeCooldown;
+            meleePressed = false;
         }
     }
 
@@ -122,12 +134,22 @@ public class PlayerController : MonoBehaviour
 
         if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, 100f, enemyLayer))
         {
-            
             Health target = hit.collider.GetComponent<Health>();
             if (target != null)
             {
                 target.TakeDamage(damage);
-                
+            }
+        }
+    }
+
+    void MeleeAttack()
+    {
+        if (Physics.SphereCast(cameraTransform.position, 0.4f, cameraTransform.forward, out RaycastHit hit, meleeRange, enemyLayer))
+        {
+            Health target = hit.collider.GetComponent<Health>();
+            if (target != null)
+            {
+                target.TakeDamage(meleeDamage);
             }
         }
     }
@@ -137,13 +159,24 @@ public class PlayerController : MonoBehaviour
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>() * 0.01f;
     public void OnJump(InputValue value) => jumpPressed = value.isPressed;
     public void OnDash(InputValue value) => dashPressed = value.isPressed;
+    public void OnFire(InputValue value) => firePressed = value.isPressed;
+
+    public void OnMelee(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            meleePressed = true;
+        }
+    }
 
     // --- DASH HELPERS ---
-    private bool isDashing() => dashDirection != Vector3.zero;
+    private bool IsDashing() => dashDirection != Vector3.zero;
+
     private void StartDash(Vector3 dir)
     {
         dashDirection = dir;
         Invoke(nameof(StopDash), dashDuration);
     }
+
     private void StopDash() => dashDirection = Vector3.zero;
 }

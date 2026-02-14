@@ -1,11 +1,11 @@
-using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class SimpleEnemyAI : MonoBehaviour
 {
-    public Transform player;
+    [SerializeField] private Transform player;
+
     public float damage = 10f;
     public float attackRange = 1.5f;
     public float attackCooldown = 1f;
@@ -16,8 +16,17 @@ public class SimpleEnemyAI : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        player = GameObject.Find("Player")?.transform;
-        if (player == null) UnityEngine.Debug.LogError("Player not found!");
+
+        if (player == null)
+        {
+            GameObject taggedPlayer = GameObject.FindWithTag("Player");
+            player = taggedPlayer != null ? taggedPlayer.transform : null;
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("Player transform is not assigned for enemy AI.");
+        }
     }
 
     void Update()
@@ -39,8 +48,14 @@ public class SimpleEnemyAI : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(damage);
-            UnityEngine.Debug.Log($"Enemy attacked player! Damage: {damage}");
+            Debug.Log($"Enemy attacked player! Damage: {damage}");
         }
+
         lastAttackTime = Time.time + attackCooldown;
+    }
+
+    public void SetTarget(Transform target)
+    {
+        player = target;
     }
 }
