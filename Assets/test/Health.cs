@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
 
+[System.Serializable]
+public class HealthChangedEvent : UnityEvent<float, float> { }
+
 public class Health : MonoBehaviour
 {
     [Header("Health")]
@@ -10,10 +13,12 @@ public class Health : MonoBehaviour
     [Header("Events")]
     public UnityEvent onDeath;
     public UnityEvent<float> onTakeDamage;
+    public HealthChangedEvent onHealthChanged;
 
     void Awake()
     {
         currentHealth = maxHealth;
+        onHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     public void TakeDamage(float damage)
@@ -22,16 +27,12 @@ public class Health : MonoBehaviour
 
         currentHealth -= damage;
         onTakeDamage?.Invoke(damage);
-
-        // ★ ВЫЗЫВАЕМ UI ★
-        if (CompareTag("Player"))
-        {
-            GameManager.instance?.UpdatePlayerHealth(currentHealth, maxHealth);
-        }
+        onHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (currentHealth <= 0)
         {
             currentHealth = 0;
+            onHealthChanged?.Invoke(currentHealth, maxHealth);
             Die();
         }
     }
@@ -48,7 +49,6 @@ public class Health : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // --- GUI HP ---
     void OnGUI()
     {
         if (!gameObject.activeInHierarchy || currentHealth <= 0) return;
