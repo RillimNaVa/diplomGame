@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     private static readonly int ShootHash = Animator.StringToHash("Shoot");
+    private static readonly int RecoilStateHash = Animator.StringToHash("recoil");
 
     [Header("Movement")]
     public float moveSpeed = 6f;
@@ -31,7 +32,7 @@ public class PlayerController : MonoBehaviour
     public float tracerDuration = 0.05f;
     public Projectile projectilePrefab;
     public Transform shootOrigin;
-    private Animator gunAnimator;
+    [SerializeField] private Animator gunAnimator;
 
     [Header("Melee")]
     public float meleeDamage = 40f;
@@ -58,7 +59,10 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
 
-        gunAnimator = GetComponent<Animator>();
+        if (gunAnimator == null)
+        {
+            gunAnimator = GetComponentInChildren<Animator>();
+        }
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -135,20 +139,11 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombat()
     {
-        if (fireRequested)
+        if (fireRequested && Time.time >= nextFireTime)
         {
-            if (Time.time >= nextFireTime)
-            {
-                if (Input.GetMouseButtonDown(0))
-                {
-                    PlayShootAnim();
-                    // тут же можешь вызывать реальную стрельбу (Raycast/пуля)
-                    // Shoot();
-                    Shoot();
-                    nextFireTime = Time.time + fireRate;
-                }
-                
-            }
+            PlayShootAnim();
+            Shoot();
+            nextFireTime = Time.time + fireRate;
 
             fireRequested = false;
         }
@@ -277,8 +272,26 @@ public class PlayerController : MonoBehaviour
     {
         if (!gunAnimator) return;
 
-        // Важно: если кликаешь быстро, триггер может не успевать визуально
-        // поэтому можно принудительно перезапускать клип:
-        gunAnimator.Play("recoil", 0, 0f);
+        if (HasAnimatorParameter(gunAnimator, ShootHash, AnimatorControllerParameterType.Trigger))
+        {
+            gunAnimator.ResetTrigger(ShootHash);
+            gunAnimator.SetTrigger(ShootHash);
+            return;
+        }
+
+        gunAnimator.Play(RecoilStateHash, 0, 0f);
+    }
+
+    private static bool HasAnimatorParameter(Animator animator, int hash, AnimatorControllerParameterType type)
+    {
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.nameHash == hash && parameter.type == type)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
