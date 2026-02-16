@@ -792,11 +792,20 @@ MonoBehaviour:
   mouseSensitivity: 2
   cameraTransform: {fileID: 0}
   fireRate: 0.2
-  damage: 25
+  damage: 10
   enemyLayer:
     serializedVersion: 2
     m_Bits: 64
   firePoint: {fileID: 0}
+  shotTracerPrefab: {fileID: 0}
+  muzzleFlash: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}
+  tracerDuration: 0.05
+  projectilePrefab: {fileID: 1177184549934515496, guid: 65990a0d45c7f49999da0ef0af77575b, type: 3}
+  shootOrigin: {fileID: 0}
+  meleeDamage: 40
+  meleeRange: 2
+  meleeCooldown: 0.6
 --- !u!54 &885446615
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -869,6 +878,9 @@ MonoBehaviour:
   onTakeDamage:
     m_PersistentCalls:
       m_Calls: []
+  onHealthChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1026905729
 GameObject:
   m_ObjectHideFlags: 0
@@ -905,9 +917,11 @@ MonoBehaviour:
   - {fileID: 246482230}
   - {fileID: 1300931871}
   baseEnemiesPerWave: 5
-  timeBetweenWaves: 30
-  timeBetweenSpawns: 2
+  timeBetweenWaves: 16.7
+  timeBetweenSpawns: 0.78
   uiManager: {fileID: 682604053}
+  playerTransform: {fileID: 0}
+  playerHealth: {fileID: 0}
 --- !u!4 &1026905731
 Transform:
   m_ObjectHideFlags: 0

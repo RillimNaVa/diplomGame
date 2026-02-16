@@ -32,7 +32,7 @@ public class Projectile : MonoBehaviour
             damage = overrideDamage;
         }
 
-        rb.velocity = direction.normalized * speed;
+        rb.linearVelocity = direction.normalized * speed;
     }
 
     void OnCollisionEnter(Collision collision)
