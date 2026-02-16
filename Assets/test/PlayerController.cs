@@ -3,8 +3,12 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
+
+
 public class PlayerController : MonoBehaviour
 {
+    private static readonly int ShootHash = Animator.StringToHash("Shoot");
+
     [Header("Movement")]
     public float moveSpeed = 6f;
     public float jumpHeight = 2f;
@@ -27,6 +31,7 @@ public class PlayerController : MonoBehaviour
     public float tracerDuration = 0.05f;
     public Projectile projectilePrefab;
     public Transform shootOrigin;
+    private Animator gunAnimator;
 
     [Header("Melee")]
     public float meleeDamage = 40f;
@@ -48,9 +53,12 @@ public class PlayerController : MonoBehaviour
     private bool fireRequested;
     private bool meleePressed;
 
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
+        gunAnimator = GetComponent<Animator>();
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -77,6 +85,7 @@ public class PlayerController : MonoBehaviour
         {
             shootOrigin = firePoint;
         }
+
     }
 
     void Update()
@@ -130,8 +139,15 @@ public class PlayerController : MonoBehaviour
         {
             if (Time.time >= nextFireTime)
             {
-                Shoot();
-                nextFireTime = Time.time + fireRate;
+                if (Input.GetMouseButtonDown(0))
+                {
+                    PlayShootAnim();
+                    // тут же можешь вызывать реальную стрельбу (Raycast/пуля)
+                    // Shoot();
+                    Shoot();
+                    nextFireTime = Time.time + fireRate;
+                }
+                
             }
 
             fireRequested = false;
@@ -256,4 +272,13 @@ public class PlayerController : MonoBehaviour
     }
 
     private void StopDash() => dashDirection = Vector3.zero;
+
+    public void PlayShootAnim()
+    {
+        if (!gunAnimator) return;
+
+        // Важно: если кликаешь быстро, триггер может не успевать визуально
+        // поэтому можно принудительно перезапускать клип:
+        gunAnimator.Play("recoil", 0, 0f);
+    }
 }
