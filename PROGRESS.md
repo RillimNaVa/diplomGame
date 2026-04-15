@@ -214,7 +214,8 @@
 | Date | What was done |
 |------|---------------|
 | 2026-04-15 | GDD v2 created. PROGRESS.md created. Project analyzed. |
-| 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. |
+| 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. (PR #10) |
+| 2026-04-15 | Phase 1 playtest fixes (PR #11): slide no longer falls through floor (removed controller.height resizing), slide ends correctly on Ctrl release (Button→Value input type), V + Right Shift added as dash keys, shot direction uses camera.forward (bullets no longer curve during fast motion), weapon tilt on camera pitch (Weapon Sway section), scene reset fixed (R key + auto-reload 2s after death, uses active scene buildIndex instead of hardcoded 0). |
 | | |
 
 ---
@@ -225,3 +226,15 @@
 - **Audio sources:** freesound.org, opengameart.org, Pixabay Audio
 - **Priority:** Gameplay feel > visuals > polish
 - **Key risk:** 3D models are the bottleneck — use primitives early, replace later
+
+## Unity manual setup reminders (do after pulling latest main)
+
+- [ ] **Build Profiles → Scene List → Add Open Scenes**: add `Assets/test.unity` so R-key scene reset works (otherwise LoadScene falls back to -1).
+- [ ] **Player → PlayerController → Weapon Sway → Weapon Holder**: drag the weapon GameObject (Sphere or gun model) into this field so weapon tilts on camera pitch.
+- [ ] If `moveSpeed` in the inspector still shows the old `6`, set it to `10` manually (serialized scene value overrides script default).
+
+## Next session starting point
+
+- Phase 1 Movement Upgrades: **done** ✅
+- Next on Phase 1: **Weapon System** — `WeaponBase.cs` abstract class, `WeaponManager.cs`, 5 weapons (Pulse Pistol, Scatter Gun, Void Rifle, Plasma Launcher, Void Blade), 1-5 + scroll wheel switching, ammo pickups, viewmodels.
+- Melee fix is deferred into the Weapon System rework (Void Blade will replace current broken melee).
