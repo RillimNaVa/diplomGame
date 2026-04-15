@@ -11,11 +11,29 @@ public class PlayerController : MonoBehaviour
     private static readonly int RecoilStateHash = Animator.StringToHash("recoil");
 
     [Header("Movement")]
-    public float moveSpeed = 6f;
+    public float moveSpeed = 10f;
     public float jumpHeight = 2f;
-    public float dashSpeed = 20f;
-    public float dashDuration = 0.2f;
     public float gravity = -20f;
+    public float airControlMultiplier = 1f;
+
+    [Header("Jump")]
+    public int maxJumps = 2;
+
+    [Header("Dash")]
+    public float dashSpeed = 25f;
+    public float dashDuration = 0.2f;
+    public int maxDashCharges = 2;
+    public float dashChargeCooldown = 3f;
+
+    [Header("Slide")]
+    public float slideSpeed = 18f;
+    public float slideDuration = 0.8f;
+    public float slideCooldown = 1f;
+    public float slideCameraHeight = 0.8f;
+    public float slideCameraLerpSpeed = 12f;
+
+    [Header("Momentum")]
+    public float momentumDecayRate = 15f;
 
     [Header("Mouse Look")]
     public float mouseSensitivity = 1.5f;
@@ -41,16 +59,38 @@ public class PlayerController : MonoBehaviour
 
     private CharacterController controller;
     private Vector3 velocity;
-    private Vector3 dashDirection;
     private float xRotation;
     private float nextFireTime;
     private float nextMeleeTime;
+
+    // Jump
+    private int jumpCount;
+
+    // Dash
+    private bool isDashing;
+    private float dashTimer;
+    private Vector3 dashDirection;
+    private int dashCharges;
+    private float dashRechargeTimer;
+
+    // Slide
+    private bool isSliding;
+    private float slideTimer;
+    private float slideCooldownTimer;
+    private Vector3 slideDirection;
+    private float originalHeight;
+    private Vector3 originalCenter;
+    private float defaultCameraY;
+
+    // Momentum
+    private float currentSpeed;
 
     // Input
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpPressed;
     private bool dashPressed;
+    private bool slideHeld;
     private bool fireRequested;
     private bool meleePressed;
 
@@ -58,6 +98,12 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
+        originalHeight = controller.height;
+        originalCenter = controller.center;
+
+        dashCharges = maxDashCharges;
+        currentSpeed = moveSpeed;
 
         if (gunAnimator == null)
         {
@@ -76,6 +122,8 @@ public class PlayerController : MonoBehaviour
             cameraTransform = cam.transform;
             cam.AddComponent<Camera>();
         }
+
+        defaultCameraY = cameraTransform.localPosition.y;
 
         if (firePoint == null)
         {
@@ -101,31 +149,144 @@ public class PlayerController : MonoBehaviour
 
     void HandleMovement()
     {
+        // 1. Ground check + reset
         bool isGrounded = controller.isGrounded;
-        if (isGrounded && velocity.y < 0) velocity.y = -2f;
-
-        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
-        controller.Move(move * moveSpeed * Time.deltaTime);
-
-        if (dashPressed && !IsDashing() && move.magnitude > 0.1f && isGrounded)
+        if (isGrounded && velocity.y < 0)
         {
-            StartDash(move.normalized);
-            dashPressed = false;
+            velocity.y = -2f;
+            jumpCount = 0;
         }
 
-        if (IsDashing())
+        // 2. Cooldown ticks
+        if (slideCooldownTimer > 0f) slideCooldownTimer -= Time.deltaTime;
+
+        if (dashCharges < maxDashCharges)
+        {
+            dashRechargeTimer += Time.deltaTime;
+            if (dashRechargeTimer >= dashChargeCooldown)
+            {
+                dashCharges++;
+                dashRechargeTimer = 0f;
+            }
+        }
+
+        // 3. Movement direction (camera-relative via player rotation)
+        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+
+        // 4. Dash start
+        if (dashPressed && !isDashing && dashCharges > 0)
+        {
+            dashCharges--;
+            isDashing = true;
+            dashTimer = dashDuration;
+            dashDirection = move.magnitude > 0.1f ? move.normalized : transform.forward;
+            velocity.y = 0f;
+            currentSpeed = dashSpeed;
+        }
+        dashPressed = false;
+
+        // 5. Dash tick
+        if (isDashing)
         {
             controller.Move(dashDirection * dashSpeed * Time.deltaTime);
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0f)
+            {
+                isDashing = false;
+            }
         }
 
-        if (jumpPressed && isGrounded)
+        // 6. Slide start
+        if (slideHeld && !isSliding && !isDashing && isGrounded
+            && move.magnitude > 0.1f && slideCooldownTimer <= 0f)
         {
+            StartSlide(move.normalized);
+        }
+
+        // 7. Slide tick
+        if (isSliding)
+        {
+            controller.Move(slideDirection * currentSpeed * Time.deltaTime);
+            slideTimer -= Time.deltaTime;
+
+            // End conditions: timer expired or button released
+            if (slideTimer <= 0f || !slideHeld)
+            {
+                EndSlide();
+            }
+        }
+
+        // 8. Normal movement (skipped during dash; reduced during slide)
+        if (!isDashing && !isSliding)
+        {
+            float airMul = isGrounded ? 1f : airControlMultiplier;
+            controller.Move(move * currentSpeed * airMul * Time.deltaTime);
+        }
+
+        // 9. Momentum decay toward base speed (only when not actively boosted)
+        if (!isDashing)
+        {
+            float target = isSliding ? slideSpeed : moveSpeed;
+            currentSpeed = Mathf.MoveTowards(currentSpeed, target, momentumDecayRate * Time.deltaTime);
+        }
+
+        // 10. Jump (can cancel slide; works in air up to maxJumps)
+        if (jumpPressed && jumpCount < maxJumps)
+        {
+            if (isSliding) EndSlide();
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            jumpCount++;
             jumpPressed = false;
         }
+        jumpPressed = false;
 
+        // 11. Gravity + vertical movement
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+
+        // 12. Camera Y lerp for slide feel
+        if (cameraTransform != null)
+        {
+            float targetY = isSliding ? slideCameraHeight : defaultCameraY;
+            Vector3 lp = cameraTransform.localPosition;
+            lp.y = Mathf.Lerp(lp.y, targetY, slideCameraLerpSpeed * Time.deltaTime);
+            cameraTransform.localPosition = lp;
+        }
+    }
+
+    private void StartSlide(Vector3 dir)
+    {
+        isSliding = true;
+        slideTimer = slideDuration;
+        slideCooldownTimer = slideCooldown;
+        slideDirection = dir;
+
+        // Inherit momentum from dash; otherwise use slideSpeed
+        if (currentSpeed < slideSpeed) currentSpeed = slideSpeed;
+
+        controller.height = originalHeight * 0.5f;
+        controller.center = new Vector3(originalCenter.x, originalCenter.y * 0.5f, originalCenter.z);
+    }
+
+    private void EndSlide()
+    {
+        // Overhead clearance check before standing up
+        if (!CanStandUp())
+        {
+            slideTimer = 0.1f; // try again in a moment
+            return;
+        }
+
+        isSliding = false;
+        controller.height = originalHeight;
+        controller.center = originalCenter;
+    }
+
+    private bool CanStandUp()
+    {
+        Vector3 top = transform.position + Vector3.up * (originalHeight - controller.radius);
+        Vector3 bottom = transform.position + Vector3.up * controller.radius;
+        return !Physics.CheckCapsule(bottom, top, controller.radius * 0.95f, ~0, QueryTriggerInteraction.Ignore);
     }
 
     void HandleLook()
@@ -238,8 +399,9 @@ public class PlayerController : MonoBehaviour
     // --- INPUT CALLBACKS (Send Messages) ---
     public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>() * 0.01f;
-    public void OnJump(InputValue value) => jumpPressed = value.isPressed;
-    public void OnDash(InputValue value) => dashPressed = value.isPressed;
+    public void OnJump(InputValue value) { if (value.isPressed) jumpPressed = true; }
+    public void OnDash(InputValue value) { if (value.isPressed) dashPressed = true; }
+    public void OnSlide(InputValue value) => slideHeld = value.isPressed;
 
     public void OnFire(InputValue value)
     {
@@ -256,17 +418,6 @@ public class PlayerController : MonoBehaviour
             meleePressed = true;
         }
     }
-
-    // --- DASH HELPERS ---
-    private bool IsDashing() => dashDirection != Vector3.zero;
-
-    private void StartDash(Vector3 dir)
-    {
-        dashDirection = dir;
-        Invoke(nameof(StopDash), dashDuration);
-    }
-
-    private void StopDash() => dashDirection = Vector3.zero;
 
     public void PlayShootAnim()
     {
