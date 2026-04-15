@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -48,6 +49,7 @@ public class GameManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.onHealthChanged.RemoveListener(UpdatePlayerHealth);
+            playerHealth.onDeath.RemoveListener(OnPlayerDied);
         }
     }
 
@@ -66,8 +68,27 @@ public class GameManager : MonoBehaviour
 
         if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+            ReloadCurrentScene();
         }
+    }
+
+    public void ReloadCurrentScene()
+    {
+        // Reload the currently active scene by its build index. Previously LoadScene(0)
+        // was hardcoded, which pointed at SampleScene in Build Settings (not test.unity),
+        // causing the yellow-screen / missing-objects bug on R press.
+        // Requires the active scene to be in Build Settings.
+        Scene active = SceneManager.GetActiveScene();
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        SceneManager.LoadScene(active.buildIndex);
+    }
+
+    void OnPlayerDied()
+    {
+        uiManager?.ShowWaveState("YOU DIED — reloading...");
+        Invoke(nameof(ReloadCurrentScene), 2f);
     }
 
     void ResolveReferences()
@@ -86,6 +107,7 @@ public class GameManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.onHealthChanged.AddListener(UpdatePlayerHealth);
+            playerHealth.onDeath.AddListener(OnPlayerDied);
             UpdatePlayerHealth(playerHealth.currentHealth, playerHealth.maxHealth);
         }
     }

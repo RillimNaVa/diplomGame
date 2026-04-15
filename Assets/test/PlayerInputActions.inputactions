@@ -62,12 +62,12 @@
                 },
                 {
                     "name": "Slide",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "b1e8a4f2-3c9d-4e7a-8f12-5d6c2a7b9e01",
-                    "expectedControlType": "",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -152,6 +152,28 @@
                     "name": "",
                     "id": "a57d3afa-a85e-4298-9553-84adda39be15",
                     "path": "<Keyboard>/leftShift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d1a2b3c4-e5f6-4789-90ab-cdef12345678",
+                    "path": "<Keyboard>/rightShift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e2b3c4d5-f6a7-4890-b1c2-def234567890",
+                    "path": "<Keyboard>/v",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

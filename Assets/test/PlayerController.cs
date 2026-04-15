@@ -39,6 +39,11 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 1.5f;
     public Transform cameraTransform;
 
+    [Header("Weapon Sway")]
+    public Transform weaponHolder;
+    [Range(0f, 1f)] public float weaponTiltAmount = 0.35f;
+    public float weaponSwaySmoothing = 10f;
+
     [Header("Shooting")]
     public float fireRate = 0.2f;
     public float damage = 25f;
@@ -85,6 +90,9 @@ public class PlayerController : MonoBehaviour
     // Momentum
     private float currentSpeed;
 
+    // Weapon sway
+    private Quaternion weaponBaseLocalRotation;
+
     // Input
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -124,6 +132,11 @@ public class PlayerController : MonoBehaviour
         }
 
         defaultCameraY = cameraTransform.localPosition.y;
+
+        if (weaponHolder != null)
+        {
+            weaponBaseLocalRotation = weaponHolder.localRotation;
+        }
 
         if (firePoint == null)
         {
@@ -264,29 +277,15 @@ public class PlayerController : MonoBehaviour
         // Inherit momentum from dash; otherwise use slideSpeed
         if (currentSpeed < slideSpeed) currentSpeed = slideSpeed;
 
-        controller.height = originalHeight * 0.5f;
-        controller.center = new Vector3(originalCenter.x, originalCenter.y * 0.5f, originalCenter.z);
+        // Note: CharacterController size is intentionally NOT shrunk during slide.
+        // Repeatedly resizing the controller caused the player to fall through floors.
+        // The visual crouch effect comes from the camera dip in HandleMovement.
+        // When low-ceiling arenas are added (Phase 2), revisit this with proper handling.
     }
 
     private void EndSlide()
     {
-        // Overhead clearance check before standing up
-        if (!CanStandUp())
-        {
-            slideTimer = 0.1f; // try again in a moment
-            return;
-        }
-
         isSliding = false;
-        controller.height = originalHeight;
-        controller.center = originalCenter;
-    }
-
-    private bool CanStandUp()
-    {
-        Vector3 top = transform.position + Vector3.up * (originalHeight - controller.radius);
-        Vector3 bottom = transform.position + Vector3.up * controller.radius;
-        return !Physics.CheckCapsule(bottom, top, controller.radius * 0.95f, ~0, QueryTriggerInteraction.Ignore);
     }
 
     void HandleLook()
@@ -296,6 +295,17 @@ public class PlayerController : MonoBehaviour
         xRotation -= lookInput.y * mouseSensitivity;
         xRotation = Mathf.Clamp(xRotation, -80f, 80f);
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+
+        // Weapon tilts proportionally to camera pitch, smoothed toward target
+        if (weaponHolder != null)
+        {
+            Quaternion targetTilt = weaponBaseLocalRotation *
+                                    Quaternion.Euler(xRotation * weaponTiltAmount, 0f, 0f);
+            weaponHolder.localRotation = Quaternion.Slerp(
+                weaponHolder.localRotation,
+                targetTilt,
+                weaponSwaySmoothing * Time.deltaTime);
+        }
     }
 
     void HandleCombat()
@@ -321,20 +331,24 @@ public class PlayerController : MonoBehaviour
     {
         const float maxDistance = 100f;
         Vector3 origin = firePoint != null ? firePoint.position : cameraTransform.position;
-        Vector3 endPoint = origin + cameraTransform.forward * maxDistance;
 
         if (muzzleFlash != null)
         {
             muzzleFlash.Play();
         }
 
-        Ray centerRay = new Ray(cameraTransform.position, cameraTransform.forward);
+        // Direction is always camera.forward — avoids parallax bug when firePoint
+        // is offset from the camera (e.g., during fast slides/dashes, bullets curved
+        // towards movement direction because direction was calculated from firePoint
+        // to a camera-space hit point).
+        Vector3 direction = cameraTransform.forward;
+        Vector3 endPoint = origin + direction * maxDistance;
+
+        Ray centerRay = new Ray(cameraTransform.position, direction);
         if (Physics.Raycast(centerRay, out RaycastHit centerHit, maxDistance))
         {
             endPoint = centerHit.point;
         }
-
-        Vector3 direction = (endPoint - origin).normalized;
 
         if (projectilePrefab != null && shootOrigin != null)
         {
