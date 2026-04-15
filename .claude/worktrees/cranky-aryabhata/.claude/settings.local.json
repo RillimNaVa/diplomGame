@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr create --draft --title 'Phase 1: Movement upgrades — DOOM-style mobility' --body ':*)",
+      "Bash(gh auth:*)",
+      "Bash(gh pr:*)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" pull)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" log --oneline -5)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" status)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" branch -a)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" checkout -b fix/slide-weapon-reset-bugs)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" diff --stat)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" add Assets/test/PlayerController.cs Assets/test/PlayerInputActions.inputactions Assets/test/GameManager.cs)",
+      "Bash(git -C 'C:\\\\Users\\\\assam\\\\DiplomGame' commit -m ':*)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" log --oneline -3)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" push -u origin fix/slide-weapon-reset-bugs)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" checkout main)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash push -m \"wip: scene changes from playtesting\" -- Assets/test.unity \".claude/worktrees/cranky-aryabhata/.claude/settings.local.json\")",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash pop)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" checkout stash@{0} -- Assets/test.unity)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash drop)"
+    ]
+  }
+}
