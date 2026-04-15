@@ -26,12 +26,12 @@
 ## Phase 1: Core Movement & Combat (Weeks 1-2)
 
 ### Movement Upgrades
-- [ ] Increase base speed to 10 m/s
-- [ ] Double jump
-- [ ] Slide (Ctrl while moving)
-- [ ] Air control (full directional control while airborne)
-- [ ] Dash rework: 2 charges, 3s cooldown per charge
-- [ ] Momentum preservation (dash → slide combos)
+- [x] Increase base speed to 10 m/s
+- [x] Double jump
+- [x] Slide (Ctrl while moving)
+- [x] Air control (full directional control while airborne)
+- [x] Dash rework: 2 charges, 3s cooldown per charge
+- [x] Momentum preservation (dash → slide combos)
 
 ### Weapon System
 - [ ] Create `WeaponBase.cs` abstract class
@@ -214,6 +214,7 @@
 | Date | What was done |
 |------|---------------|
 | 2026-04-15 | GDD v2 created. PROGRESS.md created. Project analyzed. |
+| 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. |
 | | |
 
 ---
