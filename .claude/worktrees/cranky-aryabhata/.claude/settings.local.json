@@ -18,7 +18,10 @@
       "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash push -m \"wip: scene changes from playtesting\" -- Assets/test.unity \".claude/worktrees/cranky-aryabhata/.claude/settings.local.json\")",
       "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash pop)",
       "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" checkout stash@{0} -- Assets/test.unity)",
-      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash drop)"
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" stash drop)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" add PROGRESS.md)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" push)",
+      "Bash(git -C \"C:\\\\Users\\\\assam\\\\DiplomGame\" log --oneline -7)"
     ]
   }
 }
