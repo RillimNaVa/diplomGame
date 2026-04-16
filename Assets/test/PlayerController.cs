@@ -1,15 +1,9 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
-
-
 public class PlayerController : MonoBehaviour
 {
-    private static readonly int ShootHash = Animator.StringToHash("Shoot");
-    private static readonly int RecoilStateHash = Animator.StringToHash("recoil");
-
     [Header("Movement")]
     public float moveSpeed = 10f;
     public float jumpHeight = 2f;
@@ -44,29 +38,13 @@ public class PlayerController : MonoBehaviour
     [Range(0f, 1f)] public float weaponTiltAmount = 0.35f;
     public float weaponSwaySmoothing = 10f;
 
-    [Header("Shooting")]
-    public float fireRate = 0.2f;
-    public float damage = 25f;
-    public LayerMask enemyLayer = -1;
-    public Transform firePoint;
-    public LineRenderer shotTracerPrefab;
-    public ParticleSystem muzzleFlash;
-    public ParticleSystem hitEffectPrefab;
-    public float tracerDuration = 0.05f;
-    public Projectile projectilePrefab;
-    public Transform shootOrigin;
-    [SerializeField] private Animator gunAnimator;
-
-    [Header("Melee")]
-    public float meleeDamage = 40f;
-    public float meleeRange = 2f;
-    public float meleeCooldown = 0.6f;
+    [Header("Weapon System")]
+    [Tooltip("Weapon manager that receives all combat input. Auto-resolved from this GameObject if not set.")]
+    public WeaponManager weaponManager;
 
     private CharacterController controller;
     private Vector3 velocity;
     private float xRotation;
-    private float nextFireTime;
-    private float nextMeleeTime;
 
     // Jump
     private int jumpCount;
@@ -99,8 +77,6 @@ public class PlayerController : MonoBehaviour
     private bool jumpPressed;
     private bool dashPressed;
     private bool slideHeld;
-    private bool fireRequested;
-    private bool meleePressed;
 
 
     void Start()
@@ -113,9 +89,9 @@ public class PlayerController : MonoBehaviour
         dashCharges = maxDashCharges;
         currentSpeed = moveSpeed;
 
-        if (gunAnimator == null)
+        if (weaponManager == null)
         {
-            gunAnimator = GetComponentInChildren<Animator>();
+            weaponManager = GetComponent<WeaponManager>();
         }
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -137,27 +113,12 @@ public class PlayerController : MonoBehaviour
         {
             weaponBaseLocalRotation = weaponHolder.localRotation;
         }
-
-        if (firePoint == null)
-        {
-            GameObject fp = new GameObject("FirePoint");
-            fp.transform.SetParent(cameraTransform);
-            fp.transform.localPosition = new Vector3(0.2f, -0.15f, 0.5f);
-            firePoint = fp.transform;
-        }
-
-        if (shootOrigin == null)
-        {
-            shootOrigin = firePoint;
-        }
-
     }
 
     void Update()
     {
         HandleMovement();
         HandleLook();
-        HandleCombat();
     }
 
     void HandleMovement()
@@ -308,108 +269,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void HandleCombat()
-    {
-        if (fireRequested && Time.time >= nextFireTime)
-        {
-            PlayShootAnim();
-            Shoot();
-            nextFireTime = Time.time + fireRate;
-
-            fireRequested = false;
-        }
-
-        if (meleePressed && Time.time >= nextMeleeTime)
-        {
-            MeleeAttack();
-            nextMeleeTime = Time.time + meleeCooldown;
-            meleePressed = false;
-        }
-    }
-
-    void Shoot()
-    {
-        const float maxDistance = 100f;
-        Vector3 origin = firePoint != null ? firePoint.position : cameraTransform.position;
-
-        if (muzzleFlash != null)
-        {
-            muzzleFlash.Play();
-        }
-
-        // Direction is always camera.forward — avoids parallax bug when firePoint
-        // is offset from the camera (e.g., during fast slides/dashes, bullets curved
-        // towards movement direction because direction was calculated from firePoint
-        // to a camera-space hit point).
-        Vector3 direction = cameraTransform.forward;
-        Vector3 endPoint = origin + direction * maxDistance;
-
-        Ray centerRay = new Ray(cameraTransform.position, direction);
-        if (Physics.Raycast(centerRay, out RaycastHit centerHit, maxDistance))
-        {
-            endPoint = centerHit.point;
-        }
-
-        if (projectilePrefab != null && shootOrigin != null)
-        {
-            Quaternion shotRotation = Quaternion.LookRotation(direction);
-            Projectile projectile = Instantiate(projectilePrefab, shootOrigin.position, shotRotation);
-            projectile.Launch(direction, damage);
-            return;
-        }
-
-        Debug.DrawRay(origin, direction * maxDistance, Color.red, 0.5f);
-
-        if (Physics.Raycast(origin, direction, out RaycastHit hit, maxDistance, enemyLayer))
-        {
-            endPoint = hit.point;
-
-            Health target = hit.collider.GetComponent<Health>();
-            if (target != null)
-            {
-                target.TakeDamage(damage);
-            }
-
-            if (hitEffectPrefab != null)
-            {
-                ParticleSystem hitFx = Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-                Destroy(hitFx.gameObject, hitFx.main.duration + hitFx.main.startLifetime.constantMax);
-            }
-        }
-
-        if (shotTracerPrefab != null)
-        {
-            StartCoroutine(PlayTracer(origin, endPoint));
-        }
-    }
-
-    private IEnumerator PlayTracer(Vector3 origin, Vector3 endPoint)
-    {
-        LineRenderer tracer = Instantiate(shotTracerPrefab, origin, Quaternion.identity);
-        tracer.positionCount = 2;
-        tracer.SetPosition(0, origin);
-        tracer.SetPosition(1, endPoint);
-
-        yield return new WaitForSeconds(tracerDuration);
-
-        if (tracer != null)
-        {
-            Destroy(tracer.gameObject);
-        }
-    }
-
-    void MeleeAttack()
-    {
-        if (Physics.SphereCast(cameraTransform.position, 0.4f, cameraTransform.forward, out RaycastHit hit, meleeRange, enemyLayer))
-        {
-            Health target = hit.collider.GetComponent<Health>();
-            if (target != null)
-            {
-                target.TakeDamage(meleeDamage);
-            }
-        }
-    }
-
     // --- INPUT CALLBACKS (Send Messages) ---
     public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
     public void OnLook(InputValue value) => lookInput = value.Get<Vector2>() * 0.01f;
@@ -417,46 +276,18 @@ public class PlayerController : MonoBehaviour
     public void OnDash(InputValue value) { if (value.isPressed) dashPressed = true; }
     public void OnSlide(InputValue value) => slideHeld = value.isPressed;
 
+    // Fire action is now Value-typed: this fires on both press and release with
+    // value.isPressed reflecting the new trigger state. WeaponManager handles
+    // semi-auto vs full-auto internally.
     public void OnFire(InputValue value)
     {
-        if (value.isPressed)
+        if (weaponManager != null)
         {
-            fireRequested = true;
+            weaponManager.SetFireHeld(value.isPressed);
         }
     }
 
-    public void OnMelee(InputValue value)
-    {
-        if (value.isPressed)
-        {
-            meleePressed = true;
-        }
-    }
-
-    public void PlayShootAnim()
-    {
-        if (!gunAnimator) return;
-
-        if (HasAnimatorParameter(gunAnimator, ShootHash, AnimatorControllerParameterType.Trigger))
-        {
-            gunAnimator.ResetTrigger(ShootHash);
-            gunAnimator.SetTrigger(ShootHash);
-            return;
-        }
-
-        gunAnimator.Play(RecoilStateHash, 0, 0f);
-    }
-
-    private static bool HasAnimatorParameter(Animator animator, int hash, AnimatorControllerParameterType type)
-    {
-        foreach (AnimatorControllerParameter parameter in animator.parameters)
-        {
-            if (parameter.nameHash == hash && parameter.type == type)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    // OnMelee callback intentionally removed — melee will return as the Void Blade
+    // (slot 5) in PR B of the Weapon System work. The right-mouse Melee binding
+    // currently in PlayerInputActions is left in place but will be repurposed.
 }

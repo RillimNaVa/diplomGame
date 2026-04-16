@@ -34,9 +34,9 @@
 - [x] Momentum preservation (dash → slide combos)
 
 ### Weapon System
-- [ ] Create `WeaponBase.cs` abstract class
-- [ ] Create `WeaponManager.cs` (switching, inventory)
-- [ ] Weapon 1: Pulse Pistol (semi-auto hitscan, unlimited ammo)
+- [x] Create `WeaponBase.cs` abstract class
+- [x] Create `WeaponManager.cs` (switching, inventory) — core in place, switching wired in PR B
+- [ ] Weapon 1: Pulse Pistol (semi-auto hitscan, unlimited ammo) — code done, needs scene wiring
 - [ ] Weapon 2: Scatter Gun (shotgun, 8 pellets spread)
 - [ ] Weapon 3: Void Rifle (full-auto hitscan)
 - [ ] Weapon 4: Plasma Launcher (projectile, splash damage)
@@ -216,6 +216,7 @@
 | 2026-04-15 | GDD v2 created. PROGRESS.md created. Project analyzed. |
 | 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. (PR #10) |
 | 2026-04-15 | Phase 1 playtest fixes (PR #11): slide no longer falls through floor (removed controller.height resizing), slide ends correctly on Ctrl release (Button→Value input type), V + Right Shift added as dash keys, shot direction uses camera.forward (bullets no longer curve during fast motion), weapon tilt on camera pitch (Weapon Sway section), scene reset fixed (R key + auto-reload 2s after death, uses active scene buildIndex instead of hardcoded 0). |
+| 2026-04-16 | Phase 1 Weapon System PR A: new modular framework under `Assets/Scripts/Combat/Weapons/` — `WeaponEnums`, `WeaponContext`, `WeaponDefinition` (ScriptableObject with `[SerializeReference] FireModeBase`), `FireModeBase` + `HitscanFireMode`, `WeaponBase` (runtime state inline), `GenericWeapon`, `WeaponManager` (slots[5], events, owner-death halt). Added `Editor/FireModeReferenceDrawer.cs` for Inspector type-picker dropdown. PlayerController stripped of all combat (Shoot/MeleeAttack/PlayShootAnim/HasAnimatorParameter removed); OnFire forwards to WeaponManager.SetFireHeld; OnMelee removed (returns as Void Blade in PR B). Fire input action changed Button → Value (Button) for hold-to-fire. Verified playable 2026-04-17 — Pulse Pistol fires correctly via new system with visible tracer. |
 | | |
 
 ---
@@ -233,8 +234,20 @@
 - [ ] **Player → PlayerController → Weapon Sway → Weapon Holder**: drag the weapon GameObject (Sphere or gun model) into this field so weapon tilts on camera pitch.
 - [ ] If `moveSpeed` in the inspector still shows the old `6`, set it to `10` manually (serialized scene value overrides script default).
 
+### Weapon System PR A — scene wiring (DONE 2026-04-17, verified playable)
+
+- [x] **Create the Pulse Pistol definition asset.** `Assets/Scripts/Combat/Weapons/Data/Weapons/PulsePistol_Def.asset` with `HitscanFireMode` assigned via custom Inspector dropdown.
+- [x] **Add `WeaponManager` component to the Player GameObject.** Owner / cameraTransform / hitMask / ownerHealth references wired.
+- [x] **Convert the existing pistol viewmodel into a weapon.** `GenericWeapon` component added with definition + `muzlePoint` child Transform + `ShotTracer` LineRenderer prefab for visible hitscan tracer.
+- [x] **Wire the weapon into a slot.** Slot 0 = pistol viewmodel. `defaultSlot = 0`.
+- [x] **Remove obsolete fields from PlayerController.** Old combat fields no longer appear in the Inspector after script recompile.
+- [x] **PlayerInputActions asset regenerated.** Fire action is `Value`/`Button` for hold-to-fire support.
+
+**Status: verified playable 2026-04-17 — Pulse Pistol fires correctly via new system with visible tracer, no regressions in movement/dash/slide/jump, friendly-fire prevention works, death-halt works.**
+
 ## Next session starting point
 
 - Phase 1 Movement Upgrades: **done** ✅
-- Next on Phase 1: **Weapon System** — `WeaponBase.cs` abstract class, `WeaponManager.cs`, 5 weapons (Pulse Pistol, Scatter Gun, Void Rifle, Plasma Launcher, Void Blade), 1-5 + scroll wheel switching, ammo pickups, viewmodels.
-- Melee fix is deferred into the Weapon System rework (Void Blade will replace current broken melee).
+- Phase 1 Weapon System **PR A** (core framework + Pulse Pistol migration): code done ✅, awaiting Unity scene wiring (see checklist above) and playtest.
+- Next: **PR B** — `ShotgunFireMode`, `ProjectileFireMode`, `MeleeArcFireMode`, 4 remaining `WeaponDefinition` assets, slot switching (1-5 + scroll), ammo + reload input, friendly-fire collision setup for projectiles, Void Blade replaces melee.
+- TZ for the full feature lives at [WEAPON_SYSTEM_TZ.md](./WEAPON_SYSTEM_TZ.md).

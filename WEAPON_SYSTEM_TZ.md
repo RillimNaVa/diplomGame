@@ -689,3 +689,54 @@ If tradeoffs are required during implementation, prefer:
 - playability over abstraction purity
 - modular separation over keeping combat inside `PlayerController`
 - additive extension points over speculative interfaces
+
+---
+
+## Implementation Status
+
+### PR A — Core Framework + Pulse Pistol Migration (2026-04-17) — DONE
+
+**New files:**
+
+- `Assets/Scripts/Combat/Weapons/Core/WeaponEnums.cs`
+- `Assets/Scripts/Combat/Weapons/Core/WeaponContext.cs`
+- `Assets/Scripts/Combat/Weapons/Core/WeaponDefinition.cs` (ScriptableObject with `[SerializeReference] FireModeBase`)
+- `Assets/Scripts/Combat/Weapons/Core/WeaponBase.cs` (abstract, runtime state inline — no separate RuntimeState class)
+- `Assets/Scripts/Combat/Weapons/Core/GenericWeapon.cs` (one component for all 5 weapons)
+- `Assets/Scripts/Combat/Weapons/Core/WeaponManager.cs` (slots[5], events, owner-death halt)
+- `Assets/Scripts/Combat/Weapons/FireModes/FireModeBase.cs`
+- `Assets/Scripts/Combat/Weapons/FireModes/HitscanFireMode.cs`
+- `Assets/Scripts/Combat/Weapons/Editor/FireModeReferenceDrawer.cs` (custom Inspector dropdown for FireMode picker)
+
+**Modified:**
+
+- `Assets/test/PlayerController.cs` — all combat stripped (Shoot, MeleeAttack, PlayShootAnim, HasAnimatorParameter, related fields). `OnFire` now forwards to `WeaponManager.SetFireHeld`. `OnMelee` removed (returns as Void Blade in PR B).
+- `Assets/test/PlayerInputActions.inputactions` — `Fire` action type `Button → Value/Button` for hold-to-fire support (needed by future full-auto Void Rifle).
+
+**Scene wiring (done in editor):**
+
+- `WeaponManager` component added to Player with all references wired (owner, cameraTransform, hitMask, ownerHealth).
+- `PulsePistol_Def.asset` created with `HitscanFireMode` strategy assigned via the new dropdown.
+- `GenericWeapon` component added to pistol viewmodel; `muzzlePoint` child Transform created at barrel tip; `ShotTracer` LineRenderer prefab created and wired into `Tracer Prefab`.
+- Slot 0 on `WeaponManager` = pistol viewmodel.
+
+**Verified playable:**
+
+- Pulse Pistol fires semi-auto hitscan via left-click, fire rate ~5/sec.
+- Tracer visible from muzzle to hit point.
+- Aim correct during full-speed movement, dash, and slide (no bullet curving — the bug from PR #11 did not regress).
+- Player cannot damage self (friendly-fire filter works).
+- Movement, jump, double-jump, dash (2 charges), slide — no regressions.
+- Player death → weapon stops firing and ignores input until scene reload.
+
+### PR B — Remaining Weapons + Switching + Ammo (pending, next session)
+
+- `ShotgunFireMode`, `ProjectileFireMode`, `MeleeArcFireMode` classes.
+- 4 new `WeaponDefinition` assets: Scatter Gun, Void Rifle, Plasma Launcher, Void Blade.
+- Slot switching: keys 1-5 + mouse scroll wheel (input actions + forwarding).
+- Ammo system for finite-ammo weapons (clip + reserve, reload coroutine, reload input).
+- Friendly-fire safety for projectiles (`Physics.IgnoreCollision` between projectile and player colliders on spawn).
+- Viewmodel setup for 4 new weapons (primitive placeholders acceptable until Blender models are ready).
+- Melee re-enabled through Void Blade in slot 5.
+
+See the Migration Plan section above for full step-by-step of PR B.
