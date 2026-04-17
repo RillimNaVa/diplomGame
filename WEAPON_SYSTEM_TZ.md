@@ -729,14 +729,30 @@ If tradeoffs are required during implementation, prefer:
 - Movement, jump, double-jump, dash (2 charges), slide — no regressions.
 - Player death → weapon stops firing and ignores input until scene reload.
 
-### PR B — Remaining Weapons + Switching + Ammo (pending, next session)
+### PR B — Remaining Weapons + Switching + Ammo (2026-04-17) — CODE DONE, SCENE WIRING PENDING
 
-- `ShotgunFireMode`, `ProjectileFireMode`, `MeleeArcFireMode` classes.
-- 4 new `WeaponDefinition` assets: Scatter Gun, Void Rifle, Plasma Launcher, Void Blade.
-- Slot switching: keys 1-5 + mouse scroll wheel (input actions + forwarding).
-- Ammo system for finite-ammo weapons (clip + reserve, reload coroutine, reload input).
-- Friendly-fire safety for projectiles (`Physics.IgnoreCollision` between projectile and player colliders on spawn).
-- Viewmodel setup for 4 new weapons (primitive placeholders acceptable until Blender models are ready).
-- Melee re-enabled through Void Blade in slot 5.
+**New files:**
 
-See the Migration Plan section above for full step-by-step of PR B.
+- `Assets/Scripts/Combat/Weapons/FireModes/ShotgunFireMode.cs` — `pelletCount` rays in a cone, de-duped Health damage per shot.
+- `Assets/Scripts/Combat/Weapons/FireModes/ProjectileFireMode.cs` — spawns `Projectile` prefab, calls `Projectile.Launch(direction, damage)`, and sets `Physics.IgnoreCollision` between every projectile collider and every owner collider so the player cannot self-damage.
+- `Assets/Scripts/Combat/Weapons/FireModes/MeleeArcFireMode.cs` — `OverlapSphere` at `camera.position + forward*range*0.5` with radius `range*0.5`, unique-Health dedup.
+- `Assets/Scripts/Combat/Weapons/Data/Weapons/Scatter_Gun_def.asset` (slot 1, ShotgunFireMode, 8 pellets / 12° spread, clip 6 / reserve 36).
+- `Assets/Scripts/Combat/Weapons/Data/Weapons/Void_Rifle_def.asset` (slot 2, HitscanFireMode, full-auto, clip 30 / reserve 120).
+- `Assets/Scripts/Combat/Weapons/Data/Weapons/Plasma_Launcher_def.asset` (slot 3, ProjectileFireMode, 60 dmg / fire rate 1, clip 4 / reserve 20).
+- `Assets/Scripts/Combat/Weapons/Data/Weapons/Void_Blade_def.asset` (slot 4, MeleeArcFireMode, unlimited, range 3).
+
+**Modified:**
+
+- `Assets/test/PlayerInputActions.inputactions` — removed `Melee`; added `Reload` (R), `SlotSelect1..5` (1-5), `SwitchScroll` (Mouse/scroll Value/Vector2).
+- `Assets/test/PlayerController.cs` — new callbacks `OnReload`, `OnSlotSelect1..5`, `OnSwitchScroll` forwarding to `WeaponManager.Reload / EquipSlot / CycleSlot`.
+
+**Already in place from PR A (no changes needed):**
+
+- `WeaponManager.EquipSlot`, `CycleSlot`, `OnAmmoChanged` event.
+- `WeaponBase` ammo/reload state (clip, reserve, `ReloadCoroutine`, `TryReload`).
+
+**Scene wiring still required in Unity Editor (see PROGRESS.md "Weapon System PR B — scene wiring" checklist):**
+
+- For each new weapon, create a viewmodel child of `weaponHolder`, add `GenericWeapon` + matching def asset + `muzzlePoint`, wire into `WeaponManager.slots[]`.
+- Re-pick the Fire Mode in each `*_def.asset` dropdown if Unity does not keep the SerializeReference on first import of the hand-written YAML.
+- Assign `tracerPrefab` for Scatter Gun and Void Rifle, and `projectilePrefab` for Plasma Launcher.

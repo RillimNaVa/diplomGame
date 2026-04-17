@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74f5be56901fdb44a534d05026ea425, type: 3}
+  m_Name: Plasma_Launcher_def
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponDefinition
+  weaponId: plasma_launcher
+  displayName: Plasma Launcher
+  slotIndex: 3
+  weaponCategory: 3
+  damage: 60
+  fireRate: 1
+  range: 100
+  isAutomatic: 0
+  usesAmmo: 1
+  clipSize: 4
+  maxReserveAmmo: 20
+  reloadDuration: 2.5
+  pelletCount: 1
+  spreadAngle: 0
+  projectilePrefab: {fileID: 1177184549934515496, guid: 65990a0d45c7f49999da0ef0af77575b, type: 3}
+  viewModelPrefab: {fileID: 0}
+  tracerPrefab: {fileID: 0}
+  animTriggerName: 
+  fireMode:
+    rid: 2000000000000000003
+  references:
+    version: 2
+    RefIds:
+    - rid: 2000000000000000003
+      type: {class: ProjectileFireMode, ns: , asm: Assembly-CSharp}
+      data: 

@@ -66,7 +66,9 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
+        // Scene restart moved from R (which now reloads the current weapon)
+        // to F5 to avoid conflicting with the weapon reload input.
+        if (Keyboard.current != null && Keyboard.current.f5Key.wasPressedThisFrame)
         {
             ReloadCurrentScene();
         }
