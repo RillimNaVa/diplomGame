@@ -138,19 +138,73 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""Melee"",
+                    ""name"": ""Slide"",
+                    ""type"": ""Value"",
+                    ""id"": ""b1e8a4f2-3c9d-4e7a-8f12-5d6c2a7b9e01"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Reload"",
                     ""type"": ""Button"",
-                    ""id"": ""7d7e4900-c199-4dba-930d-69cbdbf9c7ab"",
+                    ""id"": ""a1b2c3d4-0001-4aaa-8000-000000000001"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Slide"",
+                    ""name"": ""SlotSelect1"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0002-4aaa-8000-000000000002"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SlotSelect2"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0003-4aaa-8000-000000000003"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SlotSelect3"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0004-4aaa-8000-000000000004"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SlotSelect4"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0005-4aaa-8000-000000000005"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SlotSelect5"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0006-4aaa-8000-000000000006"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchScroll"",
                     ""type"": ""Value"",
-                    ""id"": ""b1e8a4f2-3c9d-4e7a-8f12-5d6c2a7b9e01"",
-                    ""expectedControlType"": ""Button"",
+                    ""id"": ""a1b2c3d4-0007-4aaa-8000-000000000007"",
+                    ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
@@ -280,23 +334,89 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""453a741a-b188-47dc-8ea9-4d38775e13d6"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Melee"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""c2f9b5e3-4d8a-4f1c-9e23-6e7d3b8c0f12"",
                     ""path"": ""<Keyboard>/leftCtrl"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Slide"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1001-4aaa-8000-000000001001"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Reload"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1002-4aaa-8000-000000001002"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SlotSelect1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1003-4aaa-8000-000000001003"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SlotSelect2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1004-4aaa-8000-000000001004"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SlotSelect3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1005-4aaa-8000-000000001005"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SlotSelect4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1006-4aaa-8000-000000001006"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SlotSelect5"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b1a2c3d4-1007-4aaa-8000-000000001007"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchScroll"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -312,8 +432,14 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
         m_Player_Dash = m_Player.FindAction("Dash", throwIfNotFound: true);
         m_Player_Fire = m_Player.FindAction("Fire", throwIfNotFound: true);
-        m_Player_Melee = m_Player.FindAction("Melee", throwIfNotFound: true);
         m_Player_Slide = m_Player.FindAction("Slide", throwIfNotFound: true);
+        m_Player_Reload = m_Player.FindAction("Reload", throwIfNotFound: true);
+        m_Player_SlotSelect1 = m_Player.FindAction("SlotSelect1", throwIfNotFound: true);
+        m_Player_SlotSelect2 = m_Player.FindAction("SlotSelect2", throwIfNotFound: true);
+        m_Player_SlotSelect3 = m_Player.FindAction("SlotSelect3", throwIfNotFound: true);
+        m_Player_SlotSelect4 = m_Player.FindAction("SlotSelect4", throwIfNotFound: true);
+        m_Player_SlotSelect5 = m_Player.FindAction("SlotSelect5", throwIfNotFound: true);
+        m_Player_SwitchScroll = m_Player.FindAction("SwitchScroll", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -399,8 +525,14 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Jump;
     private readonly InputAction m_Player_Dash;
     private readonly InputAction m_Player_Fire;
-    private readonly InputAction m_Player_Melee;
     private readonly InputAction m_Player_Slide;
+    private readonly InputAction m_Player_Reload;
+    private readonly InputAction m_Player_SlotSelect1;
+    private readonly InputAction m_Player_SlotSelect2;
+    private readonly InputAction m_Player_SlotSelect3;
+    private readonly InputAction m_Player_SlotSelect4;
+    private readonly InputAction m_Player_SlotSelect5;
+    private readonly InputAction m_Player_SwitchScroll;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -433,13 +565,37 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Fire => m_Wrapper.m_Player_Fire;
         /// <summary>
-        /// Provides access to the underlying input action "Player/Melee".
-        /// </summary>
-        public InputAction @Melee => m_Wrapper.m_Player_Melee;
-        /// <summary>
         /// Provides access to the underlying input action "Player/Slide".
         /// </summary>
         public InputAction @Slide => m_Wrapper.m_Player_Slide;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Reload".
+        /// </summary>
+        public InputAction @Reload => m_Wrapper.m_Player_Reload;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SlotSelect1".
+        /// </summary>
+        public InputAction @SlotSelect1 => m_Wrapper.m_Player_SlotSelect1;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SlotSelect2".
+        /// </summary>
+        public InputAction @SlotSelect2 => m_Wrapper.m_Player_SlotSelect2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SlotSelect3".
+        /// </summary>
+        public InputAction @SlotSelect3 => m_Wrapper.m_Player_SlotSelect3;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SlotSelect4".
+        /// </summary>
+        public InputAction @SlotSelect4 => m_Wrapper.m_Player_SlotSelect4;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SlotSelect5".
+        /// </summary>
+        public InputAction @SlotSelect5 => m_Wrapper.m_Player_SlotSelect5;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SwitchScroll".
+        /// </summary>
+        public InputAction @SwitchScroll => m_Wrapper.m_Player_SwitchScroll;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -481,12 +637,30 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Fire.started += instance.OnFire;
             @Fire.performed += instance.OnFire;
             @Fire.canceled += instance.OnFire;
-            @Melee.started += instance.OnMelee;
-            @Melee.performed += instance.OnMelee;
-            @Melee.canceled += instance.OnMelee;
             @Slide.started += instance.OnSlide;
             @Slide.performed += instance.OnSlide;
             @Slide.canceled += instance.OnSlide;
+            @Reload.started += instance.OnReload;
+            @Reload.performed += instance.OnReload;
+            @Reload.canceled += instance.OnReload;
+            @SlotSelect1.started += instance.OnSlotSelect1;
+            @SlotSelect1.performed += instance.OnSlotSelect1;
+            @SlotSelect1.canceled += instance.OnSlotSelect1;
+            @SlotSelect2.started += instance.OnSlotSelect2;
+            @SlotSelect2.performed += instance.OnSlotSelect2;
+            @SlotSelect2.canceled += instance.OnSlotSelect2;
+            @SlotSelect3.started += instance.OnSlotSelect3;
+            @SlotSelect3.performed += instance.OnSlotSelect3;
+            @SlotSelect3.canceled += instance.OnSlotSelect3;
+            @SlotSelect4.started += instance.OnSlotSelect4;
+            @SlotSelect4.performed += instance.OnSlotSelect4;
+            @SlotSelect4.canceled += instance.OnSlotSelect4;
+            @SlotSelect5.started += instance.OnSlotSelect5;
+            @SlotSelect5.performed += instance.OnSlotSelect5;
+            @SlotSelect5.canceled += instance.OnSlotSelect5;
+            @SwitchScroll.started += instance.OnSwitchScroll;
+            @SwitchScroll.performed += instance.OnSwitchScroll;
+            @SwitchScroll.canceled += instance.OnSwitchScroll;
         }
 
         /// <summary>
@@ -513,12 +687,30 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Fire.started -= instance.OnFire;
             @Fire.performed -= instance.OnFire;
             @Fire.canceled -= instance.OnFire;
-            @Melee.started -= instance.OnMelee;
-            @Melee.performed -= instance.OnMelee;
-            @Melee.canceled -= instance.OnMelee;
             @Slide.started -= instance.OnSlide;
             @Slide.performed -= instance.OnSlide;
             @Slide.canceled -= instance.OnSlide;
+            @Reload.started -= instance.OnReload;
+            @Reload.performed -= instance.OnReload;
+            @Reload.canceled -= instance.OnReload;
+            @SlotSelect1.started -= instance.OnSlotSelect1;
+            @SlotSelect1.performed -= instance.OnSlotSelect1;
+            @SlotSelect1.canceled -= instance.OnSlotSelect1;
+            @SlotSelect2.started -= instance.OnSlotSelect2;
+            @SlotSelect2.performed -= instance.OnSlotSelect2;
+            @SlotSelect2.canceled -= instance.OnSlotSelect2;
+            @SlotSelect3.started -= instance.OnSlotSelect3;
+            @SlotSelect3.performed -= instance.OnSlotSelect3;
+            @SlotSelect3.canceled -= instance.OnSlotSelect3;
+            @SlotSelect4.started -= instance.OnSlotSelect4;
+            @SlotSelect4.performed -= instance.OnSlotSelect4;
+            @SlotSelect4.canceled -= instance.OnSlotSelect4;
+            @SlotSelect5.started -= instance.OnSlotSelect5;
+            @SlotSelect5.performed -= instance.OnSlotSelect5;
+            @SlotSelect5.canceled -= instance.OnSlotSelect5;
+            @SwitchScroll.started -= instance.OnSwitchScroll;
+            @SwitchScroll.performed -= instance.OnSwitchScroll;
+            @SwitchScroll.canceled -= instance.OnSwitchScroll;
         }
 
         /// <summary>
@@ -595,18 +787,60 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnFire(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Melee" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnMelee(InputAction.CallbackContext context);
-        /// <summary>
         /// Method invoked when associated input action "Slide" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSlide(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Reload" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnReload(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SlotSelect1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlotSelect1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SlotSelect2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlotSelect2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SlotSelect3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlotSelect3(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SlotSelect4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlotSelect4(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SlotSelect5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlotSelect5(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SwitchScroll" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSwitchScroll(InputAction.CallbackContext context);
     }
 }

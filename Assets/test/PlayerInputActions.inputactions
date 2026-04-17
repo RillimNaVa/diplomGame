@@ -52,19 +52,73 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Melee",
+                    "name": "Slide",
+                    "type": "Value",
+                    "id": "b1e8a4f2-3c9d-4e7a-8f12-5d6c2a7b9e01",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Reload",
                     "type": "Button",
-                    "id": "7d7e4900-c199-4dba-930d-69cbdbf9c7ab",
+                    "id": "a1b2c3d4-0001-4aaa-8000-000000000001",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Slide",
+                    "name": "SlotSelect1",
+                    "type": "Button",
+                    "id": "a1b2c3d4-0002-4aaa-8000-000000000002",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SlotSelect2",
+                    "type": "Button",
+                    "id": "a1b2c3d4-0003-4aaa-8000-000000000003",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SlotSelect3",
+                    "type": "Button",
+                    "id": "a1b2c3d4-0004-4aaa-8000-000000000004",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SlotSelect4",
+                    "type": "Button",
+                    "id": "a1b2c3d4-0005-4aaa-8000-000000000005",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SlotSelect5",
+                    "type": "Button",
+                    "id": "a1b2c3d4-0006-4aaa-8000-000000000006",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchScroll",
                     "type": "Value",
-                    "id": "b1e8a4f2-3c9d-4e7a-8f12-5d6c2a7b9e01",
-                    "expectedControlType": "Button",
+                    "id": "a1b2c3d4-0007-4aaa-8000-000000000007",
+                    "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -194,23 +248,89 @@
                 },
                 {
                     "name": "",
-                    "id": "453a741a-b188-47dc-8ea9-4d38775e13d6",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Melee",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "c2f9b5e3-4d8a-4f1c-9e23-6e7d3b8c0f12",
                     "path": "<Keyboard>/leftCtrl",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Slide",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1001-4aaa-8000-000000001001",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Reload",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1002-4aaa-8000-000000001002",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SlotSelect1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1003-4aaa-8000-000000001003",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SlotSelect2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1004-4aaa-8000-000000001004",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SlotSelect3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1005-4aaa-8000-000000001005",
+                    "path": "<Keyboard>/4",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SlotSelect4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1006-4aaa-8000-000000001006",
+                    "path": "<Keyboard>/5",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SlotSelect5",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a2c3d4-1007-4aaa-8000-000000001007",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchScroll",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

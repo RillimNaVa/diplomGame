@@ -287,7 +287,25 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // OnMelee callback intentionally removed — melee will return as the Void Blade
-    // (slot 5) in PR B of the Weapon System work. The right-mouse Melee binding
-    // currently in PlayerInputActions is left in place but will be repurposed.
+    public void OnReload(InputValue value)
+    {
+        if (value.isPressed && weaponManager != null)
+        {
+            weaponManager.Reload();
+        }
+    }
+
+    public void OnSlotSelect1(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(0); }
+    public void OnSlotSelect2(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(1); }
+    public void OnSlotSelect3(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(2); }
+    public void OnSlotSelect4(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(3); }
+    public void OnSlotSelect5(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(4); }
+
+    public void OnSwitchScroll(InputValue value)
+    {
+        if (weaponManager == null) return;
+        Vector2 scroll = value.Get<Vector2>();
+        if (scroll.y > 0f) weaponManager.CycleSlot(+1);
+        else if (scroll.y < 0f) weaponManager.CycleSlot(-1);
+    }
 }

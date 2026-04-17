@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74f5be56901fdb44a534d05026ea425, type: 3}
+  m_Name: Void_Blade_def
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponDefinition
+  weaponId: void_blade
+  displayName: Void Blade
+  slotIndex: 4
+  weaponCategory: 4
+  damage: 55
+  fireRate: 2
+  range: 3
+  isAutomatic: 0
+  usesAmmo: 0
+  clipSize: 0
+  maxReserveAmmo: 0
+  reloadDuration: 0
+  pelletCount: 1
+  spreadAngle: 0
+  projectilePrefab: {fileID: 0}
+  viewModelPrefab: {fileID: 0}
+  tracerPrefab: {fileID: 0}
+  animTriggerName: 
+  fireMode:
+    rid: 2000000000000000004
+  references:
+    version: 2
+    RefIds:
+    - rid: 2000000000000000004
+      type: {class: MeleeArcFireMode, ns: , asm: Assembly-CSharp}
+      data: 
