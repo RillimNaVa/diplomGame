@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --base main --head claude/elegant-bell --title 'feat\\(weapons\\): PR A - core framework + Pulse Pistol migration' --body ' *)",
+      "Bash(gh pr *)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\assam\\\\DiplomGame && rmdir /s /q .claude\\\\worktrees\\\\elegant-bell\")"
+    ]
+  }
+}
