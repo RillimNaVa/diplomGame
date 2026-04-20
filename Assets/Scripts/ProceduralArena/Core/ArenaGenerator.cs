@@ -1,3 +1,12 @@
+// ============================================================================
+// [DEPRECATED] Phase 2 r4 pivot (2026-04-20). This orchestrator drives the
+// multi-room BSP flow (layout → rooms → corridors → type assignment) which is
+// no longer the Phase 2 target. It stays functional ONLY so the r3 playtest
+// scene keeps working until PR 2.A lands SingleArenaGenerator. Once the new
+// generator is wired into ArenaDebugGizmos, this file can be untouched but is
+// effectively dead code.
+// Do not extend. See ARENA_GENERATION_TZ.md (r4).
+// ============================================================================
 using System;
 using System.Diagnostics;
 using UnityEngine;

@@ -1,3 +1,11 @@
+// ============================================================================
+// [DEPRECATED] Phase 2 r4 pivot (2026-04-20).
+// Multi-room BSP layout is no longer the Phase 2 target. Replaced by
+// SingleArenaGenerator (one procedural arena per encounter + run graph).
+// Kept in the repo for diploma-defense reference — do not extend; do not wire
+// into new features. Will be removed no earlier than Phase 6 if still unused.
+// See ARENA_GENERATION_TZ.md (r4) for the current plan.
+// ============================================================================
 using UnityEngine;
 using VoidSurvivor.ProceduralArena.Core;
 
