@@ -1,4 +1,5 @@
 using UnityEngine;
+using VoidSurvivor.ProceduralArena.Build;
 using VoidSurvivor.ProceduralArena.Core;
 using VoidSurvivor.ProceduralArena.Layout;
 
@@ -10,6 +11,7 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
         public ArenaRunConfig config;
         public ArenaDebugSettings debug = new ArenaDebugSettings();
         public bool generateOnStart = true;
+        public bool buildGeometryOnStart = true;
 
         [SerializeField, HideInInspector] int lastSeedUsed;
         ArenaRuntimeContext ctx;
@@ -19,7 +21,12 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
 
         void Start()
         {
-            if (Application.isPlaying && generateOnStart && config != null) GenerateFromConfigSeed();
+            if (!Application.isPlaying) return;
+            if (generateOnStart && config != null)
+            {
+                GenerateFromConfigSeed();
+                if (buildGeometryOnStart) BuildGeometry();
+            }
         }
 
         [ContextMenu("Generate From Seed")]
@@ -43,9 +50,31 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
             UnityEngine.Debug.Log(ArenaGenerationLog.BuildSummary(ctx));
         }
 
+        [ContextMenu("Build Geometry")]
+        public void BuildGeometry()
+        {
+            if (ctx == null || ctx.layout == null) GenerateFromConfigSeed();
+            if (ctx == null || ctx.layout == null) return;
+            ArenaBuilder.Build(ctx, config, transform);
+        }
+
+        [ContextMenu("Generate + Build")]
+        public void GenerateAndBuild()
+        {
+            GenerateFromConfigSeed();
+            BuildGeometry();
+        }
+
+        [ContextMenu("Clear Geometry")]
+        public void ClearGeometry()
+        {
+            ArenaBuilder.Clear(transform);
+        }
+
         [ContextMenu("Clear")]
         public void Clear()
         {
+            ArenaBuilder.Clear(transform);
             ctx = null;
             lastSeedUsed = 0;
         }

@@ -1,3 +1,7 @@
+// ============================================================================
+// [DEPRECATED] Phase 2 r4 pivot (2026-04-20). Corridors are no longer part of
+// the active generator. Kept for reference only — see ARENA_GENERATION_TZ.md (r4).
+// ============================================================================
 using System.Collections.Generic;
 using UnityEngine;
 

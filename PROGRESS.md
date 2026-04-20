@@ -56,36 +56,46 @@
 
 ## Phase 2: Procedural Arena Generation (Weeks 3-4)
 
-### BSP Generator
+> **Pivot 2026-04-20 (TZ r4):** одна большая процедурная арена за encounter + procedural run graph с door-choice (вместо multi-room BSP). BSP-код остаётся в репо с меткой `[DEPRECATED]` для diploma reference.
+
+### [DEPRECATED] BSP Generator (r1-r3 exploration, kept for diploma reference)
 - [x] BSP tree data structure *(PR 1, 2026-04-20)*
 - [x] Recursive space partitioning (3-5 splits) *(PR 1)*
 - [x] Room placement within leaf nodes *(PR 1)*
 - [x] Corridor generation between rooms *(PR 1, MST + extras)*
-- [ ] Floor/wall/ceiling mesh generation *(PR 2)*
-- [x] Seed-based randomization *(PR 1, System.Random sub-streams)*
+- [x] Floor/wall/ceiling mesh generation *(PR 2, 2026-04-20)*
+- [x] Seed-based randomization *(PR 1, System.Random sub-streams — PRESERVED)*
 
-### Room Types
-- [ ] Small arena (15x15)
-- [ ] Medium arena (25x25, platforms)
-- [ ] Large arena (40x40, multi-level)
-- [ ] Boss arena (50x50)
-- [ ] Corridors (3-5 wide)
+### PR 2.A — Single-Arena Generator (next)
+- [ ] `SingleArenaGenerator` + shape gen (Rect / L / T / Octagon)
+- [ ] `ArenaCoverPlanner` (Poisson-disk + flow-constraints)
+- [ ] `ArenaExitPlanner` (2 exit doors, opposite walls)
+- [ ] `ArenaTypeProfile` SO (Start / Combat / Elite / Parkour / Shop / Rest / Boss)
+- [ ] `ArenaSizePreset` enum (S 40×40 / M 60×60 / L 80×80 м)
+- [ ] Per-arena ceiling 10–25м by type profile
+- [ ] Adapt `ArenaBuilder` to single-room
+- [ ] Mark BSP modules as `[DEPRECATED]` (done 2026-04-20)
 
-### Verticality
-- [ ] Ramps
-- [ ] Platforms (elevated areas)
-- [ ] Stairs
-- [ ] Cover objects (pillars, crates)
+### PR 2.B — Run Graph + Transitions
+- [ ] `RunGraph` + `RunGraphGenerator` (5-arena run: Start → Mid×3 → Boss)
+- [ ] `RunController` state machine
+- [ ] `ArenaFlowController` fade + regenerate
+- [ ] Door-choice placeholder UI (SpriteRenderer icons over exit doors)
+- [ ] Victory / GameOver placeholder screens
 
-### Navigation
-- [ ] Runtime NavMesh baking
-- [ ] Spawn point placement in generated rooms
-- [ ] Portal/door system between arenas
+### PR 2.C — NavMesh + Encounter Integration
+- [ ] Async `NavMeshSurface.UpdateNavMesh` bake
+- [ ] `GameManager.SetSpawnPoints / BeginEncounter / EndEncounter` API
+- [ ] Encounter trigger (capsule-fully-inside arena)
+- [ ] Soft-lock barrier on exit doors (emissive quad + collider)
+- [ ] Clear conditions: KillAll / ReachExit / None
 
-### Biomes
-- [ ] Biome 1: Void Station (metal, blue/white)
-- [ ] Biome 2: Alien Nexus (organic, purple/red)
-- [ ] Material swapping system per biome
+### PR 2.D — Verticality + Biomes + Balance
+- [ ] `ArenaVerticalityPlanner` (platforms/ramps for Parkour arenas)
+- [ ] `BiomeDefinition` + 2 biome presets
+- [ ] Elite / Parkour / Shop / Rest type profiles
+- [ ] Difficulty scaling по `arenaIndex`
+- [ ] Debug UI: seed display, arena index, biome id
 
 ---
 
@@ -218,6 +228,8 @@
 | 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. (PR #10) |
 | 2026-04-15 | Phase 1 playtest fixes (PR #11): slide no longer falls through floor (removed controller.height resizing), slide ends correctly on Ctrl release (Button→Value input type), V + Right Shift added as dash keys, shot direction uses camera.forward (bullets no longer curve during fast motion), weapon tilt on camera pitch (Weapon Sway section), scene reset fixed (R key + auto-reload 2s after death, uses active scene buildIndex instead of hardcoded 0). |
 | 2026-04-16 | Phase 1 Weapon System PR A: new modular framework under `Assets/Scripts/Combat/Weapons/` — `WeaponEnums`, `WeaponContext`, `WeaponDefinition` (ScriptableObject with `[SerializeReference] FireModeBase`), `FireModeBase` + `HitscanFireMode`, `WeaponBase` (runtime state inline), `GenericWeapon`, `WeaponManager` (slots[5], events, owner-death halt). Added `Editor/FireModeReferenceDrawer.cs` for Inspector type-picker dropdown. PlayerController stripped of all combat (Shoot/MeleeAttack/PlayShootAnim/HasAnimatorParameter removed); OnFire forwards to WeaponManager.SetFireHeld; OnMelee removed (returns as Void Blade in PR B). Fire input action changed Button → Value (Button) for hold-to-fire. Verified playable 2026-04-17 — Pulse Pistol fires correctly via new system with visible tracer. |
+| 2026-04-20 | **Phase 2 PIVOT (TZ r4)** по итогам playtest'а PR 2 r3: переход от multi-room BSP arena к **одной большой процедурной арене за encounter + procedural run graph с door-choice** между аренами (Hades/Roboquest-style). Причины: коридоры ломают FPS-ритм, encounter-per-room конфликтует с dash/slide, roguelike-слой отсутствовал, multi-room BSP переусложнял scope. BSP-код r1-r3 помечен `[DEPRECATED]`-заголовками в `Assets/Scripts/ProceduralArena/{Layout/*, Core/ArenaGenerator.cs, Build/CorridorBlockoutBuilder.cs}` и оставлен в репо для diploma reference (демонстрация алгоритмического исследования). Переписан `ARENA_GENERATION_TZ.md` r4 с новой архитектурой в 4 PR'а (2.A SingleArenaGenerator + shape/cover/exit planners, 2.B run graph + transitions, 2.C async NavMesh + encounter, 2.D verticality + biomes). Потолок теперь per-arena 10-25м по type profile. Determinism / seed sub-streams / builder pipeline / anchor-система / URP materials переносятся в r4 без изменений. |
+| 2026-04-20 | Phase 2 PR 2 r3 (Physical Build, flat blockout) — SUPERSEDED by r4: new `Assets/Scripts/ProceduralArena/Build/` module — `ArenaOccupancy` (macro-cell grid Empty/Room/Corridor), `ArenaBuildMaterials` (URP Lit defaults + emissive start/exit markers), `BuildUtils.SpawnBox`, `RoomBlockoutBuilder` (marker + cover pillars on microGrid via `spawnRng` + wall/corner/ceiling/floor/doorFrame anchors), `CorridorBlockoutBuilder` (wall-edge anchors along path), `ArenaBuilder` orchestrator (one `ArenaRoot` GO per build; per-room `Shell` children hold floor/ceiling/walls; walls emitted only on interior-cell edges facing Empty OR different-room interior — door gaps arise naturally where rooms meet corridor cells). Extended `ArenaRunConfig` with build-tier fields (`wallHeightMeters`, `wallThicknessMeters`, floor/ceiling thickness, cover density/width/height/spacing, anchor toggles). Extended `ArenaDebugGizmos` with ContextMenu entries `Build Geometry`, `Generate + Build`, `Clear Geometry` and `buildGeometryOnStart` play-mode flag. Zero `UnityEngine.Random` usage preserved (grep clean). All rooms flat — no verticality (PR 4). |
 | 2026-04-20 | Phase 2 PR 1 (Layout + Seed): new module `Assets/Scripts/ProceduralArena/` with Core (`ArenaRunConfig` SO, `ArenaRuntimeContext` with 5 sub-stream `System.Random`s, `ArenaGenerator` orchestrator with retry + hand-coded fallback), Layout algorithms (`BspLayoutGenerator` recursive split with jitter, `RoomPlanner` rect-in-leaf, `CorridorPlanner` MST + L-paths + extras, `RoomTypeAssigner` Start=corner + Exit=BFS-farthest), Debug (`ArenaDebugGizmos` MonoBehaviour with ContextMenu Generate/Random/Clear + Scene-view gizmos, `ArenaGenerationLog` single-line summary). Zero `UnityEngine.Random` usage (verified by grep). Acceptance verified 2026-04-20: deterministic seed, no overlap, Start/Exit present, all rooms connected, no Console spam, <1ms generation on 24×24 grid with 6 rooms. |
 | 2026-04-19 | Phase 1 Kill-to-Survive PR B: `Health` untouched. `GameManager.OnEnemyKilled` public event added; fires inside `OnEnemyDied`. `PlayerController.SetSpeedMultiplier(float)` added; `HandleMovement` now multiplies walk/air speed (dash/slide left authored). New `IGloryKillPolicy` + `GloryKillContext` + `AlwaysAllowPolicy` (seam #3). New `GloryKillDetector` — observes `WeaponManager.OnWeaponEquipped`, subscribes to Void Blade's `OnFired`, does its own `OverlapSphere` (same math as `MeleeArcFireMode`), asks policy, applies bonus damage + heal (one glory per swing). New `EnemyStagger` — listens to `Health.onHealthChanged`, enters one-way staggered state at ≤20% HP, instances materials + `_EMISSION` keyword, pulses `_EmissionColor`. New `KillStreakTracker` — subscribes to `GameManager.OnEnemyKilled`, sliding-window `List<float>` of timestamps, applies speed boost via `PlayerController` when crossing threshold, auto-expires. Scene wiring: `Enemy.prefab` got `EnemyStagger`; `test.unity` Player got `AlwaysAllowPolicy` + `GloryKillDetector` + `KillStreakTracker` (all references auto-resolved via `GetComponent` in Awake, so no manual drag required). |
 | 2026-04-19 | Phase 1 Kill-to-Survive PR A: `Health.Heal(float)` added. New `PlayerStats` (seam #1, on Player, contains all tunables for both PR A and PR B). New `HealthPickup` + static `PickupSpawner` (`Assets/Scripts/Combat/Pickups/`). New `EnemyLootTable` + `LootEntry` (seam #2, `Assets/Scripts/Combat/Enemies/`). `HPOrb.prefab` + emissive-green `HPOrb.mat` authored directly as YAML under `Assets/Prefabs/`. `Enemy.prefab` wired with `EnemyLootTable` containing one entry: HPOrb @ 15% chance. `test.unity` Player wired with `PlayerStats` component (default tunables). Passive-regen audit: none found. GameManager untouched (TZ-allowed — still counts waves via onDeath). |
@@ -267,5 +279,16 @@ For each of the 4 new weapons (Scatter Gun slot 1, Void Rifle slot 2, Plasma Lau
 
 - Phase 1: **done** ✅ (Movement, Weapons PR A+B, Kill-to-Survive PR A+B — all playtested).
 - Phase 2 **PR 1** (Layout + Seed): done ✅, verified in Editor with gizmos (2026-04-20).
-- Phase 2 **PR 2** (Physical Build — universal procedural blockout, flat only): **next**.
-- TZ: [ARENA_GENERATION_TZ.md](./ARENA_GENERATION_TZ.md) (APPROVED r2).
+- Phase 2 PIVOT'нут 2026-04-20 на **TZ r4** — single procedural arena + run graph с door-choice. BSP r1-r3 код помечен `[DEPRECATED]` и оставлен для diploma reference.
+- Phase 2 **PR 2.A** (SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena ceiling 10-25м): **next**.
+- TZ: [ARENA_GENERATION_TZ.md](./ARENA_GENERATION_TZ.md) (APPROVED r4).
+
+### Phase 2 PR 2 — Editor verification checklist
+
+- [ ] Open `Assets/test.unity`, select `ArenaDebug` GameObject → context-click its `ArenaDebugGizmos` component → `Generate + Build`.
+- [ ] Confirm an `ArenaRoot` child appears with `Room_N_*` subtrees + `Corridors/Corridor_i` subtrees, each `Shell` containing Floor/Ceiling/Wall cubes.
+- [ ] Walk in Play mode from the emissive green start marker to the emissive red exit marker — no invisible walls blocking corridors, no holes in floor/walls.
+- [ ] Same `config.seed` produces the exact same Hierarchy layout after `Clear Geometry` + `Generate + Build`.
+- [ ] `Anchors` subfolders present per room (Corner / Wall / Ceiling / Floor / DoorFrame) and visible in Scene view as empty GOs.
+- [ ] Cover pillars appear only in combat rooms, never on door cells.
+- [ ] Console has one summary log per generation, no per-cell spam.

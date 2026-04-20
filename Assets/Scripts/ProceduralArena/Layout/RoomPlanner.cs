@@ -1,3 +1,8 @@
+// ============================================================================
+// [DEPRECATED] Phase 2 r4 pivot (2026-04-20). Multi-leaf room placement is not
+// the Phase 2 target. SingleArenaGenerator emits exactly one ArenaRoomData.
+// Kept for reference only — see ARENA_GENERATION_TZ.md (r4).
+// ============================================================================
 using System.Collections.Generic;
 using UnityEngine;
 using VoidSurvivor.ProceduralArena.Core;

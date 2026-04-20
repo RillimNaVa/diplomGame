@@ -15,15 +15,25 @@ MonoBehaviour:
   seed: 12345
   macroCellMeters: 4
   microCellMeters: 1
-  mapWidthCells: 24
-  mapHeightCells: 24
-  bspMaxDepth: 4
-  bspMinLeafCells: 7
+  mapWidthCells: 30
+  mapHeightCells: 30
+  bspMaxDepth: 5
+  bspMinLeafCells: 8
   bspSplitJitter: 0.25
-  roomMinCells: 4
-  roomMaxCells: 11
+  roomMinCells: 5
+  roomMaxCells: 13
   roomPaddingCells: 1
-  targetRoomCount: 4
+  targetRoomCount: 6
   corridorWidthCells: 2
   extraCorridorChance: 0.333
   maxGenerationAttempts: 3
+  wallHeightMeters: 7
+  wallThicknessMeters: 0.4
+  floorThicknessMeters: 0.3
+  ceilingThicknessMeters: 0.3
+  coverDensity: 1.2
+  coverMinSpacingMeters: 3
+  coverHeightMeters: 2.2
+  coverWidthMeters: 1.2
+  generateAnchors: 1
+  ceilingAnchorSpacingMeters: 4

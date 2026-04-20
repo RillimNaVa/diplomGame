@@ -1,3 +1,8 @@
+// ============================================================================
+// [DEPRECATED] Phase 2 r4 pivot (2026-04-20). Corridors between rooms are no
+// longer generated — each encounter is a single procedural arena. See
+// ARENA_GENERATION_TZ.md (r4). Kept for reference only.
+// ============================================================================
 using System;
 using System.Collections.Generic;
 using UnityEngine;
