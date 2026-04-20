@@ -33,36 +33,29 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: finish core weapon system and continue Phase 1
+- Main short-term target: start Phase 2 — Procedural Arena Generation
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary
+## Current Project Status Summary (2026-04-20)
 
-As of the current state of the repository:
+**Phase 1 is complete.** As of the current state of the repository:
 
-- basic first-person movement exists
-- jump, double jump, dash, slide, and air control exist
-- basic shooting exists
-- projectile-based shooting exists
-- temporary melee exists
-- health system exists
-- simple enemy AI exists
-- basic wave spawner exists
-- minimal HUD exists
-- a prototype procedural terrain scene exists
-- a playable combat prototype scene exists
-- weapon system architecture has been specified, but not yet implemented
+- First-person movement fully tuned (walk, jump, double jump, dash with charges, slide, air control, momentum preservation).
+- **Modular weapon system shipped** (`WeaponManager` / `WeaponBase` / `WeaponDefinition` (ScriptableObject) / `[SerializeReference] FireModeBase`). Five weapons, switching, ammo, reload.
+- **Kill-to-Survive shipped**: HP orbs + `Health.Heal()`, per-enemy loot tables, one-way enemy stagger with emission pulse at ≤20% HP, side-channel `GloryKillDetector` for the `void_blade`, `KillStreakTracker` granting timed movement-speed boost.
+- Health system (event-driven) with `onHealthChanged`, `onDeath`, `onTakeDamage`, and `Heal(amount)`.
+- Simple enemy AI + wave spawner + minimal HUD.
+- Prototype procedural terrain scene (`SampleScene.unity`) — independent of the upcoming arena generation work.
+- Playable combat prototype scene (`test.unity`) with all Phase 1 systems wired.
 
-What is not yet properly built:
+What is not yet built:
 
-- real modular weapon system
-- proper weapon switching
-- ammo pickups
-- kill-to-survive mechanics
-- advanced enemy types
-- proper roguelike progression systems
+- Procedural arena generation (Phase 2, next task)
+- Advanced enemy types / state-machine AI (Phase 3)
+- Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
+- Object pooling (enemies, projectiles) — deferred performance pass
 
 ---
 
@@ -114,28 +107,27 @@ Use this for:
 
 ### `Assets/test`
 
-This is currently the most important gameplay code folder.
+Legacy folder from Phase 0. Still holds:
 
-It contains:
-
-- player controller
-- enemy AI
-- health
-- projectile
-- UI manager
-- game manager
-- input assets
-- animation controller used by recoil
-
-This is where most current gameplay logic lives.
+- `PlayerController.cs` (now slimmed down — movement, input, camera, dash/slide, `SetSpeedMultiplier` hook)
+- `GameManager.cs` (wave flow; exposes `OnEnemyKilled` event)
+- `SimpleEnemyAI.cs`
+- `Health.cs` (with the new `Heal(float)` method)
+- `Projectile.cs`
+- `UIManager.cs`
+- `EnemyHealthBarView.cs`
+- Input assets (`PlayerInputActions`)
+- `recoil.controller` animator
 
 ### `Assets/Scripts`
 
-Currently contains:
+Contains the post-Phase-1 code organized by subsystem:
 
-- [TerrainGenerator.cs](C:/Users/assam/DiplomGame/Assets/Scripts/TerrainGenerator.cs)
-
-This script is for the prototype terrain scene and not for the long-term arena-based game architecture.
+- `Assets/Scripts/Combat/Weapons/` — full weapon framework (`WeaponManager`, `WeaponBase`, `WeaponDefinition`, `FireModeBase` subclasses, per-weapon SOs).
+- `Assets/Scripts/Combat/Pickups/` — `HealthPickup`, `PickupSpawner`.
+- `Assets/Scripts/Combat/Enemies/` — `EnemyLootTable`, `EnemyStagger`.
+- `Assets/Scripts/Combat/Player/` — `PlayerStats` (central stats seam), `IGloryKillPolicy` + `AlwaysAllowPolicy`, `GloryKillDetector`, `KillStreakTracker`.
+- `Assets/Scripts/TerrainGenerator.cs` — prototype terrain, unrelated to Phase 2 arenas.
 
 ### `Assets/Prefabs`
 
@@ -247,55 +239,23 @@ Important note:
 
 ### Role
 
-This is currently the central gameplay script for the player.
+Movement + input + camera controller for the player. Combat logic was extracted during the Phase 1 Weapon System refactor.
 
 ### Current Responsibilities
 
-- character movement
-- jump and double jump
-- dash
+- character movement (WASD, air control, momentum)
+- jump / double jump
+- dash (2 charges with recharge)
 - slide
 - camera look
-- weapon tilt/sway
-- shooting
-- melee
-- projectile spawning
-- tracer spawning
-- shoot animation triggering
-- input callbacks
+- weapon tilt/sway hook
+- input forwarding to `WeaponManager`
+- `SetSpeedMultiplier(float)` — used by `KillStreakTracker` to apply streak boost to walk/air movement (dash/slide intentionally unscaled)
 
-### Why It Matters
+### Notes
 
-This is the most overloaded gameplay script in the project.
-
-It currently acts as:
-
-- movement controller
-- combat controller
-- partial weapon system
-
-### Known Architectural Problem
-
-This class is too large in responsibility and is the main reason the weapon system needs refactoring.
-
-### Current Working Features
-
-- WASD movement
-- mouse look
-- jump and double jump
-- dash with 2 charges and recharge
-- slide with held input
-- air control
-- momentum preservation
-- camera-forward shooting correction
-- temporary melee
-- recoil animation trigger
-
-### Known Issues / Notes
-
-- serialized move speed in scene is still `6`, even though script default is `10`
-- current melee is temporary and should be replaced by `Void Blade` in the upcoming weapon system
-- combat logic here should eventually be reduced to input forwarding only
+- The class is no longer overloaded. It no longer owns shooting, melee, projectile spawning, tracer lifecycle, or recoil triggering — those live in `Assets/Scripts/Combat/Weapons/`.
+- Serialized move-speed mismatch between script default and scene value may still exist — see issue #4.
 
 ---
 
@@ -653,19 +613,30 @@ Current movement system supports:
 - air control
 - momentum preservation
 - camera pitch weapon tilt
+- external speed-multiplier hook (`SetSpeedMultiplier`) consumed by Kill-Streak boosts
 
-Movement is currently the most complete gameplay subsystem.
+## Combat (Weapon System)
 
-## Combat
+Modular weapon framework in `Assets/Scripts/Combat/Weapons/`:
 
-Current combat system supports:
+- `WeaponManager` — owns active weapon, handles switching and input routing
+- `WeaponBase` — runtime per-weapon state, emits `OnFired`
+- `WeaponDefinition` — ScriptableObject with per-weapon data and a `[SerializeReference] FireModeBase`
+- `FireModeBase` subclasses: hitscan, projectile, melee arc, etc.
+- 5 weapons, switching, ammo, reload (R key)
+- Recoil via the existing `recoil.controller` animator
 
-- basic hitscan firing
-- basic projectile firing
-- temporary melee
-- recoil animation trigger
+## Kill-to-Survive
 
-Combat is functional but architecturally immature.
+Extensibility-first implementation in `Assets/Scripts/Combat/{Pickups,Enemies,Player}/`:
+
+- `PlayerStats` — central stats seam (heal amounts, streak thresholds, multipliers)
+- `HealthPickup` + `HPOrb.prefab` — OnTrigger heal via `Health.Heal`
+- `EnemyLootTable` — per-enemy drop config, rolls on `Health.onDeath`
+- `EnemyStagger` — one-way state at ≤20% HP, emission pulse via material instancing
+- `GloryKillDetector` — side-channel observer of `WeaponBase.OnFired` for the `void_blade`; duplicates MeleeArc OverlapSphere math, applies bonus damage + heal through `PlayerStats`
+- `KillStreakTracker` — sliding-window kill timestamps; applies timed speed multiplier on threshold
+- `IGloryKillPolicy` / `AlwaysAllowPolicy` — pluggable rule for when glory kills are allowed (upgrade hook)
 
 ## Enemies
 
@@ -704,23 +675,13 @@ Long-term arena generation is not implemented yet.
 
 These are the most important known architecture or engineering debts in the project.
 
-### 1. `PlayerController` is overloaded
+### 1. `PlayerController` is overloaded — RESOLVED (2026-04-17)
 
-It should not remain the owner of:
+Combat was extracted during the Weapon System refactor. Class now owns movement, input, camera, dash/slide, and the `SetSpeedMultiplier` hook only.
 
-- shooting logic
-- melee logic
-- projectile logic
-- tracer lifecycle
-- combat cooldown state
+### 2. No real weapon system yet — RESOLVED (2026-04-17)
 
-### 2. No real weapon system yet
-
-Current combat is hardwired into the player.
-
-Planned replacement:
-
-- hybrid modular weapon system defined in [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+Shipped per `WEAPON_SYSTEM_TZ.md`. See `Assets/Scripts/Combat/Weapons/`.
 
 ### 3. `test.unity` is not in Build Settings
 
@@ -779,21 +740,20 @@ Important practical interpretation:
 
 ## Current Development Direction
 
-The next major structured task is:
+Phase 1 is complete (see the status summary at the top). The next major structured task is **Phase 2 — Procedural Arena Generation**:
 
-- implement the weapon system defined in [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+- draft `ARENA_GENERATION_TZ.md`
+- implement BSP / room placement
+- runtime NavMesh baking so `SimpleEnemyAI` works inside generated arenas
+- integrate generated spawn points with `GameManager` wave loop
+- deterministic seed support for debugging and thesis figures
 
-That means:
+See `AI_HANDOFF.md` for the latest active-task context.
 
-- extract combat out of `PlayerController`
-- add `WeaponManager`
-- add `WeaponDefinition`
-- add fire modes
-- support 5 weapons
-- support switching and ammo
-- replace temporary melee with `Void Blade`
+Reference specs (both COMPLETED, kept for history):
 
-This is the highest-value architectural upgrade for the current project state.
+- [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+- [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md)
 
 ---
 

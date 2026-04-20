@@ -36,6 +36,15 @@ public class Health : MonoBehaviour
         }
     }
 
+    public void Heal(float amount)
+    {
+        if (currentHealth <= 0f) return;
+        if (amount <= 0f) return;
+
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        onHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
     void Die()
     {
         Debug.Log($"{name} DIED!");

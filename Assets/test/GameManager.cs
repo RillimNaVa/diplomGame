@@ -1,10 +1,14 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    // Fires once per enemy death (wave counting, kill-streak tracker, future HUD).
+    public event Action OnEnemyKilled;
+
     [Header("Wave Settings")]
     public GameObject enemyPrefab;
     public Transform[] spawnPoints;
@@ -145,7 +149,7 @@ public class GameManager : MonoBehaviour
     {
         if (spawnPoints.Length == 0 || enemyPrefab == null) return;
 
-        Transform point = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        Transform point = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
         GameObject enemy = Instantiate(enemyPrefab, point.position, point.rotation);
         enemiesAlive++;
 
@@ -165,6 +169,7 @@ public class GameManager : MonoBehaviour
     void OnEnemyDied()
     {
         enemiesAlive = Mathf.Max(0, enemiesAlive - 1);
+        OnEnemyKilled?.Invoke();
         EvaluateWaveEnd();
     }
 

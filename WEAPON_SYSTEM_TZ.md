@@ -1,5 +1,7 @@
 # Void Survivor Weapon System - Technical Specification
 
+> **Status: COMPLETED (2026-04-17).** Both PR A and PR B shipped and playtested. Weapon framework lives under `Assets/Scripts/Combat/Weapons/`. Document kept as a historical spec — do not edit without a new subsystem TZ.
+
 ## Purpose
 
 This document defines the target weapon-system architecture for `Void Survivor` and is intended to be handed to another AI agent for implementation.

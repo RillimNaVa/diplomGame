@@ -1180,6 +1180,10 @@ GameObject:
   - component: {fileID: 885446615}
   - component: {fileID: 885446614}
   - component: {fileID: 885446617}
+  - component: {fileID: 885446700}
+  - component: {fileID: 885446701}
+  - component: {fileID: 885446702}
+  - component: {fileID: 885446703}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1495,6 +1499,73 @@ MonoBehaviour:
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &885446700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885446608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a19019141bf42fc8b8e0bf1e3feb735, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  orbHealAmount: 5
+  gloryHealAmount: 25
+  gloryBonusDamage: 999
+  streakThreshold: 5
+  streakWindowSeconds: 10
+  streakBoostMultiplier: 1.2
+  streakBoostDuration: 5
+--- !u!114 &885446701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885446608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9df61dcecf554ad4b44ce7a087387550, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::AlwaysAllowPolicy
+--- !u!114 &885446702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885446608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f6cee64d4ee4d4da455b40804d3ca02, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::GloryKillDetector
+  weaponManager: {fileID: 0}
+  playerHealth: {fileID: 0}
+  playerStats: {fileID: 0}
+  streakTracker: {fileID: 0}
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  cameraTransform: {fileID: 0}
+  gloryKillSfx: {fileID: 0}
+  gloryKillVfx: {fileID: 0}
+--- !u!114 &885446703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885446608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74e8605e476e452b93e3e472862f8d2b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::KillStreakTracker
+  playerStats: {fileID: 0}
+  playerController: {fileID: 0}
 --- !u!1 &1026905729
 GameObject:
   m_ObjectHideFlags: 0

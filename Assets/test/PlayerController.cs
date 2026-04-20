@@ -68,6 +68,13 @@ public class PlayerController : MonoBehaviour
     // Momentum
     private float currentSpeed;
 
+    // External multiplier applied to walk/air speed only (see HandleMovement).
+    // Dash / slide are authored speeds; leaving them unscaled avoids exponential
+    // blowouts when multiple systems stack on top of the streak boost.
+    private float speedMultiplier = 1f;
+    public float SpeedMultiplier => speedMultiplier;
+    public void SetSpeedMultiplier(float value) => speedMultiplier = Mathf.Max(0.01f, value);
+
     // Weapon sway
     private Quaternion weaponBaseLocalRotation;
 
@@ -194,10 +201,12 @@ public class PlayerController : MonoBehaviour
         if (!isDashing && !isSliding)
         {
             float airMul = isGrounded ? 1f : airControlMultiplier;
-            controller.Move(move * currentSpeed * airMul * Time.deltaTime);
+            controller.Move(move * currentSpeed * speedMultiplier * airMul * Time.deltaTime);
         }
 
         // 9. Momentum decay toward base speed (only when not actively boosted)
+        // Dash/slide target speeds stay unscaled on purpose — the multiplier
+        // only affects authored walk/air movement (see SetSpeedMultiplier).
         if (!isDashing)
         {
             float target = isSliding ? slideSpeed : moveSpeed;
