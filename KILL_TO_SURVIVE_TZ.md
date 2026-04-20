@@ -503,8 +503,51 @@ Assets/
 
 ### PR A — HP Orbs + Heal API + Loot Table + PlayerStats
 
-(pending)
+**Status: code + assets done 2026-04-19. Awaiting playtest in Unity.**
+
+Implemented:
+- `Health.Heal(float amount)` in [Assets/test/Health.cs](Assets/test/Health.cs) — clamps to `maxHealth`, no-op when dead, fires `onHealthChanged`.
+- `PlayerStats` MonoBehaviour at [Assets/Scripts/Combat/Player/PlayerStats.cs](Assets/Scripts/Combat/Player/PlayerStats.cs) with **all** stat fields (both PR A and PR B) populated up-front — avoids a second wiring pass on the Player in PR B.
+- `PickupSpawner` static helper at [Assets/Scripts/Combat/Pickups/PickupSpawner.cs](Assets/Scripts/Combat/Pickups/PickupSpawner.cs) — `Spawn(prefab, pos, count, scatterRadius)`.
+- `HealthPickup` component at [Assets/Scripts/Combat/Pickups/HealthPickup.cs](Assets/Scripts/Combat/Pickups/HealthPickup.cs) — reads `PlayerStats.orbHealAmount`, Player-tag gated, optional magnet + SFX/VFX fields already present (disabled by default).
+- `EnemyLootTable` + `LootEntry` at [Assets/Scripts/Combat/Enemies/EnemyLootTable.cs](Assets/Scripts/Combat/Enemies/EnemyLootTable.cs) — subscribes to own `Health.onDeath`, rolls entries independently.
+- `HPOrb.prefab` + `HPOrb.mat` under `Assets/Prefabs/` (authored as YAML). Sphere mesh, 0.4 scale, trigger SphereCollider r=1.2, emissive-green URP Lit material.
+- `Enemy.prefab` has `EnemyLootTable` component wired: drops[0] = `{prefab: HPOrb, chance: 0.15, min/maxCount: 1}`, `spawnHeightOffset = 0.5`.
+- Scene `test.unity`: Player has `PlayerStats` component with default tunables.
+- Passive-regen audit: none found in codebase (grep for `Heal`/`regen`/`currentHealth +=` clean prior to changes).
+
+Not changed (intentional):
+- `GameManager.SpawnEnemy` — per TZ, no longer needs to subscribe for orb spawn, but current code only subscribes for wave counting; that stays.
+- `GameManager.hpOrbPrefab` — never existed; nothing to remove.
+
+To verify in Unity (next playtest):
+1. Open `Assets/test.unity`, press Play.
+2. Kill ~10 enemies, confirm orbs occasionally drop (~15% rate).
+3. Take damage from enemy, step on an orb → HP rises by exactly 5.
+4. Orb without pickup despawns after 15s.
+5. HP never exceeds 100.
 
 ### PR B — Stagger + Glory Kill + Kill Streak + Policy
 
-(pending)
+**Status: code + wiring done 2026-04-19. Awaiting playtest in Unity.**
+
+Implemented:
+- `PlayerStats` already contained all PR B fields (populated in PR A) — no edits needed.
+- `GameManager.OnEnemyKilled` public `event Action` added; fired inside existing `OnEnemyDied` listener so wave counting stays intact.
+- `PlayerController.SetSpeedMultiplier(float)` + `SpeedMultiplier` property added. `HandleMovement` multiplies walk/air speed by the multiplier (dash/slide intentionally left unscaled — authored feel).
+- `IGloryKillPolicy` + `GloryKillContext` struct + `AlwaysAllowPolicy` MonoBehaviour at [Assets/Scripts/Combat/Player/](Assets/Scripts/Combat/Player/).
+- `EnemyStagger` at [Assets/Scripts/Combat/Enemies/EnemyStagger.cs](Assets/Scripts/Combat/Enemies/EnemyStagger.cs) — subscribes to `Health.onHealthChanged`, one-way entry at ≤20% HP, instances renderer materials and enables `_EMISSION`, pulses `_EmissionColor` in `Update`. Exposes `IsStaggered` + `OnStaggerChanged(bool)`.
+- `GloryKillDetector` at [Assets/Scripts/Combat/Player/GloryKillDetector.cs](Assets/Scripts/Combat/Player/GloryKillDetector.cs) — subscribes to `WeaponManager.OnWeaponEquipped`; when the equipped weapon is `weaponId == "void_blade"` and `WeaponCategory.Melee`, subscribes to its `OnFired`. On fire, does its own `OverlapSphere` (same math as `MeleeArcFireMode`), picks first staggered target, asks `IGloryKillPolicy.CanGloryKill`, applies `PlayerStats.gloryBonusDamage` + `playerHealth.Heal(gloryHealAmount)`, one glory per swing. Never mutates weapon-system code.
+- `KillStreakTracker` at [Assets/Scripts/Combat/Player/KillStreakTracker.cs](Assets/Scripts/Combat/Player/KillStreakTracker.cs) — subscribes to `GameManager.OnEnemyKilled`, maintains `List<float>` of kill timestamps, evicts on `Update` by `PlayerStats.streakWindowSeconds`. On threshold crossing applies `PlayerStats.streakBoostMultiplier` via `PlayerController.SetSpeedMultiplier`; timer expiry returns to 1×. Exposes `CurrentStreak`, `IsBoostActive`, `OnStreakChanged(int)`, `OnBoostChanged(bool)` for future HUD.
+
+Wiring (done in YAML):
+- `Enemy.prefab` → added `EnemyStagger` (threshold 0.2, staggerEmission red, pulseSpeed 4, pulseIntensity 2.5). `targetRenderers` left empty → auto-resolves from children in `Awake`.
+- `test.unity` Player → added `AlwaysAllowPolicy`, `GloryKillDetector`, `KillStreakTracker`. All reference fields (`weaponManager`, `playerHealth`, `playerStats`, `streakTracker`, `cameraTransform`, `playerController`) left null → auto-resolve via `GetComponent` / `Camera.main` in `Awake`.
+
+To verify in Unity (next playtest):
+1. Shoot an enemy down to low HP (≤20%) → it starts pulsing red.
+2. Switch to Void Blade (key 5), swing at the pulsing enemy → it dies instantly and you gain +25 HP (capped at 100).
+3. Swing at a full-HP enemy with Void Blade → only 55 damage (definition.damage), no heal.
+4. Kill 5 enemies within 10s → walk speed visibly faster for 5s, then returns to normal.
+5. Dash/slide speeds unchanged under boost.
+6. Pulse Pistol / Scatter Gun / Void Rifle / Plasma Launcher unaffected — no glory heal, no double kills.

@@ -24,38 +24,36 @@ This file should be concrete and action-oriented.
 
 ---
 
+## Recent Closures (2026-04-17 → 2026-04-19)
+
+- Issue #1 (`PlayerController` overloaded) — **Closed**, combat extracted during Weapon System refactor.
+- Issue #2 (No real weapon system) — **Closed**, `WEAPON_SYSTEM_TZ.md` implementation shipped.
+- Issue #8 (Temporary melee) — **Closed**, replaced by `Void Blade` weapon.
+
+Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
+
+---
+
 ## Issues
 
 ## 1. `PlayerController` has too many responsibilities
 
-- Status: `Planned`
+- Status: `Closed` (2026-04-17)
 - Severity: High
 - Affected files:
   - [Assets/test/PlayerController.cs](C:/Users/assam/DiplomGame/Assets/test/PlayerController.cs)
-- Problem:
-  - The script currently handles movement, look, shooting, projectile spawning, melee, recoil triggering, and input callbacks
-- Impact:
-  - Hard to maintain
-  - Hard to extend
-  - High risk of regressions during combat changes
-- Planned direction:
-  - Move combat into the modular weapon system defined in [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+- Resolution:
+  - Combat logic (shooting, melee, projectile spawning, tracer lifecycle, recoil triggering) was extracted during the Weapon System refactor. `PlayerController` now owns only movement, look, dash/slide, input forwarding, and the new `SetSpeedMultiplier` hook used by `KillStreakTracker`. The class is now reasonably sized.
 
 ## 2. Real weapon system does not exist yet
 
-- Status: `Planned`
+- Status: `Closed` (2026-04-17)
 - Severity: High
 - Affected files:
-  - [Assets/test/PlayerController.cs](C:/Users/assam/DiplomGame/Assets/test/PlayerController.cs)
+  - [Assets/Scripts/Combat/Weapons/](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Weapons/)
   - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
-- Problem:
-  - Current combat is hardcoded into player logic
-  - No proper switching, weapon runtime state, or reusable fire-mode abstraction exists
-- Impact:
-  - Blocks clean implementation of Phase 1 weapon system
-  - Makes future upgrades and ammo systems harder
-- Planned direction:
-  - Implement the hybrid weapon architecture already documented in `WEAPON_SYSTEM_TZ.md`
+- Resolution:
+  - Modular weapon system shipped as specified: `WeaponManager`, `WeaponBase`, `WeaponDefinition` (ScriptableObject), `[SerializeReference]` `FireModeBase` hierarchy, five weapons, switching, ammo, reload. Playtested. TZ marked COMPLETED.
 
 ## 3. `Assets/test.unity` is not added to Build Settings
 
@@ -138,17 +136,12 @@ This file should be concrete and action-oriented.
 
 ## 8. Current melee is temporary and should be replaced
 
-- Status: `Planned`
+- Status: `Closed` (2026-04-17)
 - Severity: Medium
 - Affected files:
-  - [Assets/test/PlayerController.cs](C:/Users/assam/DiplomGame/Assets/test/PlayerController.cs)
-- Problem:
-  - Melee exists as an embedded temporary combat action, not a proper weapon implementation
-- Impact:
-  - Does not fit planned weapon architecture
-  - Makes future glory-kill/stagger systems awkward
-- Planned direction:
-  - Replace with `Void Blade` via weapon system
+  - [Assets/Scripts/Combat/Weapons/](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Weapons/)
+- Resolution:
+  - Temporary melee was removed from `PlayerController` and replaced by the `Void Blade` weapon using `MeleeArcFireMode` inside the modular weapon system. `GloryKillDetector` observes `WeaponBase.OnFired` for the `void_blade` id to apply bonus damage and heal via `PlayerStats`.
 
 ## 9. Terrain generation in `SampleScene` is expensive in Editor
 

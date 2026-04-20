@@ -165,7 +165,36 @@ Update this file when:
 
 Short summary:
 
-- `WEAPON_SYSTEM_TZ.md` = detailed implementation spec for the weapon system
+- `WEAPON_SYSTEM_TZ.md` = detailed implementation spec for the weapon system (Status: COMPLETED 2026-04-17)
+
+---
+
+## [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md)
+
+### What It Is
+
+A technical specification for the Kill-to-Survive subsystem (HP orbs, glory kills, stagger, kill streak, loot tables, and three extensibility seams for future upgrade systems).
+
+### What It Should Contain
+
+- goal of the subsystem
+- PR split (PR A / PR B) with acceptance criteria
+- list of new components and responsibilities
+- integration points with existing systems (`Health`, `WeaponBase`, `GameManager`)
+- playtest checklists
+
+### When To Update It
+
+- when the design intentionally deviates from the shipped implementation
+- when a new PR extends the subsystem (e.g. upgrade system wiring into `PlayerStats`)
+
+Short summary:
+
+- `KILL_TO_SURVIVE_TZ.md` = detailed implementation spec for the Kill-to-Survive subsystem (Status: COMPLETED 2026-04-19)
+
+### Pattern For Future Subsystem Specs
+
+New subsystems (e.g. `ARENA_GENERATION_TZ.md`, `UPGRADE_SYSTEM_TZ.md`) should follow the same structure: goal → architecture → PR split → acceptance checklist. Mark them `COMPLETED` at the top once shipped rather than deleting them — historical specs are useful context for later AI sessions.
 
 ---
 
@@ -403,7 +432,8 @@ Use the files like this:
 
 - `PROGRESS.md` = roadmap and phase progress
 - `PROJECT_KNOWLEDGE_BASE.md` = stable technical understanding of the project
-- `WEAPON_SYSTEM_TZ.md` = detailed spec for the weapon system
+- `WEAPON_SYSTEM_TZ.md` = detailed spec for the weapon system (COMPLETED)
+- `KILL_TO_SURVIVE_TZ.md` = detailed spec for the Kill-to-Survive subsystem (COMPLETED)
 - `AI_HANDOFF.md` = current working handoff for the next AI/chat
 - `KNOWN_ISSUES.md` = bugs and technical debt
 
