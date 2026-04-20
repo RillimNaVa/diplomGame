@@ -15,30 +15,29 @@ This file is meant to stay short and current.
 
 ---
 
-## Current Status (2026-04-20)
+## Current Status (2026-04-20, late)
 
 - **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), and Kill-to-Survive (PR A + PR B) are all shipped and playtested without known blocking bugs.
+- **Phase 2 PR 1 (Layout + Seed) DONE** (code + editor playtest 2026-04-20). `Assets/Scripts/ProceduralArena/` module produces deterministic BSP layouts with rooms, corridors, Start/Exit; visualized by `ArenaDebugGizmos` on `ArenaDebug` GameObject in `test.unity`. No geometry/NavMesh yet — PR 2 is next.
 - Stable high-level knowledge base: [PROJECT_KNOWLEDGE_BASE.md](C:/Users/assam/DiplomGame/PROJECT_KNOWLEDGE_BASE.md)
 - Roadmap and change log: [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
-- Subsystem specs (both marked COMPLETED):
-  - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
-  - [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md)
+- Subsystem specs:
+  - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md) — COMPLETED
+  - [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md) — COMPLETED
+  - [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/ARENA_GENERATION_TZ.md) — APPROVED r2, PR 1 of 4 done
 
 ---
 
 ## Current Goal
 
-**Begin Phase 2 — Procedural Arena Generation.**
+**Phase 2 — Procedural Arena Generation.** TZ approved (revision 2). 4-PR split.
 
-This is the main diploma novelty contribution (procedural generation algorithms in an arcade survival roguelike). No TZ exists yet for this phase — the first step is to write one, then split implementation into PRs.
+- PR 1 Layout + Seed — **DONE** (2026-04-20).
+- PR 2 Physical Build (flat) — **NEXT**.
+- PR 3 NavMesh + Encounter Integration — planned.
+- PR 4 Verticality + Debug + Balance Pass — planned.
 
-Expected scope for Phase 2 (from GDD v2.0):
-
-- BSP-based room/corridor layout
-- Room placement with constraints (spawn room, exits, size ranges)
-- Runtime NavMesh baking (so `SimpleEnemyAI` still works inside generated arenas)
-- Integration with existing wave spawner (spawn points become generated)
-- Deterministic seed support (useful for debugging and thesis screenshots)
+PR 2 scope from TZ: universal `RoomBlockoutBuilder` (parametric, no archetype prefabs), floor/wall/ceiling from primitives on macroGrid, corridor geometry, door gaps with anchors, start/exit markers, cover on microGrid, all rooms flat. Acceptance: player walks from Start to Exit, no broken walls, room shape matches layout debug view, deterministic by seed.
 
 ---
 

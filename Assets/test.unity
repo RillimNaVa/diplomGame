@@ -1509,7 +1509,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a19019141bf42fc8b8e0bf1e3feb735, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
   orbHealAmount: 5
   gloryHealAmount: 25
@@ -1528,7 +1528,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9df61dcecf554ad4b44ce7a087387550, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AlwaysAllowPolicy
 --- !u!114 &885446702
 MonoBehaviour:
@@ -1540,7 +1540,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2f6cee64d4ee4d4da455b40804d3ca02, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloryKillDetector
   weaponManager: {fileID: 0}
   playerHealth: {fileID: 0}
@@ -1562,7 +1562,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 74e8605e476e452b93e3e472862f8d2b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillStreakTracker
   playerStats: {fileID: 0}
   playerController: {fileID: 0}
@@ -2100,6 +2100,67 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1204748107
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1204748109}
+  - component: {fileID: 1204748108}
+  m_Layer: 0
+  m_Name: ArenaDebug
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1204748108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204748107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 603ad5d0c3aad344886af15853c1bc53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.DebugTools.ArenaDebugGizmos
+  config: {fileID: 11400000, guid: 42a82e65afae59c4b8f356a3cc85618d, type: 2}
+  debug:
+    drawOuterBounds: 1
+    drawBspLeaves: 1
+    drawRooms: 1
+    drawCorridors: 1
+    drawDoors: 1
+    drawLabels: 1
+    outerColor: {r: 1, g: 1, b: 1, a: 0.25}
+    leafColor: {r: 0.3, g: 0.6, b: 1, a: 0.35}
+    roomColor: {r: 0.2, g: 0.9, b: 0.3, a: 0.5}
+    startColor: {r: 0.4, g: 1, b: 0.4, a: 0.8}
+    exitColor: {r: 1, g: 0.4, b: 0.4, a: 0.8}
+    corridorColor: {r: 1, g: 0.8, b: 0.2, a: 0.7}
+    doorColor: {r: 1, g: 0.2, b: 0.9, a: 0.9}
+  generateOnStart: 1
+  lastSeedUsed: -778872164
+--- !u!4 &1204748109
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204748107}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 64.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3200,3 +3261,4 @@ SceneRoots:
   - {fileID: 1026905731}
   - {fileID: 682604057}
   - {fileID: 1178831498}
+  - {fileID: 1204748109}
