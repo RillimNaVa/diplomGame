@@ -20,5 +20,17 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
         public Color exitColor = new Color(1f, 0.4f, 0.4f, 0.8f);
         public Color corridorColor = new Color(1f, 0.8f, 0.2f, 0.7f);
         public Color doorColor = new Color(1f, 0.2f, 0.9f, 0.9f);
+
+        [Header("r4 single-arena gizmos")]
+        public bool drawShapeMask = true;
+        public bool drawArenaExits = true;
+        public bool drawCoverPlacements = true;
+        public bool drawStartSpawn = true;
+        public bool drawCombatSpawns = true;
+        public Color shapeMaskColor = new Color(0.2f, 0.6f, 1f, 0.35f);
+        public Color arenaExitColor = new Color(1f, 0.4f, 0.2f, 1f);
+        public Color coverGizmoColor = new Color(0.9f, 0.8f, 0.3f, 0.8f);
+        public Color startSpawnColor = new Color(0.3f, 1f, 0.5f, 1f);
+        public Color combatSpawnColor = new Color(1f, 0.3f, 0.3f, 0.8f);
     }
 }

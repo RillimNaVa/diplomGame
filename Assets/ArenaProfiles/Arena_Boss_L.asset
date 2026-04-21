@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1e2a4e20000000000000000000000af, type: 3}
+  m_Name: Arena_Boss_L
+  m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Arena.ArenaTypeProfile
+  category: 6
+  size: 2
+  ceilingRange: {x: 20, y: 25}
+  shapes:
+  - shape: 3
+    weight: 0.6
+  - shape: 0
+    weight: 0.4
+  coverDensity: 0.6
+  exitCount: 1
+  enableVerticality: 0
+  enemySpawnCount: 1
+  clearCondition: 1

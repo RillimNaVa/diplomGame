@@ -15,29 +15,34 @@ This file is meant to stay short and current.
 
 ---
 
-## Current Status (2026-04-20, late)
+## Current Status (2026-04-21)
 
-- **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), and Kill-to-Survive (PR A + PR B) are all shipped and playtested without known blocking bugs.
-- **Phase 2 PR 1 (Layout + Seed) DONE** (code + editor playtest 2026-04-20). `Assets/Scripts/ProceduralArena/` module produces deterministic BSP layouts with rooms, corridors, Start/Exit; visualized by `ArenaDebugGizmos` on `ArenaDebug` GameObject in `test.unity`. No geometry/NavMesh yet — PR 2 is next.
+- **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), Kill-to-Survive (PR A + PR B) shipped and playtested.
+- **Phase 2 PIVOT'нут на TZ r4** (2026-04-20) — single big procedural arena per encounter + procedural run graph c door-choice (Hades/Roboquest-style), вместо multi-room BSP. BSP-код r1-r3 помечен `[DEPRECATED]`, оставлен для diploma reference.
+- **Phase 2 PR 1 (Layout + Seed, BSP)** — done + editor-verified 2026-04-20 (теперь legacy).
+- **Phase 2 PR 2 (BSP blockout)** — done 2026-04-20 (теперь legacy).
+- **Phase 2 PR 2.A (r4 SingleArenaGenerator + shape/cover/exit planners + size presets + per-arena ceiling)** — verified 2026-04-21 ✅
+- **Phase 2 PR 2.B (Run Graph + Transitions + fade + door-choice + Victory/GameOver)** — verified 2026-04-21 ✅. Post-verify фиксы: Billboard label flip, door-opening cut в shell wall, lintel над дверью, solid `ExitBarrier_i` barrier.
 - Stable high-level knowledge base: [PROJECT_KNOWLEDGE_BASE.md](C:/Users/assam/DiplomGame/PROJECT_KNOWLEDGE_BASE.md)
-- Roadmap and change log: [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
-- Subsystem specs:
-  - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md) — COMPLETED
-  - [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md) — COMPLETED
-  - [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/ARENA_GENERATION_TZ.md) — APPROVED r2, PR 1 of 4 done
+- Roadmap: [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
+- TZ: [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/ARENA_GENERATION_TZ.md) — APPROVED r4.
 
 ---
 
 ## Current Goal
 
-**Phase 2 — Procedural Arena Generation.** TZ approved (revision 2). 4-PR split.
+**Phase 2 — Procedural Arena Generation r4.** 4-PR split: 2.A + 2.B done, 2.C next.
 
-- PR 1 Layout + Seed — **DONE** (2026-04-20).
-- PR 2 Physical Build (flat) — **NEXT**.
-- PR 3 NavMesh + Encounter Integration — planned.
-- PR 4 Verticality + Debug + Balance Pass — planned.
+- PR 2.A — SingleArenaGenerator + shape / cover / exit planners + ArenaTypeProfile SO + S/M/L size presets + per-arena 10-25m ceiling — **DONE (verified 2026-04-21)**.
+- PR 2.B — Run Graph (8 nodes, shared-subtree) + RunController state machine + ArenaFlowController fade/teleport + ExitDoorTrigger + DoorChoiceLabel + Victory/GameOver Canvas — **DONE (verified 2026-04-21)**.
+- PR 2.C — **NEXT**. Async `NavMeshSurface.UpdateNavMesh`, `GameManager.SetSpawnPoints/BeginEncounter/EndEncounter` API, encounter trigger (capsule-fully-inside), soft-lock barriers on exit doors до clear, clear conditions (KillAll / ReachExit / None).
+- PR 2.D — Verticality, biomes, Elite/Parkour/Shop/Rest profiles, difficulty scaling by arenaIndex.
 
-PR 2 scope from TZ: universal `RoomBlockoutBuilder` (parametric, no archetype prefabs), floor/wall/ceiling from primitives on macroGrid, corridor geometry, door gaps with anchors, start/exit markers, cover on microGrid, all rooms flat. Acceptance: player walks from Start to Exit, no broken walls, room shape matches layout debug view, deterministic by seed.
+Scene wiring reference (`test.unity`):
+- `Run` GameObject with `RunController` (config → `DefaultRunConfig`, flow → `ArenaHost`).
+- `Run/ArenaHost` GameObject with `ArenaFlowController` (buildConfig → `TestArenaConfig`).
+- Legacy `ArenaDebug` GameObject — оставлен выключённым (BSP debug); не включать одновременно с `Run` иначе две арены наложатся.
+- Player must have tag `Player`. CharacterController teleports via `cc.enabled=false/true`.
 
 ---
 
