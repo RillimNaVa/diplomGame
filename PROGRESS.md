@@ -66,22 +66,30 @@
 - [x] Floor/wall/ceiling mesh generation *(PR 2, 2026-04-20)*
 - [x] Seed-based randomization *(PR 1, System.Random sub-streams — PRESERVED)*
 
-### PR 2.A — Single-Arena Generator (next)
-- [ ] `SingleArenaGenerator` + shape gen (Rect / L / T / Octagon)
-- [ ] `ArenaCoverPlanner` (Poisson-disk + flow-constraints)
-- [ ] `ArenaExitPlanner` (2 exit doors, opposite walls)
-- [ ] `ArenaTypeProfile` SO (Start / Combat / Elite / Parkour / Shop / Rest / Boss)
-- [ ] `ArenaSizePreset` enum (S 40×40 / M 60×60 / L 80×80 м)
-- [ ] Per-arena ceiling 10–25м by type profile
-- [ ] Adapt `ArenaBuilder` to single-room
-- [ ] Mark BSP modules as `[DEPRECATED]` (done 2026-04-20)
+### PR 2.A — Single-Arena Generator (code done 2026-04-21, pending Editor verification)
+- [x] `SingleArenaGenerator` + shape gen (Rect / L / T / Octagon) *(2026-04-21)*
+- [x] `ArenaCoverPlanner` (Poisson-disk + flow-constraints) *(2026-04-21)*
+- [x] `ArenaExitPlanner` (2 exit doors, opposite walls) *(2026-04-21)*
+- [x] `ArenaTypeProfile` SO + `ShapeWeight` + `ClearCondition` *(2026-04-21)*
+- [x] `ArenaSizePreset` enum (S 10×10 / M 15×15 / L 20×20 cells → 40/60/80 м) *(2026-04-21)*
+- [x] Per-arena ceiling 10–25м by type profile *(2026-04-21)*
+- [x] Adapt `ArenaBuilder` to single-room (`BuildSingle` entry point — ArenaRoot/Shell/Cover/Exits/Anchors, no Room_N) *(2026-04-21)*
+- [x] Mark BSP modules as `[DEPRECATED]` *(done 2026-04-20)*
+- [x] 3 preset assets: `Arena_Start_S`, `Arena_Combat_M`, `Arena_Boss_L` under `Assets/ArenaProfiles/` *(2026-04-21)*
+- [x] `ArenaDebugGizmos` extended: profile field + new ContextMenu entries + gizmos for shape mask / exits / cover / spawn *(2026-04-21)*
+- [x] Editor verification (Arena_Combat_M assigned, 4 shapes observed, emissive exits/cover/start marker OK) — 2026-04-21
 
-### PR 2.B — Run Graph + Transitions
-- [ ] `RunGraph` + `RunGraphGenerator` (5-arena run: Start → Mid×3 → Boss)
-- [ ] `RunController` state machine
-- [ ] `ArenaFlowController` fade + regenerate
-- [ ] Door-choice placeholder UI (SpriteRenderer icons over exit doors)
-- [ ] Victory / GameOver placeholder screens
+### PR 2.B — Run Graph + Transitions (verified 2026-04-21)
+- [x] `RunGraph` + `RunGraphNode` + `RunGraphGenerator` (5-arena run: Start → Mid×3 → Boss, 8 nodes, shared subtree)
+- [x] `RunConfig` SO (runSeed + start/boss/mid pools + fade timings + autoStart + skipClearCondition)
+- [x] `RunController` state machine (Idle / Generating / Entering / Playing / Transitioning / Victory / GameOver)
+- [x] `ArenaFlowController` — fade Canvas + destroy+regenerate + player-teleport via CharacterController.enabled toggle
+- [x] `ExitDoorTrigger` — trigger-volume on each exit, dispatches `ChooseDoor(idx)` or `NotifyExitTriggeredOnBoss()`
+- [x] `DoorChoiceLabel` — world-space `TextMesh` placeholder over doors ("Combat [2/5]", etc.) + Billboard
+- [x] Victory / GameOver placeholder Canvas (auto-built in `RunController.Awake`, "Restart" button → re-runs StartRun)
+- [x] `DefaultRunConfig.asset` referencing the 3 preset profiles
+- [x] Editor verification — 5-arena traversal + Victory screen OK; fade/labels/determinism OK — 2026-04-21
+- [x] Post-verify fixes — Billboard label flip (text was mirrored), door-opening cut in shell wall (emissive was only visible from outside), lintel above door (closes sky gap), solid `ExitBarrier_i` behind trigger (prevents falling off map during fade) — 2026-04-21
 
 ### PR 2.C — NavMesh + Encounter Integration
 - [ ] Async `NavMeshSurface.UpdateNavMesh` bake
@@ -223,6 +231,7 @@
 
 | Date | What was done |
 |------|---------------|
+| 2026-04-21 | Phase 2 PR 2.A (r4 Single-Arena Generator) — code complete, pending Editor verification. New `Assets/Scripts/ProceduralArena/Arena/` module: `ArenaCategory`, `ArenaShape` + `ShapeWeight`, `ArenaSizePreset` (S 10×10 / M 15×15 / L 20×20 cells), `ClearCondition`, `ArenaPlacements` (CoverPlacement / ExitDoorAnchor / PlatformPlacement), `ArenaTypeProfile` SO, `ArenaShapeGenerator` (Rect/L/T/Octagon mask builders + weighted picker), `ArenaExitPlanner` (entry wall + 2 exits on opposite perpendicular walls with mid-jitter), `ArenaCoverPlanner` (Poisson-disk + axial-corridor flow constraint + start/door exclusion), `SingleArenaGenerator` (6 sub-stream System.Random RNGs from arenaSeed: size/shape/exit/cover/ceiling/spawn). Extended `ArenaRoomData` with r4 fields (category / shape / shapeMask / wallHeightMeters / coverPlacements / exitDoorAnchors / startSpawnPoint / combatSpawnPoints / platformPlacements). Added `ArenaBuilder.BuildSingle(...)` — single-arena path emits `ArenaRoot/Shell + Cover + Exits + StartMarker + Anchors`, shape-mask-aware wall emission, per-arena ceiling. Extended `ArenaDebugGizmos` with `typeProfile` + `arenaSeed` fields and ContextMenu entries `r4 / Generate Single Arena`, `r4 / Generate + Build Single Arena`, `r4 / Randomize Seed + Build`; gizmos now draw shape mask cells, exit spheres with outward arrow, cover wire-boxes, start spawn sphere, combat spawn spheres. Added `ArenaGenerationLog.BuildSingleSummary`. Authored 3 preset assets `Assets/ArenaProfiles/{Arena_Start_S, Arena_Combat_M, Arena_Boss_L}.asset` directly as YAML. Zero `UnityEngine.Random` in new code (grep-clean). |
 | 2026-04-20 | Phase 2 specification drafted: added `ARENA_GENERATION_TZ.md` covering BSP layout, room/corridor generation, controlled encounter flow, runtime NavMesh baking, single-scene arena transitions, debug tooling, and performance constraints. |
 | 2026-04-15 | GDD v2 created. PROGRESS.md created. Project analyzed. |
 | 2026-04-15 | Phase 1 Movement Upgrades done: speed 10 m/s, double jump, slide (Ctrl), full air control, dash rework (2 charges/3s cooldown, works in air), momentum preservation. (PR #10) |
@@ -280,7 +289,9 @@ For each of the 4 new weapons (Scatter Gun slot 1, Void Rifle slot 2, Plasma Lau
 - Phase 1: **done** ✅ (Movement, Weapons PR A+B, Kill-to-Survive PR A+B — all playtested).
 - Phase 2 **PR 1** (Layout + Seed): done ✅, verified in Editor with gizmos (2026-04-20).
 - Phase 2 PIVOT'нут 2026-04-20 на **TZ r4** — single procedural arena + run graph с door-choice. BSP r1-r3 код помечен `[DEPRECATED]` и оставлен для diploma reference.
-- Phase 2 **PR 2.A** (SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena ceiling 10-25м): **next**.
+- Phase 2 **PR 2.A** (SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena ceiling 10-25м): **verified 2026-04-21** ✅
+- Phase 2 **PR 2.B** (Run Graph + Transitions + fade + door-choice placeholder UI + Victory/GameOver screens + door-opening/lintel/barrier fixes): **verified 2026-04-21** ✅
+- Phase 2 **PR 2.C** (Async NavMesh + encounter integration + soft-lock barriers + clear conditions): next.
 - TZ: [ARENA_GENERATION_TZ.md](./ARENA_GENERATION_TZ.md) (APPROVED r4).
 
 ### Phase 2 PR 2 — Editor verification checklist

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VoidSurvivor.ProceduralArena.Arena;
 
 namespace VoidSurvivor.ProceduralArena.Layout
 {
@@ -20,6 +21,20 @@ namespace VoidSurvivor.ProceduralArena.Layout
         public RoomType type = RoomType.CombatMedium;
         public readonly List<Vector2Int> doorAnchorsCells = new List<Vector2Int>();
         public readonly List<int> connectedRoomIds = new List<int>();
+
+        // ---- r4 single-arena extensions (unused by legacy BSP path) ----
+        public ArenaCategory category = ArenaCategory.Combat;
+        public ArenaShape shape = ArenaShape.Rect;
+        /// <summary>Interior mask in bounds-local coordinates [0..width, 0..height). null = full rect.</summary>
+        public bool[,] shapeMask;
+        /// <summary>Per-arena ceiling height in meters. 0 = fall back to ArenaRunConfig.wallHeightMeters.</summary>
+        public float wallHeightMeters;
+        public readonly List<CoverPlacement> coverPlacements = new List<CoverPlacement>();
+        public readonly List<ExitDoorAnchor> exitDoorAnchors = new List<ExitDoorAnchor>();
+        public Vector3 startSpawnPoint;
+        public readonly List<Vector3> combatSpawnPoints = new List<Vector3>();
+        public readonly List<PlatformPlacement> platformPlacements = new List<PlatformPlacement>();
+        // ----------------------------------------------------------------
 
         public Vector2Int CenterCell =>
             new Vector2Int(
