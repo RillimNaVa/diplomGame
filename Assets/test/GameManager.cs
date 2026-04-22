@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -16,6 +17,10 @@ public class GameManager : MonoBehaviour
     public float timeBetweenWaves = 30f;
     public float timeBetweenSpawns = 2f;
 
+    [Header("Encounter Mode (PR 2.C)")]
+    [Tooltip("When true, the legacy wave loop is disabled and encounters are driven by EncounterController via BeginEncounter/EndEncounter.")]
+    public bool useEncounterMode = false;
+
     [Header("References")]
     public UIManager uiManager;
     public Transform playerTransform;
@@ -27,6 +32,11 @@ public class GameManager : MonoBehaviour
     private int enemiesToSpawn;
     private int enemiesSpawned;
     private int enemiesAlive;
+
+    // ---- Encounter mode state (PR 2.C) ----
+    Transform[] encounterSpawnPoints;
+    Action encounterOnEnemyKilled;
+    bool encounterActive;
 
     public static GameManager instance;
 
@@ -45,7 +55,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         ResolveReferences();
-        StartNewWave();
+        if (!useEncounterMode) StartNewWave();
     }
 
     void OnDisable()
@@ -59,7 +69,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (!waveInProgress)
+        if (!useEncounterMode && !waveInProgress)
         {
             waveTimer -= Time.deltaTime;
             uiManager?.UpdateTimer(waveTimer);
@@ -189,5 +199,93 @@ public class GameManager : MonoBehaviour
     public void UpdatePlayerHealth(float current, float max)
     {
         uiManager?.UpdateHealthBar(current, max);
+    }
+
+    // =====================================================================
+    // Encounter API (PR 2.C)
+    // Drives per-arena combat when useEncounterMode is true. EncounterController
+    // calls BeginEncounter with the arena's spawn points and a death callback;
+    // the controller decides when the encounter is cleared.
+    // =====================================================================
+
+    public void SetSpawnPoints(IReadOnlyList<Transform> points)
+    {
+        if (points == null || points.Count == 0)
+        {
+            spawnPoints = new Transform[0];
+            return;
+        }
+        spawnPoints = new Transform[points.Count];
+        for (int i = 0; i < points.Count; i++) spawnPoints[i] = points[i];
+    }
+
+    public void BeginEncounter(int count, Transform[] spawns, Action onEnemyKilledCallback)
+    {
+        if (!useEncounterMode)
+        {
+            Debug.LogWarning("[GameManager] BeginEncounter called but useEncounterMode is false.");
+            return;
+        }
+        if (encounterActive)
+        {
+            Debug.LogWarning("[GameManager] BeginEncounter called while another encounter is active. Ending previous.");
+            EndEncounter();
+        }
+
+        if (spawns != null && spawns.Length > 0) encounterSpawnPoints = spawns;
+        else encounterSpawnPoints = spawnPoints;
+
+        encounterOnEnemyKilled = onEnemyKilledCallback;
+        encounterActive = true;
+        enemiesSpawned = 0;
+        enemiesAlive = 0;
+        enemiesToSpawn = Mathf.Max(0, count);
+
+        uiManager?.ShowWaveState($"Encounter: {enemiesToSpawn} enemies");
+        StartCoroutine(SpawnEncounter());
+    }
+
+    public void EndEncounter()
+    {
+        encounterActive = false;
+        encounterOnEnemyKilled = null;
+        encounterSpawnPoints = null;
+        uiManager?.ShowWaveState("Encounter cleared");
+    }
+
+    IEnumerator SpawnEncounter()
+    {
+        for (int i = 0; i < enemiesToSpawn; i++)
+        {
+            if (!encounterActive) yield break;
+            SpawnEncounterEnemy();
+            enemiesSpawned++;
+            yield return new WaitForSeconds(timeBetweenSpawns);
+        }
+    }
+
+    void SpawnEncounterEnemy()
+    {
+        if (enemyPrefab == null) return;
+        Transform[] pool = encounterSpawnPoints != null && encounterSpawnPoints.Length > 0
+            ? encounterSpawnPoints : spawnPoints;
+        if (pool == null || pool.Length == 0) return;
+
+        Transform point = pool[UnityEngine.Random.Range(0, pool.Length)];
+        GameObject enemy = Instantiate(enemyPrefab, point.position, point.rotation);
+        enemiesAlive++;
+
+        SimpleEnemyAI ai = enemy.GetComponent<SimpleEnemyAI>();
+        if (ai != null && playerTransform != null) ai.SetTarget(playerTransform);
+
+        Health hp = enemy.GetComponent<Health>();
+        if (hp != null) hp.onDeath.AddListener(OnEncounterEnemyDied);
+    }
+
+    void OnEncounterEnemyDied()
+    {
+        enemiesAlive = Mathf.Max(0, enemiesAlive - 1);
+        OnEnemyKilled?.Invoke();
+        encounterOnEnemyKilled?.Invoke();
     }
 }

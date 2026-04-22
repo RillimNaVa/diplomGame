@@ -10,6 +10,7 @@ namespace VoidSurvivor.ProceduralArena.Build
         public Material cover;
         public Material startMarker;
         public Material exitMarker;
+        public Material barrier;
 
         public static ArenaBuildMaterials CreateDefaults()
         {
@@ -22,6 +23,7 @@ namespace VoidSurvivor.ProceduralArena.Build
                 cover       = Make(shader, "ArenaCoverMat",   new Color(0.45f, 0.40f, 0.35f)),
                 startMarker = MakeEmissive(shader, "ArenaStartMat", new Color(0.3f, 1.0f, 0.5f), 1.5f),
                 exitMarker  = MakeEmissive(shader, "ArenaExitMat",  new Color(1.0f, 0.3f, 0.3f), 1.8f),
+                barrier     = MakeEmissive(shader, "ArenaBarrierMat", new Color(1.0f, 0.75f, 0.15f), 2.2f),
             };
             return mats;
         }

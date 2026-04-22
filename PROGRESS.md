@@ -91,12 +91,14 @@
 - [x] Editor verification — 5-arena traversal + Victory screen OK; fade/labels/determinism OK — 2026-04-21
 - [x] Post-verify fixes — Billboard label flip (text was mirrored), door-opening cut in shell wall (emissive was only visible from outside), lintel above door (closes sky gap), solid `ExitBarrier_i` behind trigger (prevents falling off map during fade) — 2026-04-21
 
-### PR 2.C — NavMesh + Encounter Integration
-- [ ] Async `NavMeshSurface.UpdateNavMesh` bake
-- [ ] `GameManager.SetSpawnPoints / BeginEncounter / EndEncounter` API
-- [ ] Encounter trigger (capsule-fully-inside arena)
-- [ ] Soft-lock barrier on exit doors (emissive quad + collider)
-- [ ] Clear conditions: KillAll / ReachExit / None
+### PR 2.C — NavMesh + Encounter Integration (code done 2026-04-22, pending Editor verification)
+- [x] Async `NavMeshSurface.UpdateNavMesh` bake *(ArenaNavMeshController, uses com.unity.ai.navigation 2.0.9)*
+- [x] `GameManager.SetSpawnPoints / BeginEncounter / EndEncounter` API *(encounter mode gated behind `useEncounterMode` flag — legacy wave loop preserved)*
+- [x] Encounter trigger component *(EncounterTrigger.cs scaffolded; current flow bypasses it — `EncounterController.BeginEncounter` is called directly from ArenaFlowController after fadeOut, since teleport places player inside arena)*
+- [x] Soft-lock barrier on exit doors *(emissive cube + collider, toggled by EncounterController.Open/Close; `ArenaBuildMaterials.barrier` emissive-orange)*
+- [x] Clear conditions: KillAll / ReachExit / None *(ReachExit hook via `EncounterController.FinishByReach`, Timer deferred to PR 2.D)*
+- [x] `SimpleEnemyAI.isOnNavMesh` guard — prevents `SetDestination on inactive agent` during first frames of runtime bake
+- [ ] Editor verification — wire `useEncounterMode=true` on GameManager, play run through 5 arenas, confirm: (a) enemies spawn on NavMesh, (b) barriers hold until last enemy dies, (c) ExitDoorTrigger fires only after clear
 
 ### PR 2.D — Verticality + Biomes + Balance
 - [ ] `ArenaVerticalityPlanner` (platforms/ramps for Parkour arenas)

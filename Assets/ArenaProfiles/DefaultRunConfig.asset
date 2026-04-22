@@ -25,4 +25,4 @@ MonoBehaviour:
   fadeHoldSeconds: 0.15
   fadeOutSeconds: 0.35
   autoStartOnPlay: 1
-  skipClearCondition: 1
+  skipClearCondition: 0

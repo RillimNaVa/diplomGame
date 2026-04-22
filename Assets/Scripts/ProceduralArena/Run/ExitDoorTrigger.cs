@@ -1,4 +1,5 @@
 using UnityEngine;
+using VoidSurvivor.ProceduralArena.Encounter;
 
 namespace VoidSurvivor.ProceduralArena.Run
 {
@@ -15,12 +16,14 @@ namespace VoidSurvivor.ProceduralArena.Run
         public RunController controller;
         public string playerTag = "Player";
         public bool isBossVictory;
+        [Tooltip("If assigned, the trigger only fires when this barrier is open (encounter cleared).")]
+        public SoftLockBarrier gatingBarrier;
 
         bool armed = true;
 
         void Awake()
         {
-            if (controller == null) controller = FindObjectOfType<RunController>();
+            if (controller == null) controller = FindFirstObjectByType<RunController>();
             var col = GetComponent<Collider>();
             if (col != null) col.isTrigger = true;
         }
@@ -30,6 +33,10 @@ namespace VoidSurvivor.ProceduralArena.Run
             if (!armed) return;
             if (!other.CompareTag(playerTag)) return;
             if (controller == null) return;
+            // Gate: if a SoftLockBarrier is assigned and still closed, refuse to fire
+            // so the player cannot skip the encounter. The trigger stays armed —
+            // once the barrier opens, the next OnTriggerEnter will pass.
+            if (gatingBarrier != null && !gatingBarrier.IsOpen) return;
             armed = false;
             if (isBossVictory) controller.NotifyExitTriggeredOnBoss();
             else controller.ChooseDoor(childIndex);

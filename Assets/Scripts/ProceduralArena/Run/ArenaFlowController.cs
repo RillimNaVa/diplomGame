@@ -1,18 +1,22 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using VoidSurvivor.ProceduralArena.Arena;
 using VoidSurvivor.ProceduralArena.Build;
 using VoidSurvivor.ProceduralArena.Core;
+using VoidSurvivor.ProceduralArena.Encounter;
+using VoidSurvivor.ProceduralArena.Navigation;
 
 namespace VoidSurvivor.ProceduralArena.Run
 {
     /// <summary>
     /// Owns the single ArenaRoot child. Generates via SingleArenaGenerator,
-    /// builds via ArenaBuilder.BuildSingle, spawns door triggers, teleports
-    /// the player to the start spawn, and hides everything behind a fade
-    /// canvas during transitions.
+    /// builds via ArenaBuilder.BuildSingle, bakes NavMesh async, spawns door
+    /// triggers + soft-lock barriers + EncounterController, teleports the
+    /// player to the start spawn, and hides everything behind a fade canvas
+    /// during transitions.
     /// </summary>
     public class ArenaFlowController : MonoBehaviour
     {
@@ -27,13 +31,20 @@ namespace VoidSurvivor.ProceduralArena.Run
         public Image fadeImage;
         public Color fadeColor = Color.black;
 
+        [Header("Encounter (PR 2.C)")]
+        [Tooltip("Skip NavMesh bake, encounter controller, and barriers — keeps the PR 2.B walk-through flow for debugging.")]
+        public bool skipEncounterSystems = false;
+
         public event Action<RunGraphNode> ArenaEntered;
         public event Action<RunGraphNode> ArenaBuilt;
 
         ArenaRuntimeContext currentCtx;
         GameObject currentArenaRoot;
+        EncounterController currentEncounter;
+        ArenaBuildMaterials buildMats;
 
         public ArenaRuntimeContext CurrentContext => currentCtx;
+        public EncounterController CurrentEncounter => currentEncounter;
 
         void Awake()
         {
@@ -53,16 +64,28 @@ namespace VoidSurvivor.ProceduralArena.Run
 
             DestroyCurrent();
             currentCtx = SingleArenaGenerator.Generate(node.arenaSeed, node.typeProfile, buildConfig);
-            currentArenaRoot = ArenaBuilder.BuildSingle(currentCtx, buildConfig, arenaParent);
+            if (buildMats == null) buildMats = ArenaBuildMaterials.CreateDefaults();
+            currentArenaRoot = ArenaBuilder.BuildSingle(currentCtx, buildConfig, arenaParent, buildMats);
 
             if (currentArenaRoot != null)
             {
-                SpawnExitTriggers(node, controller);
+                SpawnExitTriggers(node, controller, out var barriers);
+
+                if (!skipEncounterSystems)
+                {
+                    yield return ArenaNavMeshController.BakeAsync(currentArenaRoot);
+                    SetupEncounter(node, barriers);
+                }
+
                 TeleportPlayerToStart();
                 ArenaBuilt?.Invoke(node);
             }
 
             yield return FadeTo(0f, fadeOut);
+
+            // Begin encounter after fadeOut so enemies don't spawn under a black screen.
+            if (currentEncounter != null) currentEncounter.BeginEncounter();
+
             ArenaEntered?.Invoke(node);
         }
 
@@ -76,20 +99,20 @@ namespace VoidSurvivor.ProceduralArena.Run
             }
             else
             {
-                // Belt-and-suspenders: clear any stray ArenaRoot under parent
                 ArenaBuilder.Clear(arenaParent);
             }
             currentCtx = null;
+            currentEncounter = null;
         }
 
-        void SpawnExitTriggers(RunGraphNode node, RunController controller)
+        void SpawnExitTriggers(RunGraphNode node, RunController controller, out List<SoftLockBarrier> barriers)
         {
+            barriers = new List<SoftLockBarrier>();
             if (currentCtx == null || currentCtx.layout == null) return;
             if (currentCtx.layout.rooms.Count == 0) return;
             var room = currentCtx.layout.rooms[0];
             if (room.exitDoorAnchors.Count == 0) return;
 
-            // find the Exits GO under ArenaRoot
             Transform exitsRoot = currentArenaRoot != null ? currentArenaRoot.transform.Find("Exits") : null;
             if (exitsRoot == null) return;
 
@@ -100,7 +123,8 @@ namespace VoidSurvivor.ProceduralArena.Run
             for (int i = 0; i < room.exitDoorAnchors.Count; i++)
             {
                 var anchor = room.exitDoorAnchors[i];
-                // spawn trigger as a sibling of Exit_i visual
+
+                // Trigger volume (player walks through on exit).
                 var triggerGo = new GameObject($"ExitTrigger_{i}");
                 triggerGo.transform.SetParent(exitsRoot, false);
                 triggerGo.transform.position = new Vector3(anchor.worldCenter.x, doorHeight * 0.5f, anchor.worldCenter.z);
@@ -116,28 +140,48 @@ namespace VoidSurvivor.ProceduralArena.Run
                 trig.childIndex = i;
                 trig.playerTag = playerTag;
                 trig.isBossVictory = childCount == 0;
+                // gatingBarrier is wired below after SoftLockBarrier is created.
 
-                // Solid invisible barrier just outside the opening so the player
-                // cannot fall off the map during the fade transition. The trigger
-                // fires first (its volume extends inward), fade starts, and if the
-                // player keeps pushing forward they bump into this wall.
-                var barrierGo = new GameObject($"ExitBarrier_{i}");
-                barrierGo.transform.SetParent(exitsRoot, false);
-                Vector3 barrierOffset = new Vector3(
+                // Fall-prevention wall just outside the opening (invisible, thin).
+                var fallGo = new GameObject($"ExitFallBarrier_{i}");
+                fallGo.transform.SetParent(exitsRoot, false);
+                Vector3 fallOffset = new Vector3(
                     anchor.outwardDir.x * m * 0.35f, 0f,
                     anchor.outwardDir.y * m * 0.35f);
-                barrierGo.transform.position = new Vector3(
-                    anchor.worldCenter.x + barrierOffset.x,
+                fallGo.transform.position = new Vector3(
+                    anchor.worldCenter.x + fallOffset.x,
                     doorHeight * 0.5f,
-                    anchor.worldCenter.z + barrierOffset.z);
-                var barrier = barrierGo.AddComponent<BoxCollider>();
-                barrier.isTrigger = false;
+                    anchor.worldCenter.z + fallOffset.z);
+                var fallCol = fallGo.AddComponent<BoxCollider>();
+                fallCol.isTrigger = false;
                 if (anchor.outwardDir.x != 0)
-                    barrier.size = new Vector3(0.2f, doorHeight, m * 1.0f);
+                    fallCol.size = new Vector3(0.2f, doorHeight, m * 1.0f);
                 else
-                    barrier.size = new Vector3(m * 1.0f, doorHeight, 0.2f);
+                    fallCol.size = new Vector3(m * 1.0f, doorHeight, 0.2f);
 
-                // label
+                // Soft-lock barrier — visible emissive box covering the door opening,
+                // toggled by EncounterController.
+                if (!skipEncounterSystems)
+                {
+                    var barrierGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    barrierGo.name = $"SoftLockBarrier_{i}";
+                    barrierGo.transform.SetParent(exitsRoot, false);
+                    barrierGo.transform.position = new Vector3(anchor.worldCenter.x, doorHeight * 0.5f, anchor.worldCenter.z);
+                    Vector3 barrierSize;
+                    if (anchor.outwardDir.x != 0)
+                        barrierSize = new Vector3(0.15f, doorHeight, m * 0.9f);
+                    else
+                        barrierSize = new Vector3(m * 0.9f, doorHeight, 0.15f);
+                    barrierGo.transform.localScale = barrierSize;
+                    var rend = barrierGo.GetComponent<MeshRenderer>();
+                    if (rend != null && buildMats != null && buildMats.barrier != null)
+                        rend.sharedMaterial = buildMats.barrier;
+                    var slb = barrierGo.AddComponent<SoftLockBarrier>();
+                    barriers.Add(slb);
+                    trig.gatingBarrier = slb;
+                }
+
+                // Door-choice label.
                 var labelHost = new GameObject($"ExitLabel_{i}");
                 labelHost.transform.SetParent(exitsRoot, false);
                 labelHost.transform.position = new Vector3(anchor.worldCenter.x, 0f, anchor.worldCenter.z);
@@ -153,6 +197,34 @@ namespace VoidSurvivor.ProceduralArena.Run
                     lbl.Setup(ArenaCategory.Boss, 4, doorHeight);
                 }
             }
+        }
+
+        void SetupEncounter(RunGraphNode node, List<SoftLockBarrier> barriers)
+        {
+            if (currentArenaRoot == null || currentCtx == null || currentCtx.layout == null) return;
+            if (currentCtx.layout.rooms.Count == 0) return;
+            var room = currentCtx.layout.rooms[0];
+            var profile = node.typeProfile;
+            if (profile == null) return;
+
+            var enc = currentArenaRoot.AddComponent<EncounterController>();
+            enc.clearCondition = profile.clearCondition;
+            enc.enemyCount = profile.enemySpawnCount;
+            enc.barriers.AddRange(barriers);
+
+            // Convert combatSpawnPoints into real Transforms parented under ArenaRoot.
+            var spawnRoot = new GameObject("CombatSpawns");
+            spawnRoot.transform.SetParent(currentArenaRoot.transform, false);
+            Vector3 offset = arenaParent != null ? arenaParent.position : Vector3.zero;
+            for (int i = 0; i < room.combatSpawnPoints.Count; i++)
+            {
+                var sp = new GameObject($"Spawn_{i}");
+                sp.transform.SetParent(spawnRoot.transform, false);
+                sp.transform.position = room.combatSpawnPoints[i] + offset + new Vector3(0f, 0.5f, 0f);
+                enc.spawnPoints.Add(sp.transform);
+            }
+
+            currentEncounter = enc;
         }
 
         void TeleportPlayerToStart()
