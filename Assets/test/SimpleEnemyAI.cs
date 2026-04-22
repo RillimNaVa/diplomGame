@@ -33,7 +33,11 @@ public class SimpleEnemyAI : MonoBehaviour
     {
         if (player == null || !gameObject.activeInHierarchy) return;
 
-        agent.SetDestination(player.position);
+        // PR 2.C: when arenas bake their NavMesh async on fade-in, an enemy
+        // spawned during the bake frame may not yet be on a NavMesh. Guard
+        // against the "SetDestination on inactive agent" warning/exception.
+        if (agent != null && agent.isOnNavMesh)
+            agent.SetDestination(player.position);
 
         float dist = Vector3.Distance(transform.position, player.position);
         if (dist < attackRange && Time.time > lastAttackTime)

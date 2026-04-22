@@ -41,8 +41,35 @@ namespace VoidSurvivor.ProceduralArena.Run
         void Awake()
         {
             if (flow == null) flow = GetComponent<ArenaFlowController>();
-            if (flow == null) flow = FindObjectOfType<ArenaFlowController>();
+            if (flow == null) flow = FindFirstObjectByType<ArenaFlowController>();
+            if (flow != null) flow.ArenaBuilt += OnArenaBuilt;
             BuildScreenCanvas();
+        }
+
+        void OnDestroy()
+        {
+            if (flow != null) flow.ArenaBuilt -= OnArenaBuilt;
+        }
+
+        void OnArenaBuilt(RunGraphNode node)
+        {
+            // Subscribe to the newly created EncounterController so we know
+            // when the clear condition is satisfied. If skipClearCondition
+            // is true we still subscribe but the event fires immediately
+            // (ClearCondition.None) or we simply ignore it.
+            if (flow == null || flow.CurrentEncounter == null) return;
+            var enc = flow.CurrentEncounter;
+            if (runConfig != null && runConfig.skipClearCondition)
+            {
+                // Debug walk-through: force the encounter to auto-clear without spawning enemies.
+                enc.clearCondition = VoidSurvivor.ProceduralArena.Arena.ClearCondition.None;
+                return;
+            }
+            enc.Cleared += () =>
+            {
+                if (logTransitions) Debug.Log($"[Run] encounter cleared stage={node.stage} cat={node.typeProfile?.category}");
+                NotifyArenaClearedIfReady();
+            };
         }
 
         IEnumerator Start()
