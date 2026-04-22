@@ -18,10 +18,12 @@ This document describes the current project structure, important files, implemen
 
 If you are a new AI agent entering the project, use this order:
 
-1. Read this file first
-2. Read [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
-3. Read [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md) if working on combat/weapon refactor
-4. Only then inspect the exact files related to the requested task
+1. Read [AI_HANDOFF.md](C:/Users/assam/DiplomGame/docs/AI_HANDOFF.md) first — current active task, do-not-break list, manual setup reminders
+2. Read this file for stable architecture overview
+3. Read [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md) for full roadmap + Change Log
+4. Read [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/docs/ARENA_GENERATION_TZ.md) if working on Phase 2 (procedural arenas) — active r4 spec
+5. Read [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md) / [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/docs/KILL_TO_SURVIVE_TZ.md) only for combat refactor (completed specs, historical)
+6. Only then inspect the exact files related to the requested task
 
 Do not start with a blind full scan of `Library`, `obj`, or package cache.
 
@@ -33,26 +35,33 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: start Phase 2 — Procedural Arena Generation
+- Main short-term target: finish Phase 2 — Procedural Arena Generation (r4: PR 2.A+2.B verified, PR 2.C merged pending Editor verify, PR 2.D next)
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary (2026-04-20)
+## Current Project Status Summary (2026-04-22)
 
-**Phase 1 is complete.** As of the current state of the repository:
+**Phase 1 complete. Phase 2 in flight.** As of the current state of the repository:
 
+**Phase 1 (shipped + playtested):**
 - First-person movement fully tuned (walk, jump, double jump, dash with charges, slide, air control, momentum preservation).
 - **Modular weapon system shipped** (`WeaponManager` / `WeaponBase` / `WeaponDefinition` (ScriptableObject) / `[SerializeReference] FireModeBase`). Five weapons, switching, ammo, reload.
 - **Kill-to-Survive shipped**: HP orbs + `Health.Heal()`, per-enemy loot tables, one-way enemy stagger with emission pulse at ≤20% HP, side-channel `GloryKillDetector` for the `void_blade`, `KillStreakTracker` granting timed movement-speed boost.
 - Health system (event-driven) with `onHealthChanged`, `onDeath`, `onTakeDamage`, and `Heal(amount)`.
 - Simple enemy AI + wave spawner + minimal HUD.
-- Prototype procedural terrain scene (`SampleScene.unity`) — independent of the upcoming arena generation work.
-- Playable combat prototype scene (`test.unity`) with all Phase 1 systems wired.
+
+**Phase 2 (r4 pivot 2026-04-20, TZ APPROVED):**
+- **PR 2.A verified 2026-04-21** — `SingleArenaGenerator` + shape (Rect/L/T/Octagon) / cover (Poisson-disk + flow) / exit planners + `ArenaTypeProfile` SO + S/M/L size presets (40/60/80м) + per-arena ceiling 10-25м. 3 preset assets в `Assets/ArenaProfiles/`.
+- **PR 2.B verified 2026-04-21** — `RunGraph` (8 nodes, shared subtree) + `RunController` state machine + `ArenaFlowController` fade/teleport + `ExitDoorTrigger` + `DoorChoiceLabel` + Victory/GameOver Canvas + `DefaultRunConfig.asset`.
+- **PR 2.C code merged 2026-04-22** (Editor verification pending) — async `NavMeshSurface.UpdateNavMesh` via `ArenaNavMeshController`, `GameManager.useEncounterMode` flag + `SetSpawnPoints`/`BeginEncounter`/`EndEncounter` API, `EncounterController` + `SoftLockBarrier` + `EncounterTrigger` (scaffolded), clear conditions (KillAll/ReachExit/None), `SimpleEnemyAI.isOnNavMesh` guard.
+- BSP r1-r3 code помечен `[DEPRECATED]` и оставлен в репо для diploma reference.
+- Prototype procedural terrain scene (`SampleScene.unity`) — independent of arena work, will likely be retired.
+- Playable combat prototype scene (`test.unity`) wired с Phase 1 systems + `Run`/`ArenaHost` GameObjects для Phase 2.
 
 What is not yet built:
 
-- Procedural arena generation (Phase 2, next task)
+- **PR 2.D** — verticality, biomes, Elite/Parkour/Shop/Rest profiles, difficulty scaling by arenaIndex, debug UI (seed/index/biome).
 - Advanced enemy types / state-machine AI (Phase 3)
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling (enemies, projectiles) — deferred performance pass
@@ -61,7 +70,7 @@ What is not yet built:
 
 ## Important Root Files
 
-### [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
+### [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md)
 
 Main project roadmap and progress tracker.
 
@@ -77,7 +86,7 @@ Important note:
 - some checklist items in `PROGRESS.md` may be marked done while still being only partially reflected in serialized scene data
 - example: movement speed default in code is `10`, but the active scene still has a serialized value of `6`
 
-### [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+### [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md)
 
 Detailed technical specification for the planned hybrid weapon system architecture.
 
@@ -127,7 +136,16 @@ Contains the post-Phase-1 code organized by subsystem:
 - `Assets/Scripts/Combat/Pickups/` — `HealthPickup`, `PickupSpawner`.
 - `Assets/Scripts/Combat/Enemies/` — `EnemyLootTable`, `EnemyStagger`.
 - `Assets/Scripts/Combat/Player/` — `PlayerStats` (central stats seam), `IGloryKillPolicy` + `AlwaysAllowPolicy`, `GloryKillDetector`, `KillStreakTracker`.
-- `Assets/Scripts/TerrainGenerator.cs` — prototype terrain, unrelated to Phase 2 arenas.
+- `Assets/Scripts/ProceduralArena/Core/` — `ArenaRunConfig` SO, `ArenaRuntimeContext` (sub-stream System.Random), `ArenaRoomData`, `ArenaGenerator` ([DEPRECATED] BSP orchestrator).
+- `Assets/Scripts/ProceduralArena/Layout/` — [DEPRECATED] BSP: `BspLayoutGenerator`, `RoomPlanner`, `CorridorPlanner`, `RoomTypeAssigner`. Kept for diploma reference.
+- `Assets/Scripts/ProceduralArena/Build/` — `ArenaOccupancy`, `ArenaBuilder` (orchestrator with `BuildSingle` r4 entry), `RoomBlockoutBuilder`, `CorridorBlockoutBuilder` ([DEPRECATED]), `ArenaBuildMaterials` (URP Lit + emissive markers + barrier), `BuildUtils`.
+- `Assets/Scripts/ProceduralArena/Arena/` — **r4 single-arena module**: `ArenaCategory`, `ArenaShape` + `ShapeWeight`, `ArenaSizePreset`, `ClearCondition`, `ArenaPlacements`, `ArenaTypeProfile` SO, `ArenaShapeGenerator` (Rect/L/T/Octagon masks), `ArenaExitPlanner`, `ArenaCoverPlanner` (Poisson-disk + flow constraint), `SingleArenaGenerator` (6 sub-stream RNGs).
+- `Assets/Scripts/ProceduralArena/Run/` — **r4 run-graph module**: `RunStage`, `RunGraphNode`, `RunGraph`, `RunGraphGenerator` (8 nodes shared subtree), `RunConfig` SO, `RunController` state machine, `ArenaFlowController` (fade+teleport), `ExitDoorTrigger`, `DoorChoiceLabel`.
+- `Assets/Scripts/ProceduralArena/Navigation/ArenaNavMeshController.cs` — async `NavMeshSurface.UpdateNavMesh` on ArenaRoot.
+- `Assets/Scripts/ProceduralArena/Encounter/` — `EncounterController` (per-arena clear condition orchestrator), `SoftLockBarrier` (emissive barrier toggle), `EncounterTrigger` (scaffolded, bypassed by teleport flow).
+- `Assets/Scripts/ProceduralArena/Debug/` — `ArenaDebugGizmos` (Scene-view visualization + ContextMenu entries r1-r4), `ArenaGenerationLog`.
+- `Assets/Scripts/TerrainGenerator.cs` — prototype terrain, unrelated to Phase 2 arenas (likely to be retired).
+- `Assets/ArenaProfiles/` — `Arena_Start_S.asset`, `Arena_Combat_M.asset`, `Arena_Boss_L.asset` (hand-authored YAML).
 
 ### `Assets/Prefabs`
 
@@ -740,20 +758,19 @@ Important practical interpretation:
 
 ## Current Development Direction
 
-Phase 1 is complete (see the status summary at the top). The next major structured task is **Phase 2 — Procedural Arena Generation**:
+Phase 1 complete. Phase 2 (Procedural Arena Generation r4) in flight:
 
-- draft `ARENA_GENERATION_TZ.md`
-- implement BSP / room placement
-- runtime NavMesh baking so `SimpleEnemyAI` works inside generated arenas
-- integrate generated spawn points with `GameManager` wave loop
-- deterministic seed support for debugging and thesis figures
+- PR 2.A + 2.B verified (single-arena gen + run graph + transitions).
+- PR 2.C code merged 2026-04-22 (async NavMesh bake + encounter integration + soft-lock barriers + `GameManager.useEncounterMode`) — awaiting Editor verification pass.
+- PR 2.D next: verticality (`ArenaVerticalityPlanner`), biomes + 2 biome SOs, Elite/Parkour/Shop/Rest type profiles, difficulty scaling по `arenaIndex`, debug UI overlay.
 
-See `AI_HANDOFF.md` for the latest active-task context.
+See `AI_HANDOFF.md` for the latest active-task context and the PR 2.C verification checklist.
 
-Reference specs (both COMPLETED, kept for history):
+Reference specs:
 
-- [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
-- [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md)
+- [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/docs/ARENA_GENERATION_TZ.md) — **APPROVED r4**, active spec
+- [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md) — COMPLETED, history
+- [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/docs/KILL_TO_SURVIVE_TZ.md) — COMPLETED, history
 
 ---
 
@@ -782,7 +799,7 @@ Read:
 
 Read:
 
-- [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+- [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md)
 - [Assets/test/PlayerController.cs](C:/Users/assam/DiplomGame/Assets/test/PlayerController.cs)
 - [Assets/test/Projectile.cs](C:/Users/assam/DiplomGame/Assets/test/Projectile.cs)
 - [Assets/test/Health.cs](C:/Users/assam/DiplomGame/Assets/test/Health.cs)
@@ -856,9 +873,9 @@ This project is currently a playable Unity prototype with:
 
 The most important current truth is:
 
-- movement is relatively mature
-- combat works but is not architecturally mature
-- the next major step is the modular weapon system
+- movement and combat are architecturally mature (Phase 1 shipped)
+- procedural arena pipeline (r4) через PR 2.C merged — single-arena + run graph + async NavMesh + encounter + soft-lock barriers; ждёт Editor verify
+- next major step is PR 2.D (verticality + biomes + extended type profiles + difficulty scaling)
 
 This file should let future AI agents understand the project quickly without doing a blind full scan first.
 

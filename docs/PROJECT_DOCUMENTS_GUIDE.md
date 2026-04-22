@@ -39,7 +39,7 @@ So the documentation is split by purpose.
 
 ## Main Documentation Files
 
-## [PROGRESS.md](C:/Users/assam/DiplomGame/PROGRESS.md)
+## [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md)
 
 ### What It Is
 
@@ -82,7 +82,7 @@ Short summary:
 
 ---
 
-## [PROJECT_KNOWLEDGE_BASE.md](C:/Users/assam/DiplomGame/PROJECT_KNOWLEDGE_BASE.md)
+## [PROJECT_KNOWLEDGE_BASE.md](C:/Users/assam/DiplomGame/docs/PROJECT_KNOWLEDGE_BASE.md)
 
 ### What It Is
 
@@ -128,7 +128,7 @@ Short summary:
 
 ---
 
-## [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+## [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md)
 
 ### What It Is
 
@@ -169,7 +169,7 @@ Short summary:
 
 ---
 
-## [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/KILL_TO_SURVIVE_TZ.md)
+## [KILL_TO_SURVIVE_TZ.md](C:/Users/assam/DiplomGame/docs/KILL_TO_SURVIVE_TZ.md)
 
 ### What It Is
 
@@ -198,7 +198,7 @@ New subsystems (e.g. `ARENA_GENERATION_TZ.md`, `UPGRADE_SYSTEM_TZ.md`) should fo
 
 ---
 
-## [AI_HANDOFF.md](C:/Users/assam/DiplomGame/AI_HANDOFF.md)
+## [AI_HANDOFF.md](C:/Users/assam/DiplomGame/docs/AI_HANDOFF.md)
 
 ### What It Is
 
@@ -241,7 +241,7 @@ Short summary:
 
 ---
 
-## [KNOWN_ISSUES.md](C:/Users/assam/DiplomGame/KNOWN_ISSUES.md)
+## [KNOWN_ISSUES.md](C:/Users/assam/DiplomGame/docs/KNOWN_ISSUES.md)
 
 ### What It Is
 
