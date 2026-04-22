@@ -34,7 +34,10 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
                 sb.Append(" shape=").Append(r.shape);
                 sb.Append(" bounds=").Append(r.boundsCells.width).Append('x').Append(r.boundsCells.height);
                 sb.Append(" ceiling=").Append(r.wallHeightMeters.ToString("F1")).Append('m');
+                if (!string.IsNullOrEmpty(r.biomeId)) sb.Append(" biome=").Append(r.biomeId);
                 sb.Append(" cover=").Append(r.coverPlacements.Count);
+                sb.Append(" platforms=").Append(r.platformPlacements.Count);
+                sb.Append(" ramps=").Append(r.rampPlacements.Count);
                 sb.Append(" exits=").Append(r.exitDoorAnchors.Count);
                 sb.Append(" spawns=").Append(r.combatSpawnPoints.Count);
             }

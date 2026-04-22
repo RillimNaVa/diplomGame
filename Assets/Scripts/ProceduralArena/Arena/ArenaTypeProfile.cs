@@ -33,9 +33,18 @@ namespace VoidSurvivor.ProceduralArena.Arena
 
         [Header("Verticality")]
         public bool enableVerticality = false;
+        [Tooltip("Deterministic platform count range when verticality is enabled.")]
+        public Vector2Int platformCountRange = new Vector2Int(2, 4);
+        [Tooltip("Platform top height range in meters above the arena floor.")]
+        public Vector2 platformHeightRange = new Vector2(2.5f, 5f);
+        [Tooltip("Platform footprint width/length range in macro cells.")]
+        public Vector2Int platformFootprintRange = new Vector2Int(2, 3);
 
         [Header("Spawning")]
         [Min(0)] public int enemySpawnCount = 8;
+
+        [Header("Biome")]
+        public BiomeDefinition biome;
 
         [Header("Clear condition")]
         public ClearCondition clearCondition = ClearCondition.KillAll;

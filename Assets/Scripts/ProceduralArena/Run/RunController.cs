@@ -37,12 +37,14 @@ namespace VoidSurvivor.ProceduralArena.Run
         public RunState State => state;
         public RunGraph Graph => graph;
         public RunGraphNode Current => current;
+        public RunConfig Config => runConfig;
 
         void Awake()
         {
             if (flow == null) flow = GetComponent<ArenaFlowController>();
             if (flow == null) flow = FindFirstObjectByType<ArenaFlowController>();
             if (flow != null) flow.ArenaBuilt += OnArenaBuilt;
+            EnsureDebugOverlay();
             BuildScreenCanvas();
         }
 
@@ -202,6 +204,14 @@ namespace VoidSurvivor.ProceduralArena.Run
 
             screenButton.onClick.AddListener(OnScreenButton);
             screenCanvas.enabled = false;
+        }
+
+        void EnsureDebugOverlay()
+        {
+            var overlay = GetComponent<ArenaRuntimeDebugOverlay>();
+            if (overlay == null) overlay = gameObject.AddComponent<ArenaRuntimeDebugOverlay>();
+            overlay.controller = this;
+            overlay.flow = flow;
         }
 
         void ShowScreen(string title, string buttonLabel)

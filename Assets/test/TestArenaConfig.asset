@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d87508e2aa53eef48ba877aa15f53e9b, type: 3}
   m_Name: TestArenaConfig
   m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Core.ArenaRunConfig
-  seed: 12345
+  seed: 0
   macroCellMeters: 4
   microCellMeters: 1
   mapWidthCells: 30

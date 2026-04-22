@@ -10,26 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1e2a4e20000000000000000000000af, type: 3}
-  m_Name: Arena_Combat_M
+  m_Name: Arena_Elite_L
   m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Arena.ArenaTypeProfile
-  category: 1
-  size: 1
-  ceilingRange: {x: 10, y: 14}
+  category: 2
+  size: 2
+  ceilingRange: {x: 12, y: 16}
   shapes:
+  - shape: 3
+    weight: 0.45
   - shape: 0
-    weight: 0.6
+    weight: 0.35
   - shape: 1
     weight: 0.2
-  - shape: 2
-    weight: 0.1
-  - shape: 3
-    weight: 0.1
-  coverDensity: 1.2
+  coverDensity: 0.9
   exitCount: 2
   enableVerticality: 0
   platformCountRange: {x: 0, y: 0}
-  platformHeightRange: {x: 2.5, y: 4.5}
+  platformHeightRange: {x: 2.5, y: 4}
   platformFootprintRange: {x: 2, y: 3}
-  enemySpawnCount: 8
-  biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c4, type: 2}
+  enemySpawnCount: 10
+  biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c5, type: 2}
   clearCondition: 1

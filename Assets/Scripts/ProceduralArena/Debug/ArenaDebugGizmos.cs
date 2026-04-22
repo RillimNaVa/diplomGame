@@ -217,6 +217,25 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
                 }
             }
 
+            if (debug.drawPlatforms)
+            {
+                Gizmos.color = debug.platformColor;
+                foreach (var platform in r.platformPlacements)
+                    Gizmos.DrawWireCube(origin + platform.center, platform.size);
+            }
+
+            if (debug.drawRamps)
+            {
+                Gizmos.color = debug.rampColor;
+                foreach (var ramp in r.rampPlacements)
+                {
+                    Matrix4x4 prev = Gizmos.matrix;
+                    Gizmos.matrix = Matrix4x4.TRS(origin + ramp.center, Quaternion.Euler(ramp.pitchDeg, ramp.yawDeg, 0f), Vector3.one);
+                    Gizmos.DrawWireCube(Vector3.zero, ramp.size);
+                    Gizmos.matrix = prev;
+                }
+            }
+
             if (debug.drawStartSpawn)
             {
                 Gizmos.color = debug.startSpawnColor;

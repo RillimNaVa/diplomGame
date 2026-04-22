@@ -15,6 +15,7 @@ namespace VoidSurvivor.ProceduralArena.Encounter
     {
         public ClearCondition clearCondition = ClearCondition.KillAll;
         public int enemyCount = 8;
+        public float enemyHealthMultiplier = 1f;
         public readonly List<Transform> spawnPoints = new List<Transform>();
         public readonly List<SoftLockBarrier> barriers = new List<SoftLockBarrier>();
 
@@ -77,7 +78,7 @@ namespace VoidSurvivor.ProceduralArena.Encounter
             }
 
             Transform[] pts = spawnPoints.Count > 0 ? spawnPoints.ToArray() : null;
-            gm.BeginEncounter(enemyCount, pts, OnEnemyKilled);
+            gm.BeginEncounter(enemyCount, pts, OnEnemyKilled, enemyHealthMultiplier);
         }
 
         void OnEnemyKilled()

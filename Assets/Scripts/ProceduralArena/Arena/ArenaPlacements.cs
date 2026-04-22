@@ -25,6 +25,15 @@ namespace VoidSurvivor.ProceduralArena.Arena
     {
         public Vector3 center;
         public Vector3 size;
-        public float heightMeters;
+        public float yawDeg;
+    }
+
+    [Serializable]
+    public struct RampPlacement
+    {
+        public Vector3 center;
+        public Vector3 size;
+        public float yawDeg;
+        public float pitchDeg;
     }
 }

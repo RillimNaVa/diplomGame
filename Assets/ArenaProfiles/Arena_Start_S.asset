@@ -21,5 +21,9 @@ MonoBehaviour:
   coverDensity: 0.3
   exitCount: 1
   enableVerticality: 0
+  platformCountRange: {x: 0, y: 0}
+  platformHeightRange: {x: 2.5, y: 4}
+  platformFootprintRange: {x: 2, y: 3}
   enemySpawnCount: 0
+  biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c4, type: 2}
   clearCondition: 0

@@ -30,5 +30,11 @@ namespace VoidSurvivor.ProceduralArena.Run
         [Header("Lifecycle")]
         public bool autoStartOnPlay = true;
         public bool skipClearCondition = true; // PR 2.C replaces this with real encounter gating
+
+        [Header("PR 2.D scaling")]
+        [Tooltip("Additional enemy-count multiplier per arenaIndex. 0.15 = +15% each arena.")]
+        [Min(0f)] public float enemyCountScalePerArena = 0.15f;
+        [Tooltip("Additional enemy max-health multiplier per arenaIndex. 0.05 = +5% each arena.")]
+        [Min(0f)] public float enemyHealthScalePerArena = 0.05f;
     }
 }

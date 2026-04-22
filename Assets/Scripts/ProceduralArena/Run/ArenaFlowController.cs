@@ -64,7 +64,7 @@ namespace VoidSurvivor.ProceduralArena.Run
 
             DestroyCurrent();
             currentCtx = SingleArenaGenerator.Generate(node.arenaSeed, node.typeProfile, buildConfig);
-            if (buildMats == null) buildMats = ArenaBuildMaterials.CreateDefaults();
+            buildMats = ArenaBuildMaterials.CreateDefaults(node.typeProfile != null ? node.typeProfile.biome : null);
             currentArenaRoot = ArenaBuilder.BuildSingle(currentCtx, buildConfig, arenaParent, buildMats);
 
             if (currentArenaRoot != null)
@@ -74,7 +74,7 @@ namespace VoidSurvivor.ProceduralArena.Run
                 if (!skipEncounterSystems)
                 {
                     yield return ArenaNavMeshController.BakeAsync(currentArenaRoot);
-                    SetupEncounter(node, barriers);
+                    SetupEncounter(node, barriers, controller);
                 }
 
                 TeleportPlayerToStart();
@@ -199,7 +199,7 @@ namespace VoidSurvivor.ProceduralArena.Run
             }
         }
 
-        void SetupEncounter(RunGraphNode node, List<SoftLockBarrier> barriers)
+        void SetupEncounter(RunGraphNode node, List<SoftLockBarrier> barriers, RunController controller)
         {
             if (currentArenaRoot == null || currentCtx == null || currentCtx.layout == null) return;
             if (currentCtx.layout.rooms.Count == 0) return;
@@ -207,9 +207,14 @@ namespace VoidSurvivor.ProceduralArena.Run
             var profile = node.typeProfile;
             if (profile == null) return;
 
+            room.arenaIndex = node.arenaIndex;
+            room.scaledEnemyCount = ResolveScaledEnemyCount(profile.enemySpawnCount, node.arenaIndex, controller);
+            room.enemyHealthMultiplier = ResolveScaledHealthMultiplier(node.arenaIndex, controller);
+
             var enc = currentArenaRoot.AddComponent<EncounterController>();
             enc.clearCondition = profile.clearCondition;
-            enc.enemyCount = profile.enemySpawnCount;
+            enc.enemyCount = room.scaledEnemyCount;
+            enc.enemyHealthMultiplier = room.enemyHealthMultiplier;
             enc.barriers.AddRange(barriers);
 
             // Convert combatSpawnPoints into real Transforms parented under ArenaRoot.
@@ -225,6 +230,19 @@ namespace VoidSurvivor.ProceduralArena.Run
             }
 
             currentEncounter = enc;
+        }
+
+        int ResolveScaledEnemyCount(int baseCount, int arenaIndex, RunController controller)
+        {
+            float perArena = controller != null && controller.Config != null ? controller.Config.enemyCountScalePerArena : 0f;
+            float scaled = baseCount * (1f + Mathf.Max(0f, perArena) * Mathf.Max(0, arenaIndex));
+            return Mathf.Max(0, Mathf.RoundToInt(scaled));
+        }
+
+        float ResolveScaledHealthMultiplier(int arenaIndex, RunController controller)
+        {
+            float perArena = controller != null && controller.Config != null ? controller.Config.enemyHealthScalePerArena : 0f;
+            return 1f + Mathf.Max(0f, perArena) * Mathf.Max(0, arenaIndex);
         }
 
         void TeleportPlayerToStart()

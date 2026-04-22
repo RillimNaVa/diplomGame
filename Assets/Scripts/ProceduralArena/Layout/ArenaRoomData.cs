@@ -34,6 +34,12 @@ namespace VoidSurvivor.ProceduralArena.Layout
         public Vector3 startSpawnPoint;
         public readonly List<Vector3> combatSpawnPoints = new List<Vector3>();
         public readonly List<PlatformPlacement> platformPlacements = new List<PlatformPlacement>();
+        public readonly List<RampPlacement> rampPlacements = new List<RampPlacement>();
+        public string biomeId;
+        public Color biomeDebugTint = Color.white;
+        public int arenaIndex;
+        public int scaledEnemyCount;
+        public float enemyHealthMultiplier = 1f;
         // ----------------------------------------------------------------
 
         public Vector2Int CenterCell =>

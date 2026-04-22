@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour
     Transform[] encounterSpawnPoints;
     Action encounterOnEnemyKilled;
     bool encounterActive;
+    float encounterEnemyHealthMultiplier = 1f;
 
     public static GameManager instance;
 
@@ -219,7 +220,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < points.Count; i++) spawnPoints[i] = points[i];
     }
 
-    public void BeginEncounter(int count, Transform[] spawns, Action onEnemyKilledCallback)
+    public void BeginEncounter(int count, Transform[] spawns, Action onEnemyKilledCallback, float healthMultiplier = 1f)
     {
         if (!useEncounterMode)
         {
@@ -236,6 +237,7 @@ public class GameManager : MonoBehaviour
         else encounterSpawnPoints = spawnPoints;
 
         encounterOnEnemyKilled = onEnemyKilledCallback;
+        encounterEnemyHealthMultiplier = Mathf.Max(0.1f, healthMultiplier);
         encounterActive = true;
         enemiesSpawned = 0;
         enemiesAlive = 0;
@@ -250,6 +252,7 @@ public class GameManager : MonoBehaviour
         encounterActive = false;
         encounterOnEnemyKilled = null;
         encounterSpawnPoints = null;
+        encounterEnemyHealthMultiplier = 1f;
         uiManager?.ShowWaveState("Encounter cleared");
     }
 
@@ -279,7 +282,16 @@ public class GameManager : MonoBehaviour
         if (ai != null && playerTransform != null) ai.SetTarget(playerTransform);
 
         Health hp = enemy.GetComponent<Health>();
-        if (hp != null) hp.onDeath.AddListener(OnEncounterEnemyDied);
+        if (hp != null)
+        {
+            if (Mathf.Abs(encounterEnemyHealthMultiplier - 1f) > 0.001f)
+            {
+                hp.maxHealth *= encounterEnemyHealthMultiplier;
+                hp.currentHealth = hp.maxHealth;
+                hp.onHealthChanged?.Invoke(hp.currentHealth, hp.maxHealth);
+            }
+            hp.onDeath.AddListener(OnEncounterEnemyDied);
+        }
     }
 
     void OnEncounterEnemyDied()

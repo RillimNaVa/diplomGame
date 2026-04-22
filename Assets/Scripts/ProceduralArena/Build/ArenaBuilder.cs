@@ -36,6 +36,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             shell.transform.SetParent(root.transform, false);
 
             BuildSingleShell(room, cfg, wh, mats, shell.transform);
+            BuildSingleVerticality(room, mats, root.transform);
             BuildSingleCover(room, mats.cover, root.transform);
             BuildSingleExits(room, cfg, wh, mats.exitMarker, root.transform);
             BuildSingleStartMarker(room, cfg, mats.startMarker, root.transform);
@@ -137,6 +138,41 @@ namespace VoidSurvivor.ProceduralArena.Build
                 var go = BuildUtils.SpawnBox(coverRoot.transform, $"Cover_{i}", p.position, p.size, coverMat, true);
                 if (Mathf.Abs(p.yawDeg) > 0.01f)
                     go.transform.rotation = Quaternion.Euler(0f, p.yawDeg, 0f);
+            }
+        }
+
+        static void BuildSingleVerticality(ArenaRoomData room, ArenaBuildMaterials mats, Transform parent)
+        {
+            bool hasPlatforms = room.platformPlacements.Count > 0;
+            bool hasRamps = room.rampPlacements.Count > 0;
+            if (!hasPlatforms && !hasRamps) return;
+
+            var root = new GameObject("Verticality");
+            root.transform.SetParent(parent, false);
+
+            if (hasPlatforms)
+            {
+                var platformsRoot = new GameObject("Platforms");
+                platformsRoot.transform.SetParent(root.transform, false);
+                for (int i = 0; i < room.platformPlacements.Count; i++)
+                {
+                    var p = room.platformPlacements[i];
+                    var go = BuildUtils.SpawnBox(platformsRoot.transform, $"Platform_{i}", p.center, p.size, mats.platform, true);
+                    if (Mathf.Abs(p.yawDeg) > 0.01f)
+                        go.transform.rotation = Quaternion.Euler(0f, p.yawDeg, 0f);
+                }
+            }
+
+            if (hasRamps)
+            {
+                var rampsRoot = new GameObject("Ramps");
+                rampsRoot.transform.SetParent(root.transform, false);
+                for (int i = 0; i < room.rampPlacements.Count; i++)
+                {
+                    var ramp = room.rampPlacements[i];
+                    var go = BuildUtils.SpawnBox(rampsRoot.transform, $"Ramp_{i}", ramp.center, ramp.size, mats.ramp, true);
+                    go.transform.rotation = Quaternion.Euler(ramp.pitchDeg, ramp.yawDeg, 0f);
+                }
             }
         }
 

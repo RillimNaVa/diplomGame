@@ -27,9 +27,10 @@ namespace VoidSurvivor.ProceduralArena.Arena
             var sizeRng    = new System.Random(unchecked(seed ^ 0x11CE));
             var shapeRng   = new System.Random(unchecked(seed ^ 0x22BF));
             var exitRng    = new System.Random(unchecked(seed ^ 0x33A0));
-            var coverRng   = new System.Random(unchecked(seed ^ 0x4491));
-            var ceilingRng = new System.Random(unchecked(seed ^ 0x5582));
-            var spawnRng   = new System.Random(unchecked(seed ^ 0x6673));
+            var verticalRng = new System.Random(unchecked(seed ^ 0x4491));
+            var coverRng   = new System.Random(unchecked(seed ^ 0x5582));
+            var ceilingRng = new System.Random(unchecked(seed ^ 0x6673));
+            var spawnRng   = new System.Random(unchecked(seed ^ 0x7764));
 
             // 1. Size with jitter
             Vector2Int baseSize = profile.size.BaseCells();
@@ -57,7 +58,9 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 category = profile.category,
                 shape = shape,
                 shapeMask = mask,
-                wallHeightMeters = ceiling
+                wallHeightMeters = ceiling,
+                biomeId = profile.biome != null ? profile.biome.biomeId : string.Empty,
+                biomeDebugTint = profile.biome != null ? profile.biome.debugTint : Color.white
             };
 
             // 5. Exits + start spawn
@@ -69,15 +72,18 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 room.exitDoorAnchors, out startSpawn, out entryCellLocal);
             room.startSpawnPoint = startSpawn;
 
-            // 6. Cover
+            // 6. Verticality reserves cells against cover/spawn placement.
+            bool[,] reserved = ArenaVerticalityPlanner.Plan(room, profile, cfg, entryCellLocal, verticalRng);
+
+            // 7. Cover
             var cover = ArenaCoverPlanner.Plan(cfg, mask, bounds, entryCellLocal,
-                room.exitDoorAnchors, profile.coverDensity, coverRng);
+                room.exitDoorAnchors, profile.coverDensity, reserved, coverRng);
             room.coverPlacements.AddRange(cover);
 
-            // 7. Combat spawn points (simple interior grid sampling)
-            PlanCombatSpawns(room, mask, bounds, cfg, profile.enemySpawnCount, entryCellLocal, spawnRng);
+            // 8. Combat spawn points (simple interior grid sampling)
+            PlanCombatSpawns(room, mask, bounds, cfg, profile.enemySpawnCount, entryCellLocal, reserved, spawnRng);
 
-            // 8. Wrap into ArenaLayout (single room, no corridors)
+            // 9. Wrap into ArenaLayout (single room, no corridors)
             var layout = new ArenaLayout
             {
                 seed = seed,
@@ -97,7 +103,7 @@ namespace VoidSurvivor.ProceduralArena.Arena
 
         static void PlanCombatSpawns(
             ArenaRoomData room, bool[,] mask, RectInt bounds, ArenaRunConfig cfg,
-            int count, Vector2Int entryCellLocal, System.Random rng)
+            int count, Vector2Int entryCellLocal, bool[,] reservedMask, System.Random rng)
         {
             if (count <= 0) return;
             float m = cfg.macroCellMeters;
@@ -111,6 +117,7 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 int cx = rng.Next(1, w - 1);
                 int cy = rng.Next(1, h - 1);
                 if (!mask[cx, cy]) continue;
+                if (reservedMask != null && reservedMask[cx, cy]) continue;
                 if (Mathf.Abs(cx - entryCellLocal.x) + Mathf.Abs(cy - entryCellLocal.y) < 4) continue;
                 int wx = cx + bounds.xMin, wy = cy + bounds.yMin;
                 Vector3 p = new Vector3(wx * m + m * 0.5f, 0f, wy * m + m * 0.5f);

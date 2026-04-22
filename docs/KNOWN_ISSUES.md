@@ -189,6 +189,22 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
 - Fix direction:
   - Keep for prototype; optimize later if enemy counts increase significantly
 
+## 12. Generated Unity `.csproj` can go stale after manual file creation outside Editor
+
+- Status: `Partial` (2026-04-22)
+- Severity: Low
+- Affected files:
+  - [Assembly-CSharp.csproj](C:/Users/assam/DiplomGame/Assembly-CSharp.csproj)
+  - [Assets/Scripts/ProceduralArena/Arena/BiomeDefinition.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/BiomeDefinition.cs)
+  - [Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs)
+  - [Assets/Scripts/ProceduralArena/Run/ArenaRuntimeDebugOverlay.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaRuntimeDebugOverlay.cs)
+- Problem:
+  - After PR 2.D files were added manually, `dotnet build Assembly-CSharp.csproj` still used a stale generated project and did not include the new scripts.
+- Impact:
+  - External C# compile checks can report false negatives until Unity regenerates project files.
+- Fix direction:
+  - Open Unity and trigger Refresh/Reimport or regenerate project files; do not hand-edit generated `.csproj` as a durable fix.
+
 ---
 
 ## How To Use This File

@@ -25,6 +25,7 @@ namespace VoidSurvivor.ProceduralArena.Arena
             Vector2Int startCellLocal,
             List<ExitDoorAnchor> exits,
             float coverDensity,
+            bool[,] reservedMask,
             System.Random rng)
         {
             var result = new List<CoverPlacement>();
@@ -54,6 +55,7 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 int cx = rng.Next(0, w);
                 int cy = rng.Next(0, h);
                 if (!shapeMask[cx, cy]) continue;
+                if (reservedMask != null && reservedMask[cx, cy]) continue;
                 if (axialCorridor[cx, cy]) continue;
                 if (ManhattanDist(cx, cy, startCellLocal.x, startCellLocal.y) < StartExclusionCells) continue;
                 bool nearDoor = false;

@@ -12,17 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1e2a4e2000000000000000000000204, type: 3}
   m_Name: DefaultRunConfig
   m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Run.RunConfig
-  runSeed: 424242
+  runSeed: 0
   startProfile: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c1, type: 2}
   bossProfile: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c3, type: 2}
   mid1Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c7, type: 2}
   mid2Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c6, type: 2}
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c8, type: 2}
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c9, type: 2}
   mid3Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c6, type: 2}
   fadeInSeconds: 0.35
   fadeHoldSeconds: 0.15
   fadeOutSeconds: 0.35
   autoStartOnPlay: 1
   skipClearCondition: 0
+  enemyCountScalePerArena: 0.15
+  enemyHealthScalePerArena: 0.05
