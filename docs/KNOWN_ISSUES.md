@@ -51,7 +51,7 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
 - Severity: High
 - Affected files:
   - [Assets/Scripts/Combat/Weapons/](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Weapons/)
-  - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/WEAPON_SYSTEM_TZ.md)
+  - [WEAPON_SYSTEM_TZ.md](C:/Users/assam/DiplomGame/docs/WEAPON_SYSTEM_TZ.md)
 - Resolution:
   - Modular weapon system shipped as specified: `WeaponManager`, `WeaponBase`, `WeaponDefinition` (ScriptableObject), `[SerializeReference]` `FireModeBase` hierarchy, five weapons, switching, ammo, reload. Playtested. TZ marked COMPLETED.
 
