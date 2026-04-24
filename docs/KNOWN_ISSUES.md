@@ -205,6 +205,24 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
 - Fix direction:
   - Open Unity and trigger Refresh/Reimport or regenerate project files; do not hand-edit generated `.csproj` as a durable fix.
 
+## 13. PR 2.E visual pass still needs first Unity import and readability tuning
+
+- Status: `Open` (2026-04-23)
+- Severity: Medium
+- Affected files:
+  - [Assets/Resources/ProceduralArena/Biomes/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes)
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuildMaterials.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuildMaterials.cs)
+  - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
+  - [Assets/ArenaProfiles/Biome_VoidStation.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_VoidStation.asset)
+  - [Assets/ArenaProfiles/Biome_AlienNexus.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_AlienNexus.asset)
+- Problem:
+  - PR 2.E now includes a prototype runtime PBR pipeline and texture import helper, and follow-up tuning on 2026-04-24 already neutralized `VoidStation` trim/prop slots plus added flat-arena safeguards for `Start` / `Shop` / `Rest`, but the copied biome textures still need their first Unity reimport under the new rules and the scene still has not gone through a full Play Mode readability/collision pass.
+- Impact:
+  - Terminal-side `dotnet build` is green, but the real gameplay scene can still need import cleanup or balancing for PBR map correctness, fog density, contamination coverage, emissive accents, remaining `VoidStation` readability, prop density, floor pattern readability, and the feel of newly solid architectural pieces.
+- Fix direction:
+  - Open `Assets/test.unity`, let Unity import the copied textures, start a fresh run, then verify first that `Start` / `Shop` / `Rest` stay flat and that large cyan `VoidStation` trim blocks are gone before doing the broader 5-arena visual tuning pass.
+
 ---
 
 ## How To Use This File

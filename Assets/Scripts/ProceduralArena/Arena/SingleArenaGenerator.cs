@@ -73,7 +73,10 @@ namespace VoidSurvivor.ProceduralArena.Arena
             room.startSpawnPoint = startSpawn;
 
             // 6. Verticality reserves cells against cover/spawn placement.
-            bool[,] reserved = ArenaVerticalityPlanner.Plan(room, profile, cfg, entryCellLocal, verticalRng);
+            // Calm utility arenas stay flat even if a profile is later misconfigured.
+            bool[,] reserved = AllowsGeneratedVerticality(profile.category)
+                ? ArenaVerticalityPlanner.Plan(room, profile, cfg, entryCellLocal, verticalRng)
+                : new bool[mask.GetLength(0), mask.GetLength(1)];
 
             // 7. Cover
             var cover = ArenaCoverPlanner.Plan(cfg, mask, bounds, entryCellLocal,
@@ -139,6 +142,20 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 case ArenaCategory.Rest:
                 case ArenaCategory.Parkour: return RoomType.Transition;
                 default: return RoomType.CombatMedium;
+            }
+        }
+
+        static bool AllowsGeneratedVerticality(ArenaCategory category)
+        {
+            switch (category)
+            {
+                case ArenaCategory.Combat:
+                case ArenaCategory.Elite:
+                case ArenaCategory.Parkour:
+                case ArenaCategory.Boss:
+                    return true;
+                default:
+                    return false;
             }
         }
 

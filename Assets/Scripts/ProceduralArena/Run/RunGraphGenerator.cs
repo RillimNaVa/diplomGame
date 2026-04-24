@@ -102,19 +102,50 @@ namespace VoidSurvivor.ProceduralArena.Run
         static ArenaTypeProfile PickProfile(
             ArenaTypeProfile[] pool, System.Random rng, ArenaTypeProfile fallback, ArenaTypeProfile avoid = null)
         {
-            if (pool == null || pool.Length == 0) return fallback;
-            if (pool.Length == 1) return pool[0];
+            var filtered = FilterSelectableProfiles(pool);
+            if (filtered.Length == 0) return fallback;
+            if (filtered.Length == 1) return filtered[0];
             if (avoid != null)
             {
                 // try to pick a different one; limited attempts
                 for (int i = 0; i < 4; i++)
                 {
-                    var pick = pool[rng.Next(0, pool.Length)];
+                    var pick = filtered[rng.Next(0, filtered.Length)];
                     if (pick != avoid && pick != null) return pick;
                 }
             }
-            var chosen = pool[rng.Next(0, pool.Length)];
+            var chosen = filtered[rng.Next(0, filtered.Length)];
             return chosen != null ? chosen : fallback;
+        }
+
+        static ArenaTypeProfile[] FilterSelectableProfiles(ArenaTypeProfile[] pool)
+        {
+            if (pool == null || pool.Length == 0) return Array.Empty<ArenaTypeProfile>();
+
+            int count = 0;
+            for (int i = 0; i < pool.Length; i++)
+            {
+                if (IsSelectableProfile(pool[i])) count++;
+            }
+
+            if (count == 0) return Array.Empty<ArenaTypeProfile>();
+
+            var filtered = new ArenaTypeProfile[count];
+            int index = 0;
+            for (int i = 0; i < pool.Length; i++)
+            {
+                if (!IsSelectableProfile(pool[i])) continue;
+                filtered[index++] = pool[i];
+            }
+
+            return filtered;
+        }
+
+        static bool IsSelectableProfile(ArenaTypeProfile profile)
+        {
+            if (profile == null) return false;
+            // Temporary product decision: disable Parkour until visual/gameplay polish catches up.
+            return profile.category != ArenaCategory.Parkour;
         }
 
         static int MakeTimeSeed()

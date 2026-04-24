@@ -14,16 +14,127 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Arena.BiomeDefinition
   biomeId: alien-nexus
   displayName: Alien Nexus
-  floorColor: {r: 0.18, g: 0.14, b: 0.23, a: 1}
-  wallColor: {r: 0.24, g: 0.15, b: 0.32, a: 1}
-  ceilingColor: {r: 0.1, g: 0.08, b: 0.16, a: 1}
-  coverColor: {r: 0.34, g: 0.27, b: 0.18, a: 1}
-  platformColor: {r: 0.28, g: 0.19, b: 0.38, a: 1}
-  rampColor: {r: 0.43, g: 0.24, b: 0.44, a: 1}
+  floorPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.64, g: 0.58, b: 0.72, a: 1}
+    textureScale: 1.8
+    metallic: 0.72
+    smoothness: 0.5
+    emissionColor: {r: 0.12, g: 0.03, b: 0.14, a: 1}
+    emissionIntensity: 0.06
+    doubleSided: 0
+  floorAccent:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_009_basecolor
+    tint: {r: 0.66, g: 0.48, b: 0.76, a: 1}
+    textureScale: 1.4
+    metallic: 0.78
+    smoothness: 0.58
+    emissionColor: {r: 0.36, g: 0.08, b: 0.34, a: 1}
+    emissionIntensity: 0.12
+    doubleSided: 0
+  wallPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci-fi_Walll_001_basecolor
+    tint: {r: 0.62, g: 0.5, b: 0.68, a: 1}
+    textureScale: 1.2
+    metallic: 0.64
+    smoothness: 0.42
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  wallTrim:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_009_basecolor
+    tint: {r: 0.72, g: 0.54, b: 0.84, a: 1}
+    textureScale: 1.25
+    metallic: 0.8
+    smoothness: 0.6
+    emissionColor: {r: 0.34, g: 0.08, b: 0.34, a: 1}
+    emissionIntensity: 0.14
+    doubleSided: 0
+  ceilingPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci-fi_Walll_001_basecolor
+    tint: {r: 0.4, g: 0.28, b: 0.46, a: 1}
+    textureScale: 1.1
+    metallic: 0.52
+    smoothness: 0.3
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  coverMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.66, g: 0.56, b: 0.62, a: 1}
+    textureScale: 1.35
+    metallic: 0.56
+    smoothness: 0.38
+    emissionColor: {r: 0.18, g: 0.04, b: 0.16, a: 1}
+    emissionIntensity: 0.04
+    doubleSided: 0
+  platformMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_009_basecolor
+    tint: {r: 0.64, g: 0.5, b: 0.74, a: 1}
+    textureScale: 1.35
+    metallic: 0.72
+    smoothness: 0.56
+    emissionColor: {r: 0.28, g: 0.06, b: 0.28, a: 1}
+    emissionIntensity: 0.08
+    doubleSided: 0
+  rampMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.56, g: 0.26, b: 0.46, a: 1}
+    textureScale: 1.2
+    metallic: 0.62
+    smoothness: 0.4
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  propMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Alien_Metal_002_COLOR
+    tint: {r: 0.62, g: 0.4, b: 0.52, a: 1}
+    textureScale: 1.1
+    metallic: 0.16
+    smoothness: 0.52
+    emissionColor: {r: 0.3, g: 0.06, b: 0.22, a: 1}
+    emissionIntensity: 0.08
+    doubleSided: 0
+  emissiveAccent:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Sci-fi_Metal_Walkway_001_basecolor
+    tint: {r: 0.72, g: 0.24, b: 0.76, a: 1}
+    textureScale: 1.8
+    metallic: 0.12
+    smoothness: 0.72
+    emissionColor: {r: 0.78, g: 0.22, b: 0.82, a: 1}
+    emissionIntensity: 1.65
+    doubleSided: 0
+  useContaminationLayer: 1
+  contaminationMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/AlienNexus/Alien_Muscle_001_COLOR
+    tint: {r: 0.6, g: 0.26, b: 0.38, a: 1}
+    textureScale: 1.15
+    metallic: 0.05
+    smoothness: 0.42
+    emissionColor: {r: 0.38, g: 0.06, b: 0.18, a: 1}
+    emissionIntensity: 0.08
+    doubleSided: 0
+  contaminationStrength: 0.28
+  perimeterContaminationBias: 0.82
+  centerCleanBias: 0.9
   startMarkerColor: {r: 0.36, g: 1, b: 0.92, a: 1}
   startMarkerIntensity: 1.7
   exitMarkerColor: {r: 1, g: 0.24, b: 0.64, a: 1}
   exitMarkerIntensity: 2
   barrierColor: {r: 0.9, g: 0.48, b: 1, a: 1}
   barrierIntensity: 2.3
+  fogColor: {r: 0.18, g: 0.05, b: 0.18, a: 1}
+  fogStrength: 0.46
+  ambientTint: {r: 0.46, g: 0.22, b: 0.42, a: 1}
   debugTint: {r: 1, g: 0.72, b: 0.96, a: 1}
