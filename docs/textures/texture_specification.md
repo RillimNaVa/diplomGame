@@ -120,6 +120,12 @@
 - `floorAccent`
 - `wallTrim`
 - `propMaterial`
+- current `Alien Nexus` tinted accent slots
+
+2026-04-24 implementation note:
+
+- no longer the default `Void Station` trim/prop material after the cyan follow-up
+- keep it as a narrow accent / elite-special option until readability is verified in Unity
 
 Ограничение:
 

@@ -201,14 +201,19 @@ Reason:
 
 ### floorAccent
 
-Primary choice:
+Current implementation choice after the 2026-04-24 cyan follow-up:
 
-- `docs/textures/Sci_fi_Metal_Panel_009_SD/Sci_fi_Metal_Panel_009_basecolor.png`
+- `docs/textures/Sci_fi_Metal_Panel_007_SD/Sci_fi_Metal_Panel_007_basecolor.png`
 
 Reason:
 
-- stronger accent identity
+- keeps `Void Station` accents readable without large cyan slabs
 - should appear in strips, rings, borders, or selected floor sectors only
+
+Deferred stronger accent option:
+
+- `docs/textures/Sci_fi_Metal_Panel_009_SD/Sci_fi_Metal_Panel_009_basecolor.png`
+- use only for narrow elite/special trims after visual tuning
 
 Use limit:
 
@@ -227,9 +232,9 @@ Reason:
 
 ### wallTrim
 
-Primary choice:
+Current implementation choice after the 2026-04-24 cyan follow-up:
 
-- `docs/textures/Sci_fi_Metal_Panel_009_SD/Sci_fi_Metal_Panel_009_basecolor.png`
+- `docs/textures/Sci_fi_Metal_Panel_007_SD/Sci_fi_Metal_Panel_007_basecolor.png`
 
 Use on:
 
@@ -237,6 +242,11 @@ Use on:
 - edge trims
 - door frames
 - borders
+
+Deferred stronger trim option:
+
+- `docs/textures/Sci_fi_Metal_Panel_009_SD/Sci_fi_Metal_Panel_009_basecolor.png`
+- use only if the blue band is kept narrow and does not dominate the room
 
 ### ceilingPrimary
 
@@ -260,9 +270,9 @@ Secondary option:
 
 ### propMaterial
 
-Primary choice:
+Current implementation choice after the 2026-04-24 cyan follow-up:
 
-- `docs/textures/Sci_fi_Metal_Panel_009_SD/Sci_fi_Metal_Panel_009_basecolor.png`
+- `docs/textures/Sci_fi_Metal_Panel_007_SD/Sci_fi_Metal_Panel_007_basecolor.png`
 
 Use on:
 
@@ -270,6 +280,11 @@ Use on:
 - technical blocks
 - corner props
 - support pylons
+
+Deferred stronger prop option:
+
+- `Sci_fi_Metal_Panel_009_SD`
+- reserve for special props or elite arenas after readability tuning
 
 ### emissiveAccent
 

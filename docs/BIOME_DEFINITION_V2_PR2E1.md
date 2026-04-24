@@ -372,31 +372,31 @@ public class BiomeDefinition : ScriptableObject
 ## 9.1 Void Station
 
 - `floorPrimary` -> material from `Sci_fi_Metal_Panel_007_SD`
-- `floorAccent` -> material from `Sci_fi_Metal_Panel_009_SD`
+- `floorAccent` -> material from `Sci_fi_Metal_Panel_007_SD` after the 2026-04-24 cyan follow-up
 - `wallPrimary` -> material from `Sci-fi_Walll_001_SD`
-- `wallTrim` -> material from `Sci_fi_Metal_Panel_009_SD`
+- `wallTrim` -> material from `Sci_fi_Metal_Panel_007_SD` after the 2026-04-24 cyan follow-up
 - `ceilingPrimary` -> material from `Sci-fi_Walll_001_SD`
 - `coverMaterial` -> `Sci_fi_Metal_Panel_007_SD`
-- `platformMaterial` -> `Sci_fi_Metal_Panel_007_SD` or walkway-derived variant
+- `platformMaterial` -> `Sci_fi_Metal_Panel_007_SD`
 - `rampMaterial` -> `Sci_fi_Metal_Panel_007_SD`
-- `propMaterial` -> `Sci_fi_Metal_Panel_009_SD`
+- `propMaterial` -> `Sci_fi_Metal_Panel_007_SD` after the 2026-04-24 cyan follow-up
 - `emissiveAccent` -> walkway emissive material
 - `useContaminationLayer` -> `false`
 
 ## 9.2 Alien Nexus
 
-- `floorPrimary` -> tinted sci-fi base material
-- `floorAccent` -> `Alien_Metal_002_SD` or tinted sci-fi accent
+- `floorPrimary` -> tinted `Sci_fi_Metal_Panel_007_SD`
+- `floorAccent` -> tinted `Sci_fi_Metal_Panel_009_SD`
 - `wallPrimary` -> tinted `Sci-fi_Walll_001_SD`
-- `wallTrim` -> `Alien_Muscle_001_SD`
+- `wallTrim` -> tinted `Sci_fi_Metal_Panel_009_SD`
 - `ceilingPrimary` -> tinted `Sci-fi_Walll_001_SD`
-- `coverMaterial` -> tinted sci-fi structural material
-- `platformMaterial` -> tinted infected metal
-- `rampMaterial` -> readable tinted sci-fi material
-- `propMaterial` -> `Alien_Metal_002_SD` or tinted accent metal
+- `coverMaterial` -> tinted `Sci_fi_Metal_Panel_007_SD`
+- `platformMaterial` -> tinted `Sci_fi_Metal_Panel_009_SD`
+- `rampMaterial` -> tinted `Sci_fi_Metal_Panel_007_SD`
+- `propMaterial` -> `Alien_Metal_002_SD`
 - `emissiveAccent` -> walkway emissive material recolored to violet/magenta
 - `useContaminationLayer` -> `true`
-- `contaminationMaterial` -> `Alien_Flesh_001`
+- `contaminationMaterial` -> `Alien_Muscle_001`
 
 ---
 

@@ -207,7 +207,7 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
 
 ## 13. PR 2.E visual pass still needs first Unity import and readability tuning
 
-- Status: `Open` (2026-04-23)
+- Status: `Open` (2026-04-24)
 - Severity: Medium
 - Affected files:
   - [Assets/Resources/ProceduralArena/Biomes/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes)

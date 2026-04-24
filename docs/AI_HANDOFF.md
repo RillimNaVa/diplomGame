@@ -10,7 +10,7 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
-## Current Status (2026-04-23)
+## Current Status (2026-04-24)
 
 - **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), Kill-to-Survive (PR A + PR B) shipped and playtested.
 - **Phase 2 procedural arena pipeline r4 gameplay path is verified.** PR 2.A + 2.B + 2.C + 2.D are treated as complete.
@@ -38,7 +38,7 @@ For stable architecture / roadmap / known issues, see:
 - PR 2.B - Run Graph + transitions + fade + door-choice + Victory/GameOver - **DONE (verified 2026-04-21)**.
 - PR 2.C - Async `NavMeshSurface.UpdateNavMesh`, encounter integration, soft-lock barriers, clear conditions, `SimpleEnemyAI.isOnNavMesh` guard - **DONE (verified 2026-04-22)**.
 - PR 2.D - Verticality + biome selection + new arena type profiles + `arenaIndex` scaling + runtime debug overlay - **DONE (verified 2026-04-22)**.
-- PR 2.E - second pass adds companion PBR maps, texture import automation, collidable architecture/props, quieter Alien Nexus composition, and stronger fog/emissive readability - **CODE COMPLETE 2026-04-23, UNITY VERIFY PENDING**.
+- PR 2.E - second pass adds companion PBR maps, texture import automation, collidable architecture/props, quieter Alien Nexus composition, stronger fog/emissive readability, Parkour disable guard, and flat-arena safeguards - **CODE COMPLETE 2026-04-24, UNITY VERIFY PENDING**.
 
 Scene wiring reference (`test.unity`):
 - `Run` GameObject with `RunController` (config -> `DefaultRunConfig`, flow -> `ArenaHost`).

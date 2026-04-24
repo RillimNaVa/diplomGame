@@ -108,11 +108,11 @@
 - [x] Debug UI: seed display, arena index, biome id
 
 ### PR 2.E — Visual Style Pass For Pre-Defense
-- [ ] Strengthen biomes into full material/style sets (Void Station / Alien Nexus) *(second code pass landed 2026-04-23 with companion PBR maps + import hook, Unity verify pending)*
-- [ ] Add architectural details in builder (ribs / beams / door frames / borders / corner pillars) *(second code pass landed 2026-04-23 with collidable architecture, Unity verify pending)*
-- [ ] Add floor patterns / panels / center motifs *(second code pass landed 2026-04-23 with reduced accent coverage, Unity verify pending)*
-- [ ] Add rule-based decorative props by room zones *(second code pass landed 2026-04-23 with solid perimeter props, Unity verify pending)*
-- [ ] Add atmosphere pass (fog / emissive accents / background silhouettes / grading) *(second code pass landed 2026-04-23 with stronger fog/emissive tuning, Unity verify pending)*
+- [ ] Strengthen biomes into full material/style sets (Void Station / Alien Nexus) *(code landed 2026-04-23, cyan/flat-arena follow-up 2026-04-24, Unity verify pending)*
+- [ ] Add architectural details in builder (ribs / beams / door frames / borders / corner pillars) *(code landed 2026-04-23, utility-arena safeguards 2026-04-24, Unity verify pending)*
+- [ ] Add floor patterns / panels / center motifs *(code landed 2026-04-23, `VoidStation` accent retune 2026-04-24, Unity verify pending)*
+- [ ] Add rule-based decorative props by room zones *(code landed 2026-04-23, `Start` perimeter decor disabled 2026-04-24, Unity verify pending)*
+- [ ] Add atmosphere pass (fog / emissive accents / background silhouettes / grading) *(code landed 2026-04-23, emissive balance follow-up 2026-04-24, Unity verify pending)*
 
 ---
 
@@ -306,7 +306,7 @@ For each of the 4 new weapons (Scatter Gun slot 1, Void Rifle slot 2, Plasma Lau
 - Phase 2 PIVOT'нут 2026-04-20 на **TZ r4** — single procedural arena + run graph с door-choice. BSP r1-r3 код помечен `[DEPRECATED]` и оставлен для diploma reference.
 - Phase 2 **PR 2.A** (SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena ceiling 10-25м): **verified 2026-04-21** ✅
 - Phase 2 **PR 2.B** (Run Graph + Transitions + fade + door-choice placeholder UI + Victory/GameOver screens + door-opening/lintel/barrier fixes): **verified 2026-04-21** ✅
-- Phase 2 **PR 2.E** second pass (visual style pipeline + prototype PBR pipeline + architecture collisions) is now in code on top of the verified gameplay pipeline. Next: open Unity, let `Assets/Resources/ProceduralArena/Biomes/**` reimport through the new texture import utility, and visually verify/tune a full 5-arena run before marking PR 2.E complete.
+- Phase 2 **PR 2.E** visual style pass is now in code on top of the verified gameplay pipeline, including the 2026-04-24 cyan/flat-arena follow-up. Next: open Unity, let `Assets/Resources/ProceduralArena/Biomes/**` reimport through the new texture import utility, and visually verify/tune a full 5-arena run before marking PR 2.E complete.
 - TZ: [ARENA_GENERATION_TZ.md](./ARENA_GENERATION_TZ.md) (APPROVED r4).
 
 ### Phase 2 PR 2 — Editor verification checklist
