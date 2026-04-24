@@ -65,7 +65,8 @@ namespace VoidSurvivor.ProceduralArena.DebugTools
         {
             GenerateSingleArena();
             if (ctx == null || ctx.layout == null) return;
-            ArenaBuilder.BuildSingle(ctx, config, transform);
+            var mats = ArenaBuildMaterials.CreateDefaults(typeProfile != null ? typeProfile.biome : null);
+            ArenaBuilder.BuildSingle(ctx, config, transform, mats);
         }
 
         [ContextMenu("r4 / Randomize Seed + Build")]

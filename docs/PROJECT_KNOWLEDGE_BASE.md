@@ -35,12 +35,12 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: finish Phase 2 — Procedural Arena Generation (r4: PR 2.A+2.B verified, PR 2.C merged pending Editor verify, PR 2.D first-pass code landed pending Unity refresh + Editor verify)
+- Main short-term target: finish Phase 2 — Procedural Arena Generation (r4: PR 2.A+2.B+2.C+2.D verified, PR 2.E visual pass code landed and now needs Unity-side verify/tuning)
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary (2026-04-22)
+## Current Project Status Summary (2026-04-23)
 
 **Phase 1 complete. Phase 2 in flight.** As of the current state of the repository:
 
@@ -54,14 +54,16 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 **Phase 2 (r4 pivot 2026-04-20, TZ APPROVED):**
 - **PR 2.A verified 2026-04-21** — `SingleArenaGenerator` + shape (Rect/L/T/Octagon) / cover (Poisson-disk + flow) / exit planners + `ArenaTypeProfile` SO + S/M/L size presets (40/60/80м) + per-arena ceiling 10-25м. 3 preset assets в `Assets/ArenaProfiles/`.
 - **PR 2.B verified 2026-04-21** — `RunGraph` (8 nodes, shared subtree) + `RunController` state machine + `ArenaFlowController` fade/teleport + `ExitDoorTrigger` + `DoorChoiceLabel` + Victory/GameOver Canvas + `DefaultRunConfig.asset`.
-- **PR 2.C code merged 2026-04-22** (Editor verification pending) — async `NavMeshSurface.UpdateNavMesh` via `ArenaNavMeshController`, `GameManager.useEncounterMode` flag + `SetSpawnPoints`/`BeginEncounter`/`EndEncounter` API, `EncounterController` + `SoftLockBarrier` + `EncounterTrigger` (scaffolded), clear conditions (KillAll/ReachExit/None), `SimpleEnemyAI.isOnNavMesh` guard.
+- **PR 2.C verified 2026-04-22** — async `NavMeshSurface.UpdateNavMesh` via `ArenaNavMeshController`, `GameManager.useEncounterMode` flag + `SetSpawnPoints`/`BeginEncounter`/`EndEncounter` API, `EncounterController` + `SoftLockBarrier` + `EncounterTrigger` (scaffolded), clear conditions (KillAll/ReachExit/None), `SimpleEnemyAI.isOnNavMesh` guard.
+- **PR 2.D verified 2026-04-22** — `ArenaVerticalityPlanner`, `BiomeDefinition` + 2 biome assets, Elite/Parkour/Shop/Rest profiles, encounter scaling by `arenaIndex`, runtime debug UI (seed/index/biome).
+- **PR 2.E follow-up landed 2026-04-24** (Unity visual verify pending) — prototype PBR support remains in code, `VoidStation` was retuned away from over-bright blue trim/prop slots, `Parkour` is excluded from generated runs for now, and `SingleArenaGenerator` / `ArenaBuilder` now force `Start` / `Shop` / `Rest` arenas to stay flat with calmer decor even if a profile is misconfigured.
 - BSP r1-r3 code помечен `[DEPRECATED]` и оставлен в репо для diploma reference.
 - Prototype procedural terrain scene (`SampleScene.unity`) — independent of arena work, will likely be retired.
 - Playable combat prototype scene (`test.unity`) wired с Phase 1 systems + `Run`/`ArenaHost` GameObjects для Phase 2.
 
 What is not yet built:
 
-- **PR 2.D first pass landed 2026-04-22** (Editor verification pending) — `ArenaVerticalityPlanner`, `BiomeDefinition` + 2 biome assets, Elite/Parkour/Shop/Rest profiles, encounter scaling by `arenaIndex`, runtime debug UI (seed/index/biome).
+- **PR 2.E still needs Unity-side verify/tuning** — first import of copied Resources textures, full 5-arena visual playtest, and readability tuning for fog/decor/contamination/floor accents.
 - Advanced enemy types / state-machine AI (Phase 3)
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling (enemies, projectiles) — deferred performance pass
@@ -138,14 +140,15 @@ Contains the post-Phase-1 code organized by subsystem:
 - `Assets/Scripts/Combat/Player/` — `PlayerStats` (central stats seam), `IGloryKillPolicy` + `AlwaysAllowPolicy`, `GloryKillDetector`, `KillStreakTracker`.
 - `Assets/Scripts/ProceduralArena/Core/` — `ArenaRunConfig` SO, `ArenaRuntimeContext` (sub-stream System.Random), `ArenaRoomData`, `ArenaGenerator` ([DEPRECATED] BSP orchestrator).
 - `Assets/Scripts/ProceduralArena/Layout/` — [DEPRECATED] BSP: `BspLayoutGenerator`, `RoomPlanner`, `CorridorPlanner`, `RoomTypeAssigner`. Kept for diploma reference.
-- `Assets/Scripts/ProceduralArena/Build/` — `ArenaOccupancy`, `ArenaBuilder` (orchestrator with `BuildSingle` r4 entry), `RoomBlockoutBuilder`, `CorridorBlockoutBuilder` ([DEPRECATED]), `ArenaBuildMaterials` (URP Lit + emissive markers + barrier), `BuildUtils`.
-- `Assets/Scripts/ProceduralArena/Arena/` — **r4 single-arena module**: `ArenaCategory`, `ArenaShape` + `ShapeWeight`, `ArenaSizePreset`, `ClearCondition`, `ArenaPlacements` (cover + exit + platform + ramp placements), `ArenaTypeProfile` SO, `BiomeDefinition` SO, `ArenaShapeGenerator` (Rect/L/T/Octagon masks), `ArenaExitPlanner`, `ArenaCoverPlanner` (Poisson-disk + flow constraint), `ArenaVerticalityPlanner` (deterministic platforms/ramps), `SingleArenaGenerator` (biome + verticality + cover + spawns via sub-stream RNGs).
-- `Assets/Scripts/ProceduralArena/Run/` — **r4 run-graph module**: `RunStage`, `RunGraphNode`, `RunGraph`, `RunGraphGenerator` (8 nodes shared subtree), `RunConfig` SO, `RunController` state machine, `ArenaFlowController` (fade+teleport + encounter scaling hookup), `ExitDoorTrigger`, `DoorChoiceLabel`, `ArenaRuntimeDebugOverlay`.
+- `Assets/Scripts/ProceduralArena/Build/` — `ArenaOccupancy`, `ArenaBuilder` (orchestrator with `BuildSingle` r4 entry, calmer decor for utility arenas), `RoomBlockoutBuilder`, `CorridorBlockoutBuilder` ([DEPRECATED]), `ArenaBuildMaterials` (biome material-slot resolution + Resources fallback + marker materials), `BuildUtils`.
+- `Assets/Scripts/ProceduralArena/Arena/` — **r4 single-arena module**: `ArenaCategory`, `ArenaShape` + `ShapeWeight`, `ArenaSizePreset`, `ClearCondition`, `ArenaPlacements` (cover + exit + platform + ramp placements), `ArenaTypeProfile` SO, `BiomeDefinition` SO (PR 2.E v2: material slots + atmosphere + contamination), `ArenaShapeGenerator` (Rect/L/T/Octagon masks), `ArenaExitPlanner`, `ArenaCoverPlanner` (Poisson-disk + flow constraint), `ArenaVerticalityPlanner` (deterministic platforms/ramps), `SingleArenaGenerator` (biome + verticality + cover + spawns via sub-stream RNGs, with flat-arena safeguards for `Start` / `Shop` / `Rest`).
+- `Assets/Scripts/ProceduralArena/Run/` — **r4 run-graph module**: `RunStage`, `RunGraphNode`, `RunGraph`, `RunGraphGenerator` (8 nodes shared subtree), `RunConfig` SO, `RunController` state machine, `ArenaFlowController` (fade+teleport + encounter scaling hookup + biome fog/ambient application), `ExitDoorTrigger`, `DoorChoiceLabel`, `ArenaRuntimeDebugOverlay`.
 - `Assets/Scripts/ProceduralArena/Navigation/ArenaNavMeshController.cs` — async `NavMeshSurface.UpdateNavMesh` on ArenaRoot.
 - `Assets/Scripts/ProceduralArena/Encounter/` — `EncounterController` (per-arena clear condition orchestrator), `SoftLockBarrier` (emissive barrier toggle), `EncounterTrigger` (scaffolded, bypassed by teleport flow).
 - `Assets/Scripts/ProceduralArena/Debug/` — `ArenaDebugGizmos` (Scene-view visualization + ContextMenu entries r1-r4), `ArenaGenerationLog`.
 - `Assets/Scripts/TerrainGenerator.cs` — prototype terrain, unrelated to Phase 2 arenas (likely to be retired).
 - `Assets/ArenaProfiles/` — `Arena_Start_S.asset`, `Arena_Combat_M.asset`, `Arena_Boss_L.asset`, `Arena_Elite_L.asset`, `Arena_Parkour_L.asset`, `Arena_Shop_S.asset`, `Arena_Rest_S.asset`, plus `Biome_VoidStation.asset` and `Biome_AlienNexus.asset` (hand-authored YAML).
+- `Assets/Resources/ProceduralArena/Biomes/` — PR 2.E approved texture copies used by the new runtime Resources fallback for biome surfaces before authored `.mat` libraries exist.
 
 ### `Assets/Prefabs`
 
@@ -761,10 +764,11 @@ Important practical interpretation:
 Phase 1 complete. Phase 2 (Procedural Arena Generation r4) in flight:
 
 - PR 2.A + 2.B verified (single-arena gen + run graph + transitions).
-- PR 2.C code merged 2026-04-22 (async NavMesh bake + encounter integration + soft-lock barriers + `GameManager.useEncounterMode`) — awaiting Editor verification pass.
-- PR 2.D first pass is now in code: biome-driven materials, deterministic platforms/ramps, new arena type profiles, encounter HP/count scaling by `arenaIndex`, and a runtime debug overlay. Remaining work is Unity refresh/reimport plus Editor verification and tuning.
+- PR 2.C verified 2026-04-22 (async NavMesh bake + encounter integration + soft-lock barriers + `GameManager.useEncounterMode`).
+- PR 2.D verified 2026-04-22 (biomes + deterministic platforms/ramps + extended type profiles + encounter difficulty scaling + runtime debug overlay).
+- PR 2.E follow-up landed 2026-04-24: biome surface slots with Resources-backed texture fallback remain in place, `VoidStation` uses calmer trim/prop defaults, `Parkour` is excluded from generated runs, and utility arenas now have flat-arena safeguards. Unity-side import/playtest/tuning is still pending.
 
-See `AI_HANDOFF.md` for the latest active-task context and the PR 2.C verification checklist.
+See `AI_HANDOFF.md` for the latest active-task context and the PR 2.E verification/tuning checklist.
 
 Reference specs:
 
@@ -874,8 +878,8 @@ This project is currently a playable Unity prototype with:
 The most important current truth is:
 
 - movement and combat are architecturally mature (Phase 1 shipped)
-- procedural arena pipeline (r4) через PR 2.C merged — single-arena + run graph + async NavMesh + encounter + soft-lock barriers; ждёт Editor verify
-- next major step is Unity-side verification/tuning of the new PR 2.D systems (verticality + biomes + extended type profiles + difficulty scaling)
+- procedural arena pipeline (r4) is functionally in place through PR 2.A-2.E first pass: single-arena generation + run graph + async NavMesh + encounters + biome styling + verticality + decor/atmosphere
+- next major step is Unity-side import, playtest verification, and tuning of PR 2.E readability/material balance (fog, contamination, floor accents, decor density)
 
 This file should let future AI agents understand the project quickly without doing a blind full scan first.
 

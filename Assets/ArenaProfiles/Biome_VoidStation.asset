@@ -14,16 +14,127 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VoidSurvivor.ProceduralArena.Arena.BiomeDefinition
   biomeId: void-station
   displayName: Void Station
-  floorColor: {r: 0.32, g: 0.36, b: 0.44, a: 1}
-  wallColor: {r: 0.24, g: 0.28, b: 0.34, a: 1}
-  ceilingColor: {r: 0.14, g: 0.16, b: 0.21, a: 1}
-  coverColor: {r: 0.52, g: 0.44, b: 0.33, a: 1}
-  platformColor: {r: 0.34, g: 0.42, b: 0.54, a: 1}
-  rampColor: {r: 0.52, g: 0.48, b: 0.4, a: 1}
+  floorPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.88, g: 0.92, b: 0.98, a: 1}
+    textureScale: 1.8
+    metallic: 0.82
+    smoothness: 0.58
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  floorAccent:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.78, g: 0.84, b: 0.9, a: 1}
+    textureScale: 1.45
+    metallic: 0.84
+    smoothness: 0.58
+    emissionColor: {r: 0.06, g: 0.16, b: 0.22, a: 1}
+    emissionIntensity: 0.01
+    doubleSided: 0
+  wallPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci-fi_Walll_001_basecolor
+    tint: {r: 0.66, g: 0.72, b: 0.82, a: 1}
+    textureScale: 1.2
+    metallic: 0.72
+    smoothness: 0.44
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  wallTrim:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.74, g: 0.78, b: 0.84, a: 1}
+    textureScale: 1.35
+    metallic: 0.82
+    smoothness: 0.52
+    emissionColor: {r: 0.04, g: 0.1, b: 0.14, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  ceilingPrimary:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci-fi_Walll_001_basecolor
+    tint: {r: 0.44, g: 0.5, b: 0.6, a: 1}
+    textureScale: 1.1
+    metallic: 0.62
+    smoothness: 0.36
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  coverMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.82, g: 0.78, b: 0.66, a: 1}
+    textureScale: 1.3
+    metallic: 0.58
+    smoothness: 0.42
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  platformMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.62, g: 0.68, b: 0.76, a: 1}
+    textureScale: 1.4
+    metallic: 0.78
+    smoothness: 0.54
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  rampMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.72, g: 0.78, b: 0.86, a: 1}
+    textureScale: 1.2
+    metallic: 0.72
+    smoothness: 0.48
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  propMaterial:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci_fi_Metal_Panel_007_basecolor
+    tint: {r: 0.68, g: 0.72, b: 0.78, a: 1}
+    textureScale: 1.2
+    metallic: 0.76
+    smoothness: 0.48
+    emissionColor: {r: 0.04, g: 0.08, b: 0.12, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  emissiveAccent:
+    material: {fileID: 0}
+    resourcePath: ProceduralArena/Biomes/VoidStation/Sci-fi_Metal_Walkway_001_basecolor
+    tint: {r: 0.12, g: 0.34, b: 0.48, a: 1}
+    textureScale: 1.8
+    metallic: 0.15
+    smoothness: 0.62
+    emissionColor: {r: 0.04, g: 0.26, b: 0.36, a: 1}
+    emissionIntensity: 0.28
+    doubleSided: 0
+  useContaminationLayer: 0
+  contaminationMaterial:
+    material: {fileID: 0}
+    resourcePath: 
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    textureScale: 1
+    metallic: 0
+    smoothness: 0.5
+    emissionColor: {r: 0, g: 0, b: 0, a: 1}
+    emissionIntensity: 0
+    doubleSided: 0
+  contaminationStrength: 0
+  perimeterContaminationBias: 0.15
+  centerCleanBias: 1
   startMarkerColor: {r: 0.32, g: 1, b: 0.62, a: 1}
   startMarkerIntensity: 1.5
   exitMarkerColor: {r: 1, g: 0.42, b: 0.32, a: 1}
   exitMarkerIntensity: 1.8
   barrierColor: {r: 1, g: 0.78, b: 0.18, a: 1}
   barrierIntensity: 2.2
+  fogColor: {r: 0.03, g: 0.07, b: 0.11, a: 1}
+  fogStrength: 0.24
+  ambientTint: {r: 0.62, g: 0.78, b: 0.92, a: 1}
   debugTint: {r: 0.74, g: 0.88, b: 1, a: 1}

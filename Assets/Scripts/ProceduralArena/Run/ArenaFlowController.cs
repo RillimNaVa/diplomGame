@@ -42,6 +42,12 @@ namespace VoidSurvivor.ProceduralArena.Run
         GameObject currentArenaRoot;
         EncounterController currentEncounter;
         ArenaBuildMaterials buildMats;
+        bool defaultFogEnabled;
+        Color defaultFogColor;
+        float defaultFogDensity;
+        Color defaultAmbientSkyColor;
+        Color defaultAmbientEquatorColor;
+        Color defaultAmbientGroundColor;
 
         public ArenaRuntimeContext CurrentContext => currentCtx;
         public EncounterController CurrentEncounter => currentEncounter;
@@ -51,6 +57,7 @@ namespace VoidSurvivor.ProceduralArena.Run
             if (arenaParent == null) arenaParent = transform;
             if (fadeCanvas == null || fadeImage == null) BuildDefaultFadeCanvas();
             SetFade(0f);
+            CacheAtmosphereDefaults();
         }
 
         public IEnumerator EnterArena(
@@ -66,6 +73,7 @@ namespace VoidSurvivor.ProceduralArena.Run
             currentCtx = SingleArenaGenerator.Generate(node.arenaSeed, node.typeProfile, buildConfig);
             buildMats = ArenaBuildMaterials.CreateDefaults(node.typeProfile != null ? node.typeProfile.biome : null);
             currentArenaRoot = ArenaBuilder.BuildSingle(currentCtx, buildConfig, arenaParent, buildMats);
+            ApplyBiomeAtmosphere(node.typeProfile != null ? node.typeProfile.biome : null);
 
             if (currentArenaRoot != null)
             {
@@ -103,6 +111,11 @@ namespace VoidSurvivor.ProceduralArena.Run
             }
             currentCtx = null;
             currentEncounter = null;
+        }
+
+        void OnDisable()
+        {
+            RestoreAtmosphereDefaults();
         }
 
         void SpawnExitTriggers(RunGraphNode node, RunController controller, out List<SoftLockBarrier> barriers)
@@ -320,6 +333,44 @@ namespace VoidSurvivor.ProceduralArena.Run
             rt.offsetMax = Vector2.zero;
             fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0f);
             fadeImage.raycastTarget = false;
+        }
+
+        void CacheAtmosphereDefaults()
+        {
+            defaultFogEnabled = RenderSettings.fog;
+            defaultFogColor = RenderSettings.fogColor;
+            defaultFogDensity = RenderSettings.fogDensity;
+            defaultAmbientSkyColor = RenderSettings.ambientSkyColor;
+            defaultAmbientEquatorColor = RenderSettings.ambientEquatorColor;
+            defaultAmbientGroundColor = RenderSettings.ambientGroundColor;
+        }
+
+        void ApplyBiomeAtmosphere(BiomeDefinition biome)
+        {
+            if (biome == null)
+            {
+                RestoreAtmosphereDefaults();
+                return;
+            }
+
+            RenderSettings.fog = biome.fogStrength > 0.001f;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogColor = Color.Lerp(defaultFogColor, biome.fogColor, Mathf.Clamp01(0.92f + biome.fogStrength * 0.08f));
+            RenderSettings.fogDensity = Mathf.Lerp(0.006f, 0.042f, biome.fogStrength);
+
+            RenderSettings.ambientSkyColor = Color.Lerp(defaultAmbientSkyColor, biome.ambientTint, 0.68f);
+            RenderSettings.ambientEquatorColor = Color.Lerp(defaultAmbientEquatorColor, biome.ambientTint, 0.48f);
+            RenderSettings.ambientGroundColor = Color.Lerp(defaultAmbientGroundColor, biome.ambientTint * 0.8f, 0.52f);
+        }
+
+        void RestoreAtmosphereDefaults()
+        {
+            RenderSettings.fog = defaultFogEnabled;
+            RenderSettings.fogColor = defaultFogColor;
+            RenderSettings.fogDensity = defaultFogDensity;
+            RenderSettings.ambientSkyColor = defaultAmbientSkyColor;
+            RenderSettings.ambientEquatorColor = defaultAmbientEquatorColor;
+            RenderSettings.ambientGroundColor = defaultAmbientGroundColor;
         }
     }
 }

@@ -40,6 +40,10 @@ namespace VoidSurvivor.ProceduralArena.Build
             BuildSingleCover(room, mats.cover, root.transform);
             BuildSingleExits(room, cfg, wh, mats.exitMarker, root.transform);
             BuildSingleStartMarker(room, cfg, mats.startMarker, root.transform);
+            BuildSingleArchitecture(room, cfg, wh, mats, root.transform);
+            BuildSingleFloorPatterns(room, cfg, mats, root.transform);
+            BuildSingleDecor(room, cfg, wh, mats, root.transform);
+            BuildSingleAtmosphere(room, cfg, wh, mats, root.transform);
             if (cfg.generateAnchors) BuildSingleAnchors(room, cfg, wh, root.transform);
 
             return root;
@@ -143,6 +147,8 @@ namespace VoidSurvivor.ProceduralArena.Build
 
         static void BuildSingleVerticality(ArenaRoomData room, ArenaBuildMaterials mats, Transform parent)
         {
+            if (!AllowsVerticality(room.category)) return;
+
             bool hasPlatforms = room.platformPlacements.Count > 0;
             bool hasRamps = room.rampPlacements.Count > 0;
             if (!hasPlatforms && !hasRamps) return;
@@ -217,6 +223,486 @@ namespace VoidSurvivor.ProceduralArena.Build
             if (rend != null) rend.sharedMaterial = startMat;
             var col = marker.GetComponent<Collider>();
             if (col != null) Object.DestroyImmediate(col);
+        }
+
+        static void BuildSingleArchitecture(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null) return;
+
+            var root = new GameObject("Architecture");
+            root.transform.SetParent(parent, false);
+
+            BuildCornerPillars(room, cfg, wh, mats.wall, root.transform);
+            BuildDoorFrames(room, cfg, wh, mats.wallTrim ?? mats.wall, root.transform);
+            BuildWallRibs(room, cfg, wh, mats.wallTrim ?? mats.wall, root.transform);
+            BuildCeilingBeams(room, cfg, wh, mats.ceiling ?? mats.wall, root.transform);
+        }
+
+        static void BuildSingleFloorPatterns(
+            ArenaRoomData room, ArenaRunConfig cfg, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null || mats.floorAccent == null) return;
+
+            var root = new GameObject("FloorDetails");
+            root.transform.SetParent(parent, false);
+
+            float m = cfg.macroCellMeters;
+            float overlayY = 0.03f;
+            Vector3 center = BoundsCenter(room.boundsCells, m, overlayY);
+            float roomSpan = Mathf.Min(room.boundsCells.width, room.boundsCells.height) * m;
+            float centerSize = room.category == ArenaCategory.Boss ? roomSpan * 0.26f :
+                               room.category == ArenaCategory.Elite ? roomSpan * 0.22f :
+                               room.category == ArenaCategory.Parkour ? roomSpan * 0.2f :
+                               roomSpan * 0.18f;
+            centerSize = Mathf.Max(m * 1.4f, centerSize);
+
+            BuildUtils.SpawnBox(root.transform, "CenterPlate_Base",
+                center,
+                new Vector3(centerSize, 0.05f, centerSize),
+                mats.floor,
+                false);
+
+            float ringThickness = Mathf.Max(0.24f, m * 0.12f);
+            Material accentMat = mats.floorAccent ?? mats.emissiveAccent ?? mats.floor;
+            BuildUtils.SpawnBox(root.transform, "CenterRing_N",
+                center + new Vector3(0f, 0.02f, centerSize * 0.5f - ringThickness * 0.5f),
+                new Vector3(centerSize, 0.03f, ringThickness),
+                accentMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "CenterRing_S",
+                center + new Vector3(0f, 0.02f, -centerSize * 0.5f + ringThickness * 0.5f),
+                new Vector3(centerSize, 0.03f, ringThickness),
+                accentMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "CenterRing_E",
+                center + new Vector3(centerSize * 0.5f - ringThickness * 0.5f, 0.02f, 0f),
+                new Vector3(ringThickness, 0.03f, centerSize),
+                accentMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "CenterRing_W",
+                center + new Vector3(-centerSize * 0.5f + ringThickness * 0.5f, 0.02f, 0f),
+                new Vector3(ringThickness, 0.03f, centerSize),
+                accentMat,
+                false);
+
+            float padWidth = m * 1.05f;
+            Material exitPadMaterial = mats.floorAccent ?? mats.floor;
+            for (int i = 0; i < room.exitDoorAnchors.Count; i++)
+            {
+                var anchor = room.exitDoorAnchors[i];
+                Vector3 padCenter = new Vector3(anchor.worldCenter.x, overlayY, anchor.worldCenter.z)
+                    - new Vector3(anchor.outwardDir.x * m * 0.75f, 0f, anchor.outwardDir.y * m * 0.75f);
+                BuildUtils.SpawnBox(root.transform, $"ExitPad_{i}",
+                    padCenter,
+                    new Vector3(
+                        anchor.outwardDir.x != 0 ? ringThickness : padWidth,
+                        0.04f,
+                        anchor.outwardDir.x != 0 ? padWidth : ringThickness),
+                    exitPadMaterial,
+                    false);
+            }
+
+            BuildUtils.SpawnBox(root.transform, "StartPad",
+                new Vector3(room.startSpawnPoint.x, overlayY, room.startSpawnPoint.z),
+                new Vector3(m * 1.1f, 0.04f, m * 1.1f),
+                mats.floorAccent ?? mats.floor,
+                false);
+        }
+
+        static void BuildSingleDecor(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null || mats.prop == null) return;
+
+            int decorCount = ResolveDecorCount(room.category);
+            if (decorCount <= 0) return;
+
+            var root = new GameObject("Decor");
+            root.transform.SetParent(parent, false);
+
+            float m = cfg.macroCellMeters;
+            bool[,] mask = room.shapeMask;
+            int[,] targets = new int[,]
+            {
+                { 1, 1 },
+                { mask.GetLength(0) - 2, 1 },
+                { 1, mask.GetLength(1) - 2 },
+                { mask.GetLength(0) - 2, mask.GetLength(1) - 2 },
+                { mask.GetLength(0) / 2, 1 },
+                { mask.GetLength(0) / 2, mask.GetLength(1) - 2 },
+                { 1, mask.GetLength(1) / 2 },
+                { mask.GetLength(0) - 2, mask.GetLength(1) / 2 },
+            };
+
+            int placed = 0;
+            for (int i = 0; i < targets.GetLength(0) && placed < decorCount; i++)
+            {
+                if (!TryFindInteriorCell(mask, targets[i, 0], targets[i, 1], out int lx, out int ly))
+                    continue;
+
+                Vector3 pos = LocalCellCenter(room.boundsCells, lx, ly, m, 0f);
+                if (IsNearPoint(pos, room.startSpawnPoint, m * 1.5f)) continue;
+                if (IsNearAnyExit(pos, room.exitDoorAnchors, m * 1.25f)) continue;
+
+                float height = room.category == ArenaCategory.Boss ? wh * 0.24f : wh * 0.18f;
+                Vector3 size = new Vector3(m * 0.65f, height, m * 0.65f);
+                var block = BuildUtils.SpawnBox(root.transform, $"Prop_{placed}", pos + new Vector3(0f, height * 0.5f, 0f), size, mats.prop, true);
+                block.transform.rotation = Quaternion.Euler(0f, placed * 37f, 0f);
+
+                if (ShouldUseDecorAccent(room.category) && mats.emissiveAccent != null)
+                {
+                    BuildUtils.SpawnBox(block.transform, "AccentBand",
+                        new Vector3(0f, height * 0.18f, 0f),
+                        new Vector3(size.x * 0.9f, Mathf.Max(0.08f, wh * 0.015f), size.z * 0.9f),
+                        mats.emissiveAccent,
+                        false);
+                }
+
+                placed++;
+            }
+        }
+
+        static void BuildSingleAtmosphere(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null) return;
+
+            var root = new GameObject("Atmosphere");
+            root.transform.SetParent(parent, false);
+            float m = cfg.macroCellMeters;
+
+            for (int i = 0; i < room.exitDoorAnchors.Count; i++)
+            {
+                var anchor = room.exitDoorAnchors[i];
+                Vector3 sideOffset = anchor.outwardDir.x != 0
+                    ? new Vector3(0f, 0f, m * 0.42f)
+                    : new Vector3(m * 0.42f, 0f, 0f);
+                Vector3 basePos = new Vector3(anchor.worldCenter.x, 0f, anchor.worldCenter.z)
+                    - new Vector3(anchor.outwardDir.x * m * 0.85f, 0f, anchor.outwardDir.y * m * 0.85f);
+
+                SpawnAtmospherePylon(root.transform, $"ExitGlow_{i}_A", basePos + sideOffset, wh, mats);
+                SpawnAtmospherePylon(root.transform, $"ExitGlow_{i}_B", basePos - sideOffset, wh, mats);
+            }
+
+            if (mats.sourceBiome != null && mats.sourceBiome.useContaminationLayer && mats.contamination != null)
+            {
+                BuildContaminationPatches(room, cfg, mats, root.transform);
+            }
+        }
+
+        static bool AllowsVerticality(ArenaCategory category)
+        {
+            switch (category)
+            {
+                case ArenaCategory.Combat:
+                case ArenaCategory.Elite:
+                case ArenaCategory.Parkour:
+                case ArenaCategory.Boss:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        static int ResolveDecorCount(ArenaCategory category)
+        {
+            switch (category)
+            {
+                case ArenaCategory.Start:
+                    return 0;
+                case ArenaCategory.Shop:
+                case ArenaCategory.Rest:
+                    return 2;
+                case ArenaCategory.Boss:
+                    return 5;
+                default:
+                    return 4;
+            }
+        }
+
+        static bool ShouldUseDecorAccent(ArenaCategory category)
+        {
+            switch (category)
+            {
+                case ArenaCategory.Combat:
+                case ArenaCategory.Elite:
+                case ArenaCategory.Parkour:
+                case ArenaCategory.Boss:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        static void BuildCornerPillars(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, Material mat, Transform parent)
+        {
+            if (mat == null) return;
+
+            bool[,] mask = room.shapeMask;
+            float m = cfg.macroCellMeters;
+            int[,] targets = new int[,]
+            {
+                { 0, 0 },
+                { mask.GetLength(0) - 1, 0 },
+                { 0, mask.GetLength(1) - 1 },
+                { mask.GetLength(0) - 1, mask.GetLength(1) - 1 }
+            };
+
+            for (int i = 0; i < targets.GetLength(0); i++)
+            {
+                if (!TryFindInteriorCell(mask, targets[i, 0], targets[i, 1], out int lx, out int ly))
+                    continue;
+                Vector3 pos = LocalCellCenter(room.boundsCells, lx, ly, m, 0f);
+                BuildUtils.SpawnBox(parent, $"CornerPillar_{i}",
+                    pos + new Vector3(0f, wh * 0.5f, 0f),
+                    new Vector3(m * 0.28f, wh, m * 0.28f),
+                    mat,
+                    true);
+            }
+        }
+
+        static void BuildDoorFrames(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, Material mat, Transform parent)
+        {
+            if (mat == null || room.exitDoorAnchors == null) return;
+
+            float m = cfg.macroCellMeters;
+            float doorHeight = Mathf.Min(wh * 0.7f, 5f);
+            float postWidth = Mathf.Max(0.18f, cfg.wallThicknessMeters * 0.8f);
+            float topHeight = Mathf.Max(0.3f, wh * 0.05f);
+
+            for (int i = 0; i < room.exitDoorAnchors.Count; i++)
+            {
+                var anchor = room.exitDoorAnchors[i];
+                Vector3 center = new Vector3(anchor.worldCenter.x, doorHeight * 0.5f, anchor.worldCenter.z);
+                bool alongX = anchor.outwardDir.x == 0;
+                Vector3 lateral = alongX ? new Vector3(m * 0.45f, 0f, 0f) : new Vector3(0f, 0f, m * 0.45f);
+
+                Vector3 postSize = alongX
+                    ? new Vector3(postWidth, doorHeight, cfg.wallThicknessMeters * 1.2f)
+                    : new Vector3(cfg.wallThicknessMeters * 1.2f, doorHeight, postWidth);
+                BuildUtils.SpawnBox(parent, $"DoorFrame_Left_{i}", center - lateral, postSize, mat, true);
+                BuildUtils.SpawnBox(parent, $"DoorFrame_Right_{i}", center + lateral, postSize, mat, true);
+
+                Vector3 topCenter = new Vector3(anchor.worldCenter.x, doorHeight + topHeight * 0.5f, anchor.worldCenter.z);
+                Vector3 topSize = alongX
+                    ? new Vector3(m * 1.1f, topHeight, cfg.wallThicknessMeters * 1.2f)
+                    : new Vector3(cfg.wallThicknessMeters * 1.2f, topHeight, m * 1.1f);
+                BuildUtils.SpawnBox(parent, $"DoorFrame_Top_{i}", topCenter, topSize, mat, true);
+            }
+        }
+
+        static void BuildWallRibs(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, Material mat, Transform parent)
+        {
+            if (mat == null || room.shapeMask == null) return;
+
+            float m = cfg.macroCellMeters;
+            float ribDepth = Mathf.Max(0.15f, cfg.wallThicknessMeters * 0.6f);
+            float ribWidth = Mathf.Max(0.2f, m * 0.18f);
+            bool[,] mask = room.shapeMask;
+
+            for (int y = 0; y < mask.GetLength(1); y++)
+            for (int x = 0; x < mask.GetLength(0); x++)
+            {
+                if (!mask[x, y]) continue;
+                int wx = x + room.boundsCells.xMin;
+                int wy = y + room.boundsCells.yMin;
+                if ((wx + wy) % 3 != 0) continue;
+
+                TrySpawnRib(mask, room, x, y, 0, -1, m, wh, ribWidth, ribDepth, mat, parent);
+                TrySpawnRib(mask, room, x, y, 0, 1, m, wh, ribWidth, ribDepth, mat, parent);
+                TrySpawnRib(mask, room, x, y, -1, 0, m, wh, ribDepth, ribWidth, mat, parent);
+                TrySpawnRib(mask, room, x, y, 1, 0, m, wh, ribDepth, ribWidth, mat, parent);
+            }
+        }
+
+        static void TrySpawnRib(
+            bool[,] mask, ArenaRoomData room, int x, int y, int dx, int dy,
+            float m, float wh, float sx, float sz, Material mat, Transform parent)
+        {
+            int nx = x + dx;
+            int ny = y + dy;
+            bool neighborInterior = nx >= 0 && ny >= 0 && nx < mask.GetLength(0) && ny < mask.GetLength(1) && mask[nx, ny];
+            if (neighborInterior) return;
+
+            int wx = x + room.boundsCells.xMin;
+            int wy = y + room.boundsCells.yMin;
+            if (IsDoorOpening(room, wx, wy, dx, dy)) return;
+
+            Vector3 center = LocalCellCenter(room.boundsCells, x, y, m, wh * 0.5f);
+            center += new Vector3(dx * (m * 0.5f - sx * 0.5f), 0f, dy * (m * 0.5f - sz * 0.5f));
+
+            BuildUtils.SpawnBox(parent, $"WallRib_{wx}_{wy}_{dx}_{dy}",
+                center,
+                new Vector3(sx, wh * 0.92f, sz),
+                mat,
+                true);
+        }
+
+        static void BuildCeilingBeams(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, Material mat, Transform parent)
+        {
+            if (mat == null) return;
+
+            float m = cfg.macroCellMeters;
+            float width = room.boundsCells.width * m;
+            float height = room.boundsCells.height * m;
+            Vector3 center = BoundsCenter(room.boundsCells, m, wh - Mathf.Max(0.25f, cfg.ceilingThicknessMeters));
+            float beamThickness = Mathf.Max(0.3f, wh * 0.04f);
+
+            int longAxisCount = Mathf.Clamp(Mathf.RoundToInt(Mathf.Max(width, height) / (m * 5f)), 1, 4);
+            for (int i = 0; i < longAxisCount; i++)
+            {
+                float t = longAxisCount == 1 ? 0.5f : (float)i / (longAxisCount - 1);
+                if (width >= height)
+                {
+                    float z = Mathf.Lerp(room.boundsCells.yMin * m + m, room.boundsCells.yMax * m - m, t);
+                    BuildUtils.SpawnBox(parent, $"CeilingBeam_X_{i}",
+                        new Vector3(center.x, center.y, z),
+                        new Vector3(width - m, beamThickness, beamThickness),
+                        mat,
+                        true);
+                }
+                else
+                {
+                    float x = Mathf.Lerp(room.boundsCells.xMin * m + m, room.boundsCells.xMax * m - m, t);
+                    BuildUtils.SpawnBox(parent, $"CeilingBeam_Z_{i}",
+                        new Vector3(x, center.y, center.z),
+                        new Vector3(beamThickness, beamThickness, height - m),
+                        mat,
+                        true);
+                }
+            }
+        }
+
+        static void SpawnAtmospherePylon(Transform parent, string name, Vector3 position, float wh, ArenaBuildMaterials mats)
+        {
+            float height = Mathf.Clamp(wh * 0.38f, 2.2f, 4.5f);
+            float width = 0.28f;
+            BuildUtils.SpawnBox(parent, $"{name}_Core",
+                position + new Vector3(0f, height * 0.5f, 0f),
+                new Vector3(width, height, width),
+                mats.prop ?? mats.wallTrim ?? mats.wall,
+                false);
+
+            if (mats.emissiveAccent != null)
+            {
+                BuildUtils.SpawnBox(parent, $"{name}_Glow",
+                    position + new Vector3(0f, height * 0.55f, 0f),
+                    new Vector3(width * 1.6f, height * 0.22f, width * 1.6f),
+                    mats.emissiveAccent,
+                    false);
+            }
+        }
+
+        static void BuildContaminationPatches(
+            ArenaRoomData room, ArenaRunConfig cfg, ArenaBuildMaterials mats, Transform parent)
+        {
+            var biome = mats.sourceBiome;
+            if (biome == null || !biome.useContaminationLayer || mats.contamination == null) return;
+
+            float m = cfg.macroCellMeters;
+            bool[,] mask = room.shapeMask;
+            int maxPatches = biome.contaminationStrength >= 0.65f ? 4 : biome.contaminationStrength >= 0.35f ? 3 : 2;
+            int placed = 0;
+
+            int[,] targets = new int[,]
+            {
+                { 1, 1 },
+                { mask.GetLength(0) - 2, 1 },
+                { 1, mask.GetLength(1) - 2 },
+                { mask.GetLength(0) - 2, mask.GetLength(1) - 2 },
+                { mask.GetLength(0) / 2, 1 },
+                { mask.GetLength(0) / 2, mask.GetLength(1) - 2 }
+            };
+
+            for (int i = 0; i < targets.GetLength(0) && placed < maxPatches; i++)
+            {
+                if (!TryFindInteriorCell(mask, targets[i, 0], targets[i, 1], out int lx, out int ly))
+                    continue;
+
+                Vector3 floorPos = LocalCellCenter(room.boundsCells, lx, ly, m, 0.04f);
+                if (IsNearPoint(floorPos, room.startSpawnPoint, m * biome.centerCleanBias * 2f))
+                    continue;
+
+                float size = Mathf.Lerp(m * 0.45f, m * 0.9f, biome.contaminationStrength);
+                BuildUtils.SpawnBox(parent, $"ContaminationFloor_{placed}",
+                    floorPos,
+                    new Vector3(size, 0.03f, size),
+                    mats.contamination,
+                    false);
+
+                BuildUtils.SpawnBox(parent, $"ContaminationCeiling_{placed}",
+                    floorPos + new Vector3(0f, room.wallHeightMeters - Mathf.Max(0.08f, cfg.ceilingThicknessMeters), 0f),
+                    new Vector3(size * 0.6f, 0.03f, size * 0.6f),
+                    mats.contamination,
+                    false);
+
+                placed++;
+            }
+        }
+
+        static bool IsNearAnyExit(Vector3 pos, List<ExitDoorAnchor> exits, float threshold)
+        {
+            if (exits == null) return false;
+            float sqr = threshold * threshold;
+            for (int i = 0; i < exits.Count; i++)
+            {
+                var exitPos = new Vector3(exits[i].worldCenter.x, pos.y, exits[i].worldCenter.z);
+                if ((pos - exitPos).sqrMagnitude <= sqr) return true;
+            }
+            return false;
+        }
+
+        static bool IsNearPoint(Vector3 pos, Vector3 other, float threshold)
+        {
+            float sqr = threshold * threshold;
+            return (new Vector3(pos.x, 0f, pos.z) - new Vector3(other.x, 0f, other.z)).sqrMagnitude <= sqr;
+        }
+
+        static bool TryFindInteriorCell(bool[,] mask, int targetX, int targetY, out int foundX, out int foundY)
+        {
+            if (mask == null)
+            {
+                foundX = foundY = 0;
+                return false;
+            }
+
+            int maxRadius = Mathf.Max(mask.GetLength(0), mask.GetLength(1));
+            for (int radius = 0; radius <= maxRadius; radius++)
+            {
+                for (int y = Mathf.Max(0, targetY - radius); y <= Mathf.Min(mask.GetLength(1) - 1, targetY + radius); y++)
+                {
+                    for (int x = Mathf.Max(0, targetX - radius); x <= Mathf.Min(mask.GetLength(0) - 1, targetX + radius); x++)
+                    {
+                        if (!mask[x, y]) continue;
+                        foundX = x;
+                        foundY = y;
+                        return true;
+                    }
+                }
+            }
+
+            foundX = foundY = 0;
+            return false;
+        }
+
+        static Vector3 LocalCellCenter(RectInt bounds, int localX, int localY, float cellSize, float y)
+        {
+            int wx = localX + bounds.xMin;
+            int wy = localY + bounds.yMin;
+            return new Vector3(wx * cellSize + cellSize * 0.5f, y, wy * cellSize + cellSize * 0.5f);
+        }
+
+        static Vector3 BoundsCenter(RectInt bounds, float cellSize, float y)
+        {
+            return new Vector3(
+                (bounds.xMin + bounds.width * 0.5f) * cellSize,
+                y,
+                (bounds.yMin + bounds.height * 0.5f) * cellSize);
         }
 
         static void BuildSingleAnchors(ArenaRoomData room, ArenaRunConfig cfg, float wh, Transform parent)

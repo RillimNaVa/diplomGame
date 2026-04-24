@@ -17,7 +17,6 @@ MonoBehaviour:
   bossProfile: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c3, type: 2}
   mid1Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
-  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c7, type: 2}
   mid2Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c6, type: 2}
