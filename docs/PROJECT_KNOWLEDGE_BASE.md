@@ -35,14 +35,14 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: finish Phase 2 — Procedural Arena Generation (r4: PR 2.A+2.B+2.C+2.D verified, PR 2.E visual pass code landed and now needs Unity-side verify/tuning)
+- Main short-term target: begin Phase 3 — Enemy AI, now that Phase 2 r4 is verified through PR 2.E
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary (2026-04-23)
+## Current Project Status Summary (2026-04-24)
 
-**Phase 1 complete. Phase 2 in flight.** As of the current state of the repository:
+**Phase 1 complete. Phase 2 complete through PR 2.E. Phase 3 is next.** As of the current state of the repository:
 
 **Phase 1 (shipped + playtested):**
 - First-person movement fully tuned (walk, jump, double jump, dash with charges, slide, air control, momentum preservation).
@@ -56,14 +56,13 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 - **PR 2.B verified 2026-04-21** — `RunGraph` (8 nodes, shared subtree) + `RunController` state machine + `ArenaFlowController` fade/teleport + `ExitDoorTrigger` + `DoorChoiceLabel` + Victory/GameOver Canvas + `DefaultRunConfig.asset`.
 - **PR 2.C verified 2026-04-22** — async `NavMeshSurface.UpdateNavMesh` via `ArenaNavMeshController`, `GameManager.useEncounterMode` flag + `SetSpawnPoints`/`BeginEncounter`/`EndEncounter` API, `EncounterController` + `SoftLockBarrier` + `EncounterTrigger` (scaffolded), clear conditions (KillAll/ReachExit/None), `SimpleEnemyAI.isOnNavMesh` guard.
 - **PR 2.D verified 2026-04-22** — `ArenaVerticalityPlanner`, `BiomeDefinition` + 2 biome assets, Elite/Parkour/Shop/Rest profiles, encounter scaling by `arenaIndex`, runtime debug UI (seed/index/biome).
-- **PR 2.E follow-up landed 2026-04-24** (Unity visual verify pending) — prototype PBR support remains in code, `VoidStation` was retuned away from over-bright blue trim/prop slots, `Parkour` is excluded from generated runs for now, and `SingleArenaGenerator` / `ArenaBuilder` now force `Start` / `Shop` / `Rest` arenas to stay flat with calmer decor even if a profile is misconfigured.
+- **PR 2.E verified 2026-04-24 by user Unity Editor test** — prototype PBR support remains in code, `VoidStation` was retuned away from over-bright blue trim/prop slots, `Parkour` is excluded from generated runs for now, and `SingleArenaGenerator` / `ArenaBuilder` now force `Start` / `Shop` / `Rest` arenas to stay flat with calmer decor even if a profile is misconfigured.
 - BSP r1-r3 code помечен `[DEPRECATED]` и оставлен в репо для diploma reference.
 - Prototype procedural terrain scene (`SampleScene.unity`) — independent of arena work, will likely be retired.
 - Playable combat prototype scene (`test.unity`) wired с Phase 1 systems + `Run`/`ArenaHost` GameObjects для Phase 2.
 
 What is not yet built:
 
-- **PR 2.E still needs Unity-side verify/tuning** — first import of copied Resources textures, full 5-arena visual playtest, and readability tuning for fog/decor/contamination/floor accents.
 - Advanced enemy types / state-machine AI (Phase 3)
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling (enemies, projectiles) — deferred performance pass
@@ -766,9 +765,9 @@ Phase 1 complete. Phase 2 (Procedural Arena Generation r4) in flight:
 - PR 2.A + 2.B verified (single-arena gen + run graph + transitions).
 - PR 2.C verified 2026-04-22 (async NavMesh bake + encounter integration + soft-lock barriers + `GameManager.useEncounterMode`).
 - PR 2.D verified 2026-04-22 (biomes + deterministic platforms/ramps + extended type profiles + encounter difficulty scaling + runtime debug overlay).
-- PR 2.E follow-up landed 2026-04-24: biome surface slots with Resources-backed texture fallback remain in place, `VoidStation` uses calmer trim/prop defaults, `Parkour` is excluded from generated runs, and utility arenas now have flat-arena safeguards. Unity-side import/playtest/tuning is still pending.
+- PR 2.E verified 2026-04-24 by user Unity Editor test: biome surface slots with Resources-backed texture fallback remain in place, `VoidStation` uses calmer trim/prop defaults, `Parkour` is excluded from generated runs, and utility arenas now have flat-arena safeguards.
 
-See `AI_HANDOFF.md` for the latest active-task context and the PR 2.E verification/tuning checklist.
+See `AI_HANDOFF.md` for the latest active-task context and Phase 3 starting point.
 
 Reference specs:
 
@@ -878,8 +877,8 @@ This project is currently a playable Unity prototype with:
 The most important current truth is:
 
 - movement and combat are architecturally mature (Phase 1 shipped)
-- procedural arena pipeline (r4) is functionally in place through PR 2.A-2.E first pass: single-arena generation + run graph + async NavMesh + encounters + biome styling + verticality + decor/atmosphere
-- next major step is Unity-side import, playtest verification, and tuning of PR 2.E readability/material balance (fog, contamination, floor accents, decor density)
+- procedural arena pipeline (r4) is verified through PR 2.A-2.E: single-arena generation + run graph + async NavMesh + encounters + biome styling + verticality + decor/atmosphere
+- next major step is Phase 3 enemy AI: refactor `SimpleEnemyAI` into a state-machine base, then add enemy types and better spawning behavior
 
 This file should let future AI agents understand the project quickly without doing a blind full scan first.
 

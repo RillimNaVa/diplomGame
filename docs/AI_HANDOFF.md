@@ -13,8 +13,8 @@ For stable architecture / roadmap / known issues, see:
 ## Current Status (2026-04-24)
 
 - **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), Kill-to-Survive (PR A + PR B) shipped and playtested.
-- **Phase 2 procedural arena pipeline r4 gameplay path is verified.** PR 2.A + 2.B + 2.C + 2.D are treated as complete.
-- **Phase 2 PR 2.E second pass is now in code, Unity visual verify pending.**
+- **Phase 2 procedural arena pipeline r4 gameplay + visual pass is verified.** PR 2.A + 2.B + 2.C + 2.D + 2.E are treated as complete.
+- **Phase 2 PR 2.E second pass is closed after Unity Editor visual verification by the user on 2026-04-24.**
   - `BiomeDefinition` uses material-slot-driven biome data.
   - Approved PR 2.E textures plus companion maps were copied under `Assets/Resources/ProceduralArena/Biomes/`.
   - `ArenaBuildMaterials` now resolves full companion texture sets with Resources fallback.
@@ -24,6 +24,7 @@ For stable architecture / roadmap / known issues, see:
   - `ArenaDebugGizmos -> r4 / Generate + Build Single Arena` now uses biome-aware materials too.
   - Follow-up tuning on 2026-04-24 reduced over-bright cyan in `Biome_VoidStation`, temporarily disabled `Parkour` selection in run generation, and added hard safeguards so `Start` / `Shop` / `Rest` arenas stay flat with reduced edge decor.
   - `dotnet build Assembly-CSharp.csproj` passed on 2026-04-24 after the follow-up fixes.
+  - User Unity Editor test reported the PR 2.E result is "more or less normal", so the milestone is accepted for now.
 - Stable high-level knowledge base: [PROJECT_KNOWLEDGE_BASE.md](C:/Users/assam/DiplomGame/docs/PROJECT_KNOWLEDGE_BASE.md)
 - Roadmap: [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md)
 - TZ: [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/docs/ARENA_GENERATION_TZ.md) - APPROVED r4.
@@ -32,13 +33,13 @@ For stable architecture / roadmap / known issues, see:
 
 ## Current Goal
 
-**Finish PR 2.E verification/tuning on top of the already verified Phase 2 gameplay pipeline.**
+**Begin Phase 3 enemy AI work on top of the verified Phase 2 arena pipeline.**
 
 - PR 2.A - SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena 10-25m ceiling - **DONE (verified 2026-04-21)**.
 - PR 2.B - Run Graph + transitions + fade + door-choice + Victory/GameOver - **DONE (verified 2026-04-21)**.
 - PR 2.C - Async `NavMeshSurface.UpdateNavMesh`, encounter integration, soft-lock barriers, clear conditions, `SimpleEnemyAI.isOnNavMesh` guard - **DONE (verified 2026-04-22)**.
 - PR 2.D - Verticality + biome selection + new arena type profiles + `arenaIndex` scaling + runtime debug overlay - **DONE (verified 2026-04-22)**.
-- PR 2.E - second pass adds companion PBR maps, texture import automation, collidable architecture/props, quieter Alien Nexus composition, stronger fog/emissive readability, Parkour disable guard, and flat-arena safeguards - **CODE COMPLETE 2026-04-24, UNITY VERIFY PENDING**.
+- PR 2.E - second pass adds companion PBR maps, texture import automation, collidable architecture/props, quieter Alien Nexus composition, stronger fog/emissive readability, Parkour disable guard, and flat-arena safeguards - **DONE (verified 2026-04-24 by user Unity Editor test)**.
 
 Scene wiring reference (`test.unity`):
 - `Run` GameObject with `RunController` (config -> `DefaultRunConfig`, flow -> `ArenaHost`).
@@ -71,11 +72,11 @@ Scene wiring reference (`test.unity`):
 
 ## What Is Not Done Yet
 
-- **PR 2.E still needs actual Unity-side visual verification.**
-- New textures under `Assets/Resources/ProceduralArena/Biomes/` still need first Unity reimport under the new PR 2.E texture import utility.
-- PR 2.E still needs tuning in Play Mode: material import correctness, floor accent coverage, decor density, collision feel around architecture, contamination strength, fog intensity, and overall readability through a full 5-arena run.
 - `Parkour` is intentionally disabled in generated runs for now; if it appears again, check `DefaultRunConfig.asset` and `RunGraphGenerator.IsSelectableProfile(...)`.
-- If bright cyan `VoidStation` blocks/trim still appear, verify that Unity reimported the updated `Biome_VoidStation.asset` and the copied textures; the intended follow-up now uses neutral `Panel_007` for `floorAccent`, `wallTrim`, and `propMaterial`, with much weaker emissive accents.
+- PR 2.D/2.E review notes to keep in mind before re-enabling Parkour or extending verticality:
+  - east/west ramp geometry should be rechecked because ramp pitch currently assumes the north/south local axis.
+  - biome atmosphere mutates global `RenderSettings`; restore `fogMode` too if scenes start sharing multiple visual controllers.
+- If bright cyan `VoidStation` blocks/trim reappear, verify that Unity reimported the updated `Biome_VoidStation.asset` and the copied textures; the intended follow-up uses neutral `Panel_007` for `floorAccent`, `wallTrim`, and `propMaterial`, with much weaker emissive accents.
 - `test.unity` is still not in Build Settings (issue #3).
 - Enemy pooling (issue #6), projectile pooling (issue #7), and `SimpleEnemyAI` refactor (issue #5) remain deferred beyond this milestone.
 
@@ -83,28 +84,23 @@ Scene wiring reference (`test.unity`):
 
 ## Recommended Next Task
 
-1. Open Unity and let `Assets/Resources/ProceduralArena/Biomes/**` reimport under the new texture import utility.
-2. Playtest a full 5-arena run in `Assets/test.unity` with `Run` active.
-3. Verify `ArenaDebugGizmos -> r4 / Generate + Build Single Arena` against the runtime path so biome visuals match in both flows.
-4. Recheck `VoidStation` specifically: `Start` should be flat/clean, `Rest`/`Shop` should be flatter and less busy, and large cyan trim blocks should no longer dominate props/frames.
-5. Tune PR 2.E if needed: floor accents, decor density, contamination strength, fog/ambient intensity, exit readability, and collision feel.
-6. After PR 2.E verify, continue to Phase 3 enemy AI refactor.
+1. Start Phase 3 with `SimpleEnemyAI` refactor into a small state-machine base while preserving the current `Health` and `GameManager.OnEnemyKilled` contracts.
+2. Add the first enemy-type split gradually: keep the current melee chaser as Drone/Grunt, then introduce ranged Sentinel after the base is stable.
+3. Keep `GameManager` encounter API compatible with the Phase 2 `ArenaFlowController` / `EncounterController` path.
+4. Re-enable or revisit Parkour only after the ramp-axis review and gameplay readability pass.
 
 ---
 
 ## Files Most Relevant For The Next Task
 
-- [VISUAL_STYLE_PASS_TZ.md](C:/Users/assam/DiplomGame/docs/VISUAL_STYLE_PASS_TZ.md)
-- [Assets/Scripts/ProceduralArena/Arena/BiomeDefinition.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/BiomeDefinition.cs)
-- [Assets/Scripts/ProceduralArena/Build/ArenaBuildMaterials.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuildMaterials.cs)
-- [Assets/Scripts/ProceduralArena/Build/BiomeTextureSetResolver.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/BiomeTextureSetResolver.cs)
-- [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- [Assets/test/SimpleEnemyAI.cs](C:/Users/assam/DiplomGame/Assets/test/SimpleEnemyAI.cs)
+- [Assets/test/GameManager.cs](C:/Users/assam/DiplomGame/Assets/test/GameManager.cs)
+- [Assets/test/Health.cs](C:/Users/assam/DiplomGame/Assets/test/Health.cs)
+- [Assets/Prefabs/Enemy.prefab](C:/Users/assam/DiplomGame/Assets/Prefabs/Enemy.prefab)
+- [Assets/Scripts/ProceduralArena/Encounter/EncounterController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Encounter/EncounterController.cs)
 - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
-- [Assets/Editor/ProceduralArena/ProceduralArenaTextureImportUtility.cs](C:/Users/assam/DiplomGame/Assets/Editor/ProceduralArena/ProceduralArenaTextureImportUtility.cs)
-- [Assets/Scripts/ProceduralArena/Debug/ArenaDebugGizmos.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Debug/ArenaDebugGizmos.cs)
-- [Assets/ArenaProfiles/Biome_VoidStation.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_VoidStation.asset)
-- [Assets/ArenaProfiles/Biome_AlienNexus.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_AlienNexus.asset)
-- `Assets/Resources/ProceduralArena/Biomes/`
+- [Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs)
+- [KNOWN_ISSUES.md](C:/Users/assam/DiplomGame/docs/KNOWN_ISSUES.md)
 
 ---
 
@@ -125,10 +121,8 @@ Scene wiring reference (`test.unity`):
 
 - On `GameManager` in `test.unity`, ensure `useEncounterMode = true`.
 - Keep `Run` active and legacy `ArenaDebug` disabled during runtime tests.
-- For walk-through debug without killing enemies, set `skipClearCondition = true` in `DefaultRunConfig.asset`.
-- After opening the project, let Unity reimport `Assets/Resources/ProceduralArena/Biomes/**`.
-- Start a fresh run after code changes; `RunGraph` and already-built arena roots should not be reused when checking the Parkour/flat-arena safeguards.
-- Verify both the runtime path and the debug-build path before calling PR 2.E done.
+- For walk-through debug without killing enemies, set `skipClearCondition = true` in `DefaultRunConfig.asset`; keep it `false` for normal encounter testing.
+- Start a fresh run after code changes; `RunGraph` and already-built arena roots should not be reused when checking enemy AI behavior.
 - `test.unity` still should be added to Build Settings later (outside PR 2.E scope).
 
 ---

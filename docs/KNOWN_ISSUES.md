@@ -24,13 +24,14 @@ This file should be concrete and action-oriented.
 
 ---
 
-## Recent Closures (2026-04-17 → 2026-04-19)
+## Recent Closures (2026-04-17 → 2026-04-24)
 
 - Issue #1 (`PlayerController` overloaded) — **Closed**, combat extracted during Weapon System refactor.
 - Issue #2 (No real weapon system) — **Closed**, `WEAPON_SYSTEM_TZ.md` implementation shipped.
 - Issue #8 (Temporary melee) — **Closed**, replaced by `Void Blade` weapon.
+- Issue #13 (PR 2.E visual pass pending Unity verify) — **Closed**, user verified the result in Unity Editor on 2026-04-24.
 
-Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
+Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #17, #18, #19, #20.
 
 ---
 
@@ -207,7 +208,7 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
 
 ## 13. PR 2.E visual pass still needs first Unity import and readability tuning
 
-- Status: `Open` (2026-04-24)
+- Status: `Closed` (2026-04-24)
 - Severity: Medium
 - Affected files:
   - [Assets/Resources/ProceduralArena/Biomes/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes)
@@ -217,11 +218,108 @@ Kept open for Phase 2+: #3, #4, #5, #6, #7, #9, #10, #11.
   - [Assets/ArenaProfiles/Biome_VoidStation.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_VoidStation.asset)
   - [Assets/ArenaProfiles/Biome_AlienNexus.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_AlienNexus.asset)
 - Problem:
-  - PR 2.E now includes a prototype runtime PBR pipeline and texture import helper, and follow-up tuning on 2026-04-24 already neutralized `VoidStation` trim/prop slots plus added flat-arena safeguards for `Start` / `Shop` / `Rest`, but the copied biome textures still need their first Unity reimport under the new rules and the scene still has not gone through a full Play Mode readability/collision pass.
+  - PR 2.E previously needed Unity-side visual verification after the prototype runtime PBR pipeline, texture import helper, `VoidStation` retune, and flat-arena safeguards were added.
 - Impact:
-  - Terminal-side `dotnet build` is green, but the real gameplay scene can still need import cleanup or balancing for PBR map correctness, fog density, contamination coverage, emissive accents, remaining `VoidStation` readability, prop density, floor pattern readability, and the feel of newly solid architectural pieces.
+  - Closed after the user tested the result in Unity Editor on 2026-04-24 and accepted it for milestone closure.
+- Resolution:
+  - Phase 2 PR 2.E is now treated as verified. Any further visual/material work should be handled as Phase 5 polish or as targeted follow-up bugs, not as a blocker for Phase 3.
+
+## 14. East/west vertical ramps may pitch around the wrong axis
+
+- Status: `Open` (2026-04-24)
+- Severity: Medium
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs)
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- Problem:
+  - `ArenaVerticalityPlanner` stores east/west ramp run length on the X axis, but `ArenaBuilder` always applies ramp pitch as `Quaternion.Euler(pitch, yaw, 0)`, which pitches around local X. North/south ramps are likely correct; east/west ramps can become sideways/slanted incorrectly.
+- Impact:
+  - Low immediate impact because `Parkour` is disabled in generated runs, but Boss can still use verticality and future Parkour re-enable may expose bad ramp geometry or unreliable NavMesh.
 - Fix direction:
-  - Open `Assets/test.unity`, let Unity import the copied textures, start a fresh run, then verify first that `Start` / `Shop` / `Rest` stay flat and that large cyan `VoidStation` trim blocks are gone before doing the broader 5-arena visual tuning pass.
+  - Normalize ramp mesh orientation so the ramp run is always along local Z before yaw, or add axis-aware rotation/size handling for east/west ramps.
+
+## 15. Biome atmosphere does not restore `RenderSettings.fogMode`
+
+- Status: `Open` (2026-04-24)
+- Severity: Low
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
+- Problem:
+  - `ArenaFlowController` caches and restores fog enabled/color/density and ambient colors, but `ApplyBiomeAtmosphere` overwrites `RenderSettings.fogMode` with `ExponentialSquared` and `RestoreAtmosphereDefaults` does not restore the original fog mode.
+- Impact:
+  - Usually harmless in the current single-scene flow, but it leaks global render state if another scene, tool, or visual controller expects a different fog mode.
+- Fix direction:
+  - Cache `RenderSettings.fogMode` in `CacheAtmosphereDefaults()` and restore it in `RestoreAtmosphereDefaults()`.
+
+## 16. PR 2.E texture assets are duplicated across runtime biome folders and source docs
+
+- Status: `Open` (2026-04-24)
+- Severity: High
+- Affected files:
+  - [Assets/Resources/ProceduralArena/Biomes/AlienNexus/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes/AlienNexus)
+  - [Assets/Resources/ProceduralArena/Biomes/VoidStation/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes/VoidStation)
+  - [docs/textures/](C:/Users/assam/DiplomGame/docs/textures)
+  - [Assets/ArenaProfiles/Biome_AlienNexus.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_AlienNexus.asset)
+  - [Assets/ArenaProfiles/Biome_VoidStation.asset](C:/Users/assam/DiplomGame/Assets/ArenaProfiles/Biome_VoidStation.asset)
+- Problem:
+  - Several sci-fi texture sets are stored in both biome-specific runtime folders and again under `docs/textures/`; hash checks show real duplicate binary content, not just similar names. This bloats git history and makes future texture changes easy to desynchronize.
+- Impact:
+  - Larger repository size, slower clone/sync, duplicated import work, and confusing source-of-truth for texture assets.
+- Fix direction:
+  - Move shared sci-fi runtime textures into a single `Assets/Resources/ProceduralArena/Biomes/Shared/` folder and update biome `resourcePath` references. Keep biome folders only for unique assets. Move source/reference textures out of runtime paths and consider Git LFS or external storage for large source texture archives.
+
+## 17. Runtime PBR map packing is CPU-heavy and keeps generated textures cached
+
+- Status: `Open` (2026-04-24)
+- Severity: Medium
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Build/BiomeTextureSetResolver.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/BiomeTextureSetResolver.cs)
+  - [Assets/Editor/ProceduralArena/ProceduralArenaTextureImportUtility.cs](C:/Users/assam/DiplomGame/Assets/Editor/ProceduralArena/ProceduralArenaTextureImportUtility.cs)
+- Problem:
+  - `BiomeTextureSetResolver` builds metallic/gloss and emission maps at runtime with `GetPixels` / `SetPixels`, while the import helper marks all biome textures readable. Generated textures are kept in static caches with no explicit cleanup path.
+- Impact:
+  - Higher memory use, possible first-arena hitch when maps are generated, and stale generated textures during long Editor sessions or when domain reload is disabled.
+- Fix direction:
+  - Pre-pack metallic/smoothness/mask/emission maps offline or in an Editor-only bake step. Import runtime textures as non-readable where possible. If runtime generation remains as a development fallback, add an explicit cache clear/destroy method for generated `Texture2D` instances.
+
+## 18. Biome fog color blend ignores most of `fogStrength`
+
+- Status: `Open` (2026-04-24)
+- Severity: Low
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
+- Problem:
+  - `ApplyBiomeAtmosphere` uses `Color.Lerp(defaultFogColor, biome.fogColor, Mathf.Clamp01(0.92f + biome.fogStrength * 0.08f))`, so the fog color is almost fully biome-colored even at very low `fogStrength`.
+- Impact:
+  - Visual tuning is less intuitive: `fogStrength` controls density, but barely controls color influence. This is hard to explain and can make subtle biome atmosphere settings behave too strongly.
+- Fix direction:
+  - Decide whether biome fog color should be hard-swapped or blended. If blended, use `biome.fogStrength` or a named curve/constant instead of the current hidden 0.92 baseline.
+
+## 19. `ArenaBuilder` is becoming a god-object
+
+- Status: `Open` (2026-04-24)
+- Severity: Medium
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- Problem:
+  - `ArenaBuilder` now contains shell, verticality, cover, exits, start marker, architecture, floor patterns, decor, atmosphere, anchors, and legacy BSP build logic in one large class.
+- Impact:
+  - Harder review, harder future visual iteration, and a weaker architecture story for the diploma if asked why one builder owns so many unrelated responsibilities.
+- Fix direction:
+  - Keep `ArenaBuilder.BuildSingle` as a facade/orchestrator, but split implementation into focused builder classes such as shell, exits, architecture, floor patterns, decor, atmosphere, and verticality builders. Partial classes are acceptable as a temporary readability step, but separate builders are cleaner.
+
+## 20. Decor yaw uses a magic deterministic constant instead of a named/randomized source
+
+- Status: `Open` (2026-04-24)
+- Severity: Low
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- Problem:
+  - PR 2.E decor rotates props with `placed * 37f`. This is deterministic, but the number is undocumented and not tied to the seeded procedural sub-streams used elsewhere.
+- Impact:
+  - Minor maintainability issue and a small inconsistency in the determinism story: future agents may not know whether this was intentional visual distribution or an arbitrary placeholder.
+- Fix direction:
+  - Replace the literal with a named constant or move decor variation into a deterministic decor RNG/sub-stream, then document that visual-only variation remains seed-stable.
 
 ---
 
