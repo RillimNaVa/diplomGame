@@ -206,6 +206,60 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 - Fix direction:
   - Open Unity and trigger Refresh/Reimport or regenerate project files; do not hand-edit generated `.csproj` as a durable fix.
 
+## 16. Platforms still authored as scaled `CreatePrimitive(Cube)` slabs
+
+- Status: `Open` (2026-04-25)
+- Severity: Medium (visual)
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs) — `BuildSingleVerticality` -> `mats.platform`
+- Problem:
+  - Verticality platforms (and ramps) are thin scaled cube primitives. Even with PR 2.G per-instance UV tiling, they read as thin texture-stretched slabs without volume, edges, or supports — by far the worst-looking element in the current build (confirmed via user 2026-04-25 screenshot).
+- Impact:
+  - Single-handedly breaks visual fidelity across `Combat` / `Elite` / `Parkour` / `Boss` arenas.
+- Fix direction:
+  - PR 2.H: replace `mats.platform` cube spawn with a beveled-edge prefab (Kenney / Synty / Blender), keeping the same placement metadata (`p.center`, `p.size`, `p.yawDeg`). Same for ramps.
+
+## 17. PR 2.G per-instance MPB disables SRP batcher path on textured cubes
+
+- Status: `Open` (2026-04-25)
+- Severity: Low (perf)
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Build/WorldUVScaler.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/WorldUVScaler.cs)
+  - [Assets/Scripts/ProceduralArena/Build/BuildUtils.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/BuildUtils.cs)
+- Problem:
+  - `WorldUVScaler` writes `_BaseMap_ST` per renderer via `MaterialPropertyBlock`. Unity URP's SRP batcher excludes renderers with non-empty MPB, so each textured cube falls off the batched path. We still get GPU instancing fallback, but draw calls increase vs. PR 2.F.
+- Impact:
+  - At ~200 cubes/arena typical, no measurable cost yet. Could matter once we add Phase 3 enemies + projectiles.
+- Fix direction:
+  - Replace `WorldUVScaler` with a custom URP ShaderGraph that does world-space triplanar sampling — keeps SRP batcher path, also fixes corner seams. Defer until profiling shows it matters.
+
+## 14. PR 2.F runtime cost: per-arena reflection probe + extra point lights
+
+- Status: `Open` (2026-04-25)
+- Severity: Low
+- Affected files:
+  - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
+  - [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- Problem:
+  - PR 2.F spawns one `Realtime` `ReflectionProbe` per arena (one-shot bake via `RenderProbe()`), and adds Point Lights on every exit and every atmosphere pylon. Shadow-casting is disabled on these point lights, but on URP Forward there is still a per-light cost and the realtime probe re-bakes once on arena entry.
+- Impact:
+  - At default URP additional-light limits this is fine, but very high pylon counts on `AlienNexus`/`VoidStation` plus 4 exits could push close to the per-camera additional-light cap and add a one-frame hitch when the probe bakes.
+- Fix direction:
+  - If profiling shows a cost: switch the probe to `Custom` baked cubemaps per biome, or downgrade to a single static probe shared by the whole scene; cap exit/pylon point lights via biome budget.
+
+## 15. Texture binaries still duplicated under `Assets/Resources/ProceduralArena/Biomes/`
+
+- Status: `Open` (2026-04-25, carried over from PR 2.E review)
+- Severity: Low
+- Affected files:
+  - [Assets/Resources/ProceduralArena/Biomes/](C:/Users/assam/DiplomGame/Assets/Resources/ProceduralArena/Biomes)
+- Problem:
+  - PR 2.E copied the same PBR texture sets into per-biome resource folders instead of referencing a shared library. Repo size is inflated and updating a shared map means editing N copies.
+- Impact:
+  - Larger git history, easier drift between biomes, slower asset reimport.
+- Fix direction:
+  - After Phase 2 visuals are locked, deduplicate to a single `Assets/Resources/ProceduralArena/SharedTextures/` and point biome surface definitions at shared resource paths.
+
 ## 13. PR 2.E visual pass still needs first Unity import and readability tuning
 
 - Status: `Closed` (2026-04-24)

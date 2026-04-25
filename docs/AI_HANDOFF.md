@@ -10,11 +10,30 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
-## Current Status (2026-04-24)
+## Current Status (2026-04-25)
 
 - **Phase 1 is COMPLETE.** Movement upgrades, Weapon System (PR A + PR B), Kill-to-Survive (PR A + PR B) shipped and playtested.
-- **Phase 2 procedural arena pipeline r4 gameplay + visual pass is verified.** PR 2.A + 2.B + 2.C + 2.D + 2.E are treated as complete.
-- **Phase 2 PR 2.E second pass is closed after Unity Editor visual verification by the user on 2026-04-24.**
+- **Phase 2 procedural arena pipeline r4 is complete (PR 2.A–2.E).** PR 2.E was closed 2026-04-24 after user's in-Editor playtest.
+- **Phase 2 PR 2.F Visual Fidelity Pass — verified 2026-04-25 by user; "looks better than before, but platforms still flat slabs and some textures stretch".**
+- **Phase 2 PR 2.G Anti-stretch + lighting fill — code landed 2026-04-25, Unity verify pending.**
+  - `WorldUVScaler` MonoBehaviour + `WorldUVDensityRegistry` (`Assets/Scripts/ProceduralArena/Build/WorldUVScaler.cs`): per-instance MaterialPropertyBlock derives `_BaseMap_ST` (and `_BumpMap_ST` / occlusion / metallic / emission ST) from each box' `lossyScale`. Dominant face = smallest axis = surface normal; UV tile width/height = world width/height of the dominant face × tilesPerMeter from the registry. Kills "Roblox" stretch on big floors and walls without changing meshes.
+  - `BuildUtils.SpawnBox` now auto-attaches `WorldUVScaler` to every spawned cube.
+  - `ArenaBuildMaterials.CreateSurface` registers per-material density (`slot.textureScale × 0.25` → tiles per meter), enables `enableInstancing = true`, and stops baking `textureScale` into the material's `_BaseMap_ST` (per-instance MPB now drives tiling).
+  - New `ArenaBuilder.BuildSingleEdgeStrips` — thin emissive strips along floor-to-wall seams (skips door cells) for "panel-light" feel.
+  - New `ArenaBuilder.BuildSingleFillLights` — center + four quadrant **Spot** lights pointing straight down (110° outer / ~60° inner) at `wh-0.45` height; intensity = `max(2.5, biome.accentLightIntensity × 1.6)`, range = `wh + 6m`. Quadrant lights only on arenas ≥ 6×6 cells; small Start/Shop/Rest arenas get just the center fill. Spots replace earlier Point fill lights — points lose ~95% to inverse-square falloff before reaching player height, spots focus the cone where it matters.
+  - New `ArenaBuilder.SpawnCeilingLamp` — co-spawned at every fill-light position. Visible fixture: dark mounting bracket (uses `mats.ceiling`/`mats.wall`) flush to the ceiling + bright emissive panel (`mats.lampPanel`, 2.2 m square) hanging 8 cm below. Mounted 4 cm below the ceiling tile to avoid z-fight. New `mats.lampPanel` is intentionally biome-agnostic warm-white at intensity 4.5 so panels read as actually lit on every biome.
+  - `PC_RPAsset.asset`: `m_AdditionalLightsPerObjectLimit` 4→8 (so fill + exit + pylon point lights coexist on one renderer), `m_ShadowDistance` 50→60.
+- **Phase 2 PR 2.F Visual Fidelity Pass — closed 2026-04-25 after user playtest.**
+  - Camera `m_RenderPostProcessing` enabled in `Assets/test.unity` + SMAA on (Antialiasing=2); post-processing is now actually rendered.
+  - `PC_Renderer.asset` SSAO intensity raised 0.4 → 0.85, DirectLightingStrength 0.25 → 0.35, Radius 0.3 → 0.35.
+  - `BiomeSurfaceDefinition` got `bumpScale`, `parallaxStrength`, `detailAlbedoResourcePath`, `detailTextureScale`, `detailStrength` per-slot fields. `ArenaBuildMaterials.ApplyTextureSet` wires them into URP Lit (`_BumpScale`, `_Parallax`, `_DetailAlbedoMap`, `_DETAIL_MULX2` keyword).
+  - `BiomeDefinition` got `BiomePostProcessing` block (bloom / colorFilter / exposure / contrast / saturation / vignette) + `accentLightIntensity` / `accentLightRange` / `exitLightColor` for runtime point lights.
+  - New `ArenaPostProcessingController` (auto-added to `ArenaFlowController`) spawns a runtime Global Volume with Bloom + ColorAdjustments + Vignette + ACES Tonemapping, priority 100. Biome tint now rides through `ColorAdjustments.colorFilter` instead of abusing `RenderSettings.ambient*`.
+  - `ArenaFlowController.SpawnReflectionProbe` adds a realtime box-projected reflection probe at arena center after each build (one-shot `RenderProbe`), so metal reacts.
+  - `ArenaBuilder.BuildSingleExits` + `SpawnAtmospherePylon` now attach actual URP Point Lights on exit markers and atmosphere pylons, color/intensity/range driven by biome.
+  - Fog bug fixed: `ApplyBiomeAtmosphere` now uses `fogStrength` as the Lerp t (previously clamped to ≥0.92, so any biome with fogStrength=0 still got 92% of biome.fogColor).
+  - Ambient tint nudge softened (0.35/0.25/0.30) because the heavy color work now lives in post-processing.
+- **Phase 2 PR 2.E closed 2026-04-24** after user playtest.
   - `BiomeDefinition` uses material-slot-driven biome data.
   - Approved PR 2.E textures plus companion maps were copied under `Assets/Resources/ProceduralArena/Biomes/`.
   - `ArenaBuildMaterials` now resolves full companion texture sets with Resources fallback.
@@ -33,7 +52,15 @@ For stable architecture / roadmap / known issues, see:
 
 ## Current Goal
 
-**Begin Phase 3 enemy AI work on top of the verified Phase 2 arena pipeline.**
+**Unity-side verification of PR 2.G Anti-stretch + lighting fill.** Reload Unity (so `WorldUVScaler` is recognised as a `MonoBehaviour`), play through a 5-arena run, and confirm:
+1. Big floor/wall textures no longer stretch — bricks/panels read at a consistent scale regardless of arena size.
+2. Each arena has a soft fill of light from above (no pitch-black corners), but no surface looks blown out.
+3. Thin emissive strips along the floor-to-wall seam are visible and pick up the biome accent color.
+4. FPS is within ±5–10% of PR 2.F baseline (extra point lights × 5 per arena should fit under the bumped `AdditionalLightsPerObjectLimit=8`).
+5. No URP "too many additional lights" warnings in Console.
+6. Small arenas (Start/Shop/Rest, < 6×6 cells) only get the center fill light, not all 5.
+
+After PR 2.G verify: pick the path for **PR 2.H — Beveled prefabs** (Asset Store modular sci-fi pack vs. Blender custom meshes). Platforms specifically must move off scaled `CreatePrimitive(Cube)` ASAP — they're the worst-looking element in the current build (per user screenshot 2026-04-25).
 
 - PR 2.A - SingleArenaGenerator + shape / cover / exit planners + size presets + per-arena 10-25m ceiling - **DONE (verified 2026-04-21)**.
 - PR 2.B - Run Graph + transitions + fade + door-choice + Victory/GameOver - **DONE (verified 2026-04-21)**.

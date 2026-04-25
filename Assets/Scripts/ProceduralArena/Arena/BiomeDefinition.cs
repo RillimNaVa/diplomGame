@@ -17,6 +17,45 @@ namespace VoidSurvivor.ProceduralArena.Arena
         public Color emissionColor = Color.black;
         [Min(0f)] public float emissionIntensity = 0f;
         public bool doubleSided = false;
+
+        [Header("PR 2.F — depth / detail")]
+        [Tooltip("Normal map intensity. 1 = default, 1.5–2.0 for stronger relief on walls.")]
+        [Range(0f, 3f)] public float bumpScale = 1f;
+        [Tooltip("Parallax strength (URP _Parallax, 0–0.08 effective range). 0 disables.")]
+        [Range(0f, 0.08f)] public float parallaxStrength = 0f;
+        [Tooltip("Optional detail albedo map Resources path (second UV layer). Leave empty to disable.")]
+        public string detailAlbedoResourcePath = string.Empty;
+        [Tooltip("Tiling of the detail map relative to the base map.")]
+        [Min(1f)] public float detailTextureScale = 8f;
+        [Tooltip("Detail map blend strength (0 = off, 1 = full). Applied via _DetailAlbedoMapScale.")]
+        [Range(0f, 2f)] public float detailStrength = 0.8f;
+    }
+
+    [Serializable]
+    public class BiomePostProcessing
+    {
+        [Header("Enable flags — leave off to keep defaults from SampleSceneProfile")]
+        public bool overrideBloom = true;
+        public bool overrideColor = true;
+        public bool overrideVignette = true;
+
+        [Header("Bloom")]
+        [Range(0f, 3f)] public float bloomIntensity = 0.6f;
+        [Range(0f, 2f)] public float bloomThreshold = 0.9f;
+        [Range(0f, 1f)] public float bloomScatter = 0.7f;
+        public Color bloomTint = Color.white;
+
+        [Header("Color Adjustments")]
+        [Range(-3f, 3f)] public float postExposure = 0f;
+        [Range(-100f, 100f)] public float contrast = 6f;
+        public Color colorFilter = Color.white;
+        [Range(-180f, 180f)] public float hueShift = 0f;
+        [Range(-100f, 100f)] public float saturation = 4f;
+
+        [Header("Vignette")]
+        public Color vignetteColor = Color.black;
+        [Range(0f, 1f)] public float vignetteIntensity = 0.24f;
+        [Range(0.01f, 1f)] public float vignetteSmoothness = 0.35f;
     }
 
     [CreateAssetMenu(fileName = "BiomeDefinition", menuName = "VoidSurvivor/Arena/Biome Definition")]
@@ -59,6 +98,17 @@ namespace VoidSurvivor.ProceduralArena.Arena
         public Color fogColor = Color.black;
         [Range(0f, 1f)] public float fogStrength = 0f;
         public Color ambientTint = Color.white;
+
+        [Header("PR 2.F — Runtime Point Lights")]
+        [Tooltip("Extra point lights on emissive accents / exit markers. 0 disables.")]
+        [Range(0f, 8f)] public float accentLightIntensity = 2.2f;
+        [Tooltip("Point light range on emissive accents (meters).")]
+        [Min(0f)] public float accentLightRange = 8f;
+        [Tooltip("Exit marker point light color override. If alpha=0, falls back to exitMarkerColor.")]
+        public Color exitLightColor = new Color(0f, 0f, 0f, 0f);
+
+        [Header("PR 2.F — Post-Processing")]
+        public BiomePostProcessing postProcessing = new BiomePostProcessing();
 
         [Header("Debug UI")]
         public Color debugTint = new Color(0.75f, 0.85f, 1f);

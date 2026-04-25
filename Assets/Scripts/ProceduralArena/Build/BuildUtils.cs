@@ -16,7 +16,13 @@ namespace VoidSurvivor.ProceduralArena.Build
             go.transform.position = center;
             go.transform.localScale = size;
             var rend = go.GetComponent<MeshRenderer>();
-            if (rend != null && mat != null) rend.sharedMaterial = mat;
+            if (rend != null && mat != null)
+            {
+                rend.sharedMaterial = mat;
+                // Per-instance world-space UV tiling — kills "Roblox stretch"
+                // on big floors/walls without changing the underlying mesh.
+                go.AddComponent<WorldUVScaler>();
+            }
             if (!collider)
             {
                 var col = go.GetComponent<Collider>();

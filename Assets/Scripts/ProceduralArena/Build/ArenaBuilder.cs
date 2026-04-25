@@ -38,12 +38,14 @@ namespace VoidSurvivor.ProceduralArena.Build
             BuildSingleShell(room, cfg, wh, mats, shell.transform);
             BuildSingleVerticality(room, mats, root.transform);
             BuildSingleCover(room, mats.cover, root.transform);
-            BuildSingleExits(room, cfg, wh, mats.exitMarker, root.transform);
+            BuildSingleExits(room, cfg, wh, mats, root.transform);
             BuildSingleStartMarker(room, cfg, mats.startMarker, root.transform);
             BuildSingleArchitecture(room, cfg, wh, mats, root.transform);
             BuildSingleFloorPatterns(room, cfg, mats, root.transform);
             BuildSingleDecor(room, cfg, wh, mats, root.transform);
             BuildSingleAtmosphere(room, cfg, wh, mats, root.transform);
+            BuildSingleEdgeStrips(room, cfg, mats, root.transform);
+            BuildSingleFillLights(room, cfg, wh, mats, root.transform);
             if (cfg.generateAnchors) BuildSingleAnchors(room, cfg, wh, root.transform);
 
             return root;
@@ -183,7 +185,7 @@ namespace VoidSurvivor.ProceduralArena.Build
         }
 
         static void BuildSingleExits(
-            ArenaRoomData room, ArenaRunConfig cfg, float wh, Material exitMat, Transform parent)
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
         {
             if (room.exitDoorAnchors.Count == 0) return;
             var exitsRoot = new GameObject("Exits");
@@ -192,6 +194,12 @@ namespace VoidSurvivor.ProceduralArena.Build
             float doorHeight = Mathf.Min(wh * 0.7f, 5f);
             float doorWidth = m * 0.9f;
             float doorThickness = 0.05f;
+            var biome = mats != null ? mats.sourceBiome : null;
+            Color exitLightColor = biome != null && biome.exitLightColor.a > 0.01f
+                ? biome.exitLightColor
+                : (biome != null ? biome.exitMarkerColor : new Color(1f, 0.3f, 0.3f));
+            float exitLightIntensity = biome != null ? biome.accentLightIntensity : 2.2f;
+            float exitLightRange = biome != null ? Mathf.Max(1f, biome.accentLightRange) : 8f;
             for (int i = 0; i < room.exitDoorAnchors.Count; i++)
             {
                 var a = room.exitDoorAnchors[i];
@@ -201,11 +209,20 @@ namespace VoidSurvivor.ProceduralArena.Build
                 else
                     size = new Vector3(doorWidth, doorHeight, doorThickness);
                 Vector3 center = new Vector3(a.worldCenter.x, doorHeight * 0.5f, a.worldCenter.z);
-                var go = BuildUtils.SpawnBox(exitsRoot.transform, $"Exit_{i}", center, size, exitMat, false);
+                var go = BuildUtils.SpawnBox(exitsRoot.transform, $"Exit_{i}", center, size, mats != null ? mats.exitMarker : null, false);
                 var anchor = new GameObject($"ExitAnchor_{i}");
                 anchor.transform.SetParent(exitsRoot.transform, false);
                 anchor.transform.position = new Vector3(a.worldCenter.x, 0f, a.worldCenter.z);
                 anchor.transform.rotation = Quaternion.Euler(0f, a.yawDeg, 0f);
+
+                if (exitLightIntensity > 0.01f)
+                {
+                    // Nudge light slightly inward so it lights the room, not the void beyond the wall.
+                    Vector3 lightPos = center
+                        - new Vector3(a.outwardDir.x * m * 0.4f, 0f, a.outwardDir.y * m * 0.4f);
+                    AttachPointLight(exitsRoot.transform, $"ExitLight_{i}", lightPos,
+                        exitLightColor, exitLightIntensity, exitLightRange);
+                }
             }
         }
 
@@ -596,6 +613,37 @@ namespace VoidSurvivor.ProceduralArena.Build
                     mats.emissiveAccent,
                     false);
             }
+
+            var biome = mats.sourceBiome;
+            float intensity = biome != null ? biome.accentLightIntensity * 0.6f : 1.3f;
+            float range = biome != null ? Mathf.Max(1f, biome.accentLightRange * 0.85f) : 6f;
+            if (intensity > 0.01f)
+            {
+                Color lightColor = biome != null
+                    ? (biome.emissiveAccent != null && biome.emissiveAccent.emissionIntensity > 0.01f
+                        ? biome.emissiveAccent.emissionColor
+                        : biome.barrierColor)
+                    : new Color(0.3f, 0.8f, 1f);
+                if (lightColor.maxColorComponent < 0.05f) lightColor = new Color(0.3f, 0.8f, 1f);
+                AttachPointLight(parent, $"{name}_Light",
+                    position + new Vector3(0f, height * 0.6f, 0f),
+                    lightColor, intensity, range);
+            }
+        }
+
+        static void AttachPointLight(Transform parent, string name, Vector3 position,
+            Color color, float intensity, float range)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None; // keep cheap; additional-light shadows fill up fast
+            light.renderMode = LightRenderMode.Auto;
         }
 
         static void BuildContaminationPatches(
@@ -703,6 +751,182 @@ namespace VoidSurvivor.ProceduralArena.Build
                 (bounds.xMin + bounds.width * 0.5f) * cellSize,
                 y,
                 (bounds.yMin + bounds.height * 0.5f) * cellSize);
+        }
+
+        // Thin emissive strips along the floor where it meets exterior walls.
+        // Visually breaks up the flat floor-to-wall seam and gives the arena a
+        // "Doom Eternal panel" feel without needing a real trim sheet.
+        static void BuildSingleEdgeStrips(
+            ArenaRoomData room, ArenaRunConfig cfg, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null) return;
+            Material strip = mats.emissiveAccent;
+            if (strip == null) return;
+
+            float m = cfg.macroCellMeters;
+            float th = cfg.wallThicknessMeters;
+            float stripHeight = 0.06f;
+            float stripDepth = Mathf.Max(0.08f, th * 0.6f);
+            float stripY = 0.05f; // sit just above the floor surface
+
+            var root = new GameObject("EdgeStrips");
+            root.transform.SetParent(parent, false);
+
+            bool[,] mask = room.shapeMask;
+            int w = mask.GetLength(0), h = mask.GetLength(1);
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                if (!mask[x, y]) continue;
+                int wx = x + room.boundsCells.xMin;
+                int wy = y + room.boundsCells.yMin;
+                TryEmitEdgeStrip(mask, room, x, y, 0, -1, wx, wy, m, th, stripDepth, stripHeight, stripY, strip, root.transform);
+                TryEmitEdgeStrip(mask, room, x, y, 0,  1, wx, wy, m, th, stripDepth, stripHeight, stripY, strip, root.transform);
+                TryEmitEdgeStrip(mask, room, x, y, -1, 0, wx, wy, m, th, stripDepth, stripHeight, stripY, strip, root.transform);
+                TryEmitEdgeStrip(mask, room, x, y,  1, 0, wx, wy, m, th, stripDepth, stripHeight, stripY, strip, root.transform);
+            }
+        }
+
+        static void TryEmitEdgeStrip(
+            bool[,] mask, ArenaRoomData room, int x, int y, int dx, int dy, int wx, int wy,
+            float m, float th, float depth, float height, float yPos, Material mat, Transform parent)
+        {
+            int nx = x + dx, ny = y + dy;
+            int w = mask.GetLength(0), h = mask.GetLength(1);
+            bool neighborInterior = nx >= 0 && ny >= 0 && nx < w && ny < h && mask[nx, ny];
+            if (neighborInterior) return;
+            if (IsDoorOpening(room, wx, wy, dx, dy)) return; // skip door gaps
+
+            Vector3 c = new Vector3(wx * m + m * 0.5f, yPos, wy * m + m * 0.5f);
+            Vector3 size;
+            string tag;
+            float inset = th + depth * 0.5f;
+            if (dy == -1)      { c += new Vector3(0f, 0f, -m * 0.5f + inset); size = new Vector3(m * 0.95f, height, depth); tag = "S"; }
+            else if (dy == 1)  { c += new Vector3(0f, 0f,  m * 0.5f - inset); size = new Vector3(m * 0.95f, height, depth); tag = "N"; }
+            else if (dx == -1) { c += new Vector3(-m * 0.5f + inset, 0f, 0f); size = new Vector3(depth, height, m * 0.95f); tag = "W"; }
+            else               { c += new Vector3( m * 0.5f - inset, 0f, 0f); size = new Vector3(depth, height, m * 0.95f); tag = "E"; }
+
+            BuildUtils.SpawnBox(parent, $"EdgeStrip_{wx}_{wy}_{tag}", c, size, mat, false);
+        }
+
+        // Ceiling-mounted spotlights pointing straight down. We use Spot rather
+        // than Point because point lights at 10–15 m above the floor lose 95 %
+        // of their intensity to inverse-square falloff before reaching player
+        // height. A 110° spot focuses the cone toward the playable area instead.
+        // Intensity is intentionally moderate (1.6 × biome.accentLightIntensity)
+        // so it illuminates without blowing out — the actual visual punch
+        // comes from contrast vs. the ambient/post-fx tint.
+        static void BuildSingleFillLights(
+            ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (mats == null) return;
+            var biome = mats.sourceBiome;
+            float baseIntensity = biome != null ? biome.accentLightIntensity : 2.2f;
+            float fillIntensity = Mathf.Max(2.5f, baseIntensity * 1.6f);
+            float fillRange = wh + 6f;       // reach the floor with margin
+            float spotAngle = 110f;          // wide enough to overlap neighbours
+
+            float m = cfg.macroCellMeters;
+            float spanX = room.boundsCells.width * m;
+            float spanZ = room.boundsCells.height * m;
+
+            // Color: warm-neutral leaning toward biome ambient tint, kept low-saturation
+            // so it doesn't fight the biome ColorAdjustments tint pushed via post-fx.
+            Color tint = biome != null ? biome.ambientTint : new Color(0.85f, 0.88f, 0.95f);
+            Color fillColor = Color.Lerp(new Color(0.95f, 0.95f, 0.95f), tint, 0.25f);
+            if (fillColor.maxColorComponent < 0.05f) fillColor = new Color(0.9f, 0.92f, 0.95f);
+
+            var root = new GameObject("FillLights");
+            root.transform.SetParent(parent, false);
+
+            // Mount spots just below the lamp panel so the cone starts from the fixture.
+            float spotY = wh - 0.45f;
+            Vector3 center = BoundsCenter(room.boundsCells, m, spotY);
+
+            AttachCeilingSpot(root.transform, "FillLight_Center", center, fillColor, fillIntensity, fillRange, spotAngle);
+            SpawnCeilingLamp(root.transform, "CeilingLamp_Center", center, wh, fillColor, mats);
+
+            float quadInset = 0.28f;
+            float qx = spanX * (0.5f - quadInset);
+            float qz = spanZ * (0.5f - quadInset);
+            if (spanX >= m * 6f && spanZ >= m * 6f)
+            {
+                float quadIntensity = fillIntensity * 0.85f;
+                Vector3[] offsets = {
+                    new Vector3( qx, 0f,  qz),
+                    new Vector3(-qx, 0f,  qz),
+                    new Vector3( qx, 0f, -qz),
+                    new Vector3(-qx, 0f, -qz),
+                };
+                string[] tags = { "NE", "NW", "SE", "SW" };
+                for (int i = 0; i < 4; i++)
+                {
+                    Vector3 pos = center + offsets[i];
+                    AttachCeilingSpot(root.transform, $"FillLight_{tags[i]}", pos, fillColor, quadIntensity, fillRange, spotAngle);
+                    SpawnCeilingLamp(root.transform, $"CeilingLamp_{tags[i]}", pos, wh, fillColor, mats);
+                }
+            }
+        }
+
+        static void AttachCeilingSpot(Transform parent, string name, Vector3 position,
+            Color color, float intensity, float range, float spotAngle)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            go.transform.rotation = Quaternion.Euler(90f, 0f, 0f); // point straight down
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.spotAngle = spotAngle;
+            light.innerSpotAngle = spotAngle * 0.55f;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.Auto;
+        }
+
+        // Visible ceiling fixture: a small emissive panel mounted to the ceiling
+        // above the corresponding fill light, plus a tiny mounting bracket cube.
+        // No extra Light component — the underlying fill point light already
+        // provides the illumination, this is purely visual so the player can
+        // see *where* the light is coming from.
+        static void SpawnCeilingLamp(
+            Transform parent, string name, Vector3 fillLightPos, float wh, Color tint, ArenaBuildMaterials mats)
+        {
+            if (mats == null) return;
+            Material panelMat = mats.lampPanel ?? mats.emissiveAccent;
+            if (panelMat == null) return;
+
+            // Mount the lamp 4cm below the actual ceiling tile to avoid z-fight
+            // with `Ceiling_*` floors-in-reverse (those have their bottom face
+            // exactly at wh).
+            float lampTopY = wh - 0.04f;
+            float panelSize = 2.2f;            // bigger = readable from the floor
+            float panelThickness = 0.10f;
+            float bracketThickness = 0.08f;
+            float bracketSize = panelSize + 0.25f;
+
+            // Bracket: dark frame flush to the ceiling. Top at lampTopY.
+            Material bracketMat = mats.ceiling ?? mats.wall;
+            if (bracketMat != null)
+            {
+                float bracketCenterY = lampTopY - bracketThickness * 0.5f;
+                BuildUtils.SpawnBox(parent, $"{name}_Bracket",
+                    new Vector3(fillLightPos.x, bracketCenterY, fillLightPos.z),
+                    new Vector3(bracketSize, bracketThickness, bracketSize),
+                    bracketMat,
+                    false);
+            }
+
+            // Emissive panel hangs just under the bracket.
+            float panelTopY = lampTopY - bracketThickness;
+            float panelCenterY = panelTopY - panelThickness * 0.5f;
+            BuildUtils.SpawnBox(parent, $"{name}_Panel",
+                new Vector3(fillLightPos.x, panelCenterY, fillLightPos.z),
+                new Vector3(panelSize, panelThickness, panelSize),
+                panelMat,
+                false);
         }
 
         static void BuildSingleAnchors(ArenaRoomData room, ArenaRunConfig cfg, float wh, Transform parent)

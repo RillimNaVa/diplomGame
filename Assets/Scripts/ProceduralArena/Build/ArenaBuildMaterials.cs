@@ -20,6 +20,7 @@ namespace VoidSurvivor.ProceduralArena.Build
         public Material startMarker;
         public Material exitMarker;
         public Material barrier;
+        public Material lampPanel;
 
         public static ArenaBuildMaterials CreateDefaults(BiomeDefinition biome = null)
         {
@@ -48,6 +49,12 @@ namespace VoidSurvivor.ProceduralArena.Build
                 startMarker = MakeEmissive(shader, "ArenaStartMat", startColor, startIntensity),
                 exitMarker  = MakeEmissive(shader, "ArenaExitMat", exitColor, exitIntensity),
                 barrier     = MakeEmissive(shader, "ArenaBarrierMat", barrierColor, barrierIntensity),
+                // Ceiling-lamp panel: bright neutral-warm white, mostly biome-agnostic so
+                // every arena reads as actually lit. Slight tint pull toward biome ambient
+                // for cohesion.
+                lampPanel   = MakeEmissive(shader, "ArenaLampPanelMat",
+                    Color.Lerp(new Color(1f, 0.97f, 0.92f), biome != null ? biome.ambientTint : Color.white, 0.2f),
+                    4.5f),
             };
             return mats;
         }
@@ -81,9 +88,18 @@ namespace VoidSurvivor.ProceduralArena.Build
                 ApplyTextureSet(material, slot, fallbackMetallic, fallbackSmoothness);
             }
 
+            // Per-instance UV tiling (WorldUVScaler) overrides _BaseMap_ST at runtime
+            // based on each box' lossyScale, so the material-level tile is identity.
+            // We keep the slot.textureScale value as the *density* (tiles per meter)
+            // pushed into the registry, instead of writing into the material's ST.
             float textureScale = slot != null ? Mathf.Max(0.1f, slot.textureScale) : 1f;
-            if (material.HasProperty("_BaseMap")) material.SetTextureScale("_BaseMap", new Vector2(textureScale, textureScale));
-            if (material.HasProperty("_MainTex")) material.SetTextureScale("_MainTex", new Vector2(textureScale, textureScale));
+            float tilesPerMeter = textureScale * 0.25f; // textureScale=1 -> 1 tile per 4m, =4 -> 1 tile per 1m
+            WorldUVDensityRegistry.Register(material, tilesPerMeter);
+
+            // Enable GPU instancing where possible (markers/decor without textures
+            // benefit; SRP batcher path takes over for textured slots when MPB
+            // would otherwise break batching).
+            material.enableInstancing = true;
 
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", tint);
             if (material.HasProperty("_Color")) material.SetColor("_Color", tint);
@@ -125,7 +141,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             {
                 material.EnableKeyword("_NORMALMAP");
                 material.SetTexture("_BumpMap", set.normal);
-                if (material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", 1f);
+                if (material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", Mathf.Max(0f, slot.bumpScale));
             }
 
             if (set.occlusion != null && material.HasProperty("_OcclusionMap"))
@@ -134,10 +150,28 @@ namespace VoidSurvivor.ProceduralArena.Build
                 if (material.HasProperty("_OcclusionStrength")) material.SetFloat("_OcclusionStrength", 1f);
             }
 
-            if (set.height != null && material.HasProperty("_ParallaxMap"))
+            if (set.height != null && slot.parallaxStrength > 0.0001f && material.HasProperty("_ParallaxMap"))
             {
+                material.EnableKeyword("_PARALLAXMAP");
                 material.SetTexture("_ParallaxMap", set.height);
-                if (material.HasProperty("_Parallax")) material.SetFloat("_Parallax", 0.02f);
+                if (material.HasProperty("_Parallax")) material.SetFloat("_Parallax", Mathf.Clamp(slot.parallaxStrength, 0.005f, 0.08f));
+            }
+
+            if (!string.IsNullOrEmpty(slot.detailAlbedoResourcePath))
+            {
+                var detail = Resources.Load<Texture2D>(slot.detailAlbedoResourcePath);
+                if (detail != null)
+                {
+                    if (material.HasProperty("_DetailAlbedoMap"))
+                    {
+                        material.EnableKeyword("_DETAIL_MULX2");
+                        material.SetTexture("_DetailAlbedoMap", detail);
+                        float ts = Mathf.Max(1f, slot.detailTextureScale);
+                        material.SetTextureScale("_DetailAlbedoMap", new Vector2(ts, ts));
+                        if (material.HasProperty("_DetailAlbedoMapScale"))
+                            material.SetFloat("_DetailAlbedoMapScale", slot.detailStrength);
+                    }
+                }
             }
 
             var glossMap = BiomeTextureSetResolver.BuildMetallicGlossMap(slot.resourcePath, set,
@@ -174,6 +208,10 @@ namespace VoidSurvivor.ProceduralArena.Build
                 m.EnableKeyword("_EMISSION");
                 m.SetColor("_EmissionColor", c * intensity);
             }
+            m.enableInstancing = true;
+            // Markers are usually small; default density keeps them from looking weird
+            // if a future biome attaches a real texture to them.
+            WorldUVDensityRegistry.Register(m, 0.5f);
             return m;
         }
     }
