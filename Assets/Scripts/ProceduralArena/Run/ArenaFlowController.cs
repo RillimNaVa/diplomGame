@@ -42,6 +42,8 @@ namespace VoidSurvivor.ProceduralArena.Run
         GameObject currentArenaRoot;
         EncounterController currentEncounter;
         ArenaBuildMaterials buildMats;
+        ArenaPostProcessingController postFx;
+        ReflectionProbe currentReflectionProbe;
         bool defaultFogEnabled;
         Color defaultFogColor;
         float defaultFogDensity;
@@ -58,6 +60,8 @@ namespace VoidSurvivor.ProceduralArena.Run
             if (fadeCanvas == null || fadeImage == null) BuildDefaultFadeCanvas();
             SetFade(0f);
             CacheAtmosphereDefaults();
+            postFx = GetComponent<ArenaPostProcessingController>();
+            if (postFx == null) postFx = gameObject.AddComponent<ArenaPostProcessingController>();
         }
 
         public IEnumerator EnterArena(
@@ -71,13 +75,16 @@ namespace VoidSurvivor.ProceduralArena.Run
 
             DestroyCurrent();
             currentCtx = SingleArenaGenerator.Generate(node.arenaSeed, node.typeProfile, buildConfig);
-            buildMats = ArenaBuildMaterials.CreateDefaults(node.typeProfile != null ? node.typeProfile.biome : null);
+            var biome = node.typeProfile != null ? node.typeProfile.biome : null;
+            buildMats = ArenaBuildMaterials.CreateDefaults(biome);
             currentArenaRoot = ArenaBuilder.BuildSingle(currentCtx, buildConfig, arenaParent, buildMats);
-            ApplyBiomeAtmosphere(node.typeProfile != null ? node.typeProfile.biome : null);
+            ApplyBiomeAtmosphere(biome);
+            if (postFx != null) postFx.ApplyBiome(biome);
 
             if (currentArenaRoot != null)
             {
                 SpawnExitTriggers(node, controller, out var barriers);
+                SpawnReflectionProbe();
 
                 if (!skipEncounterSystems)
                 {
@@ -111,11 +118,13 @@ namespace VoidSurvivor.ProceduralArena.Run
             }
             currentCtx = null;
             currentEncounter = null;
+            currentReflectionProbe = null;
         }
 
         void OnDisable()
         {
             RestoreAtmosphereDefaults();
+            if (postFx != null) postFx.ClearBiome();
         }
 
         void SpawnExitTriggers(RunGraphNode node, RunController controller, out List<SoftLockBarrier> barriers)
@@ -353,14 +362,59 @@ namespace VoidSurvivor.ProceduralArena.Run
                 return;
             }
 
-            RenderSettings.fog = biome.fogStrength > 0.001f;
+            // PR 2.F: fogStrength is the lerp t, not a clamped constant. At 0
+            // biome fog is fully absent, at 1 biome fog fully replaces defaults.
+            float fogT = Mathf.Clamp01(biome.fogStrength);
+            RenderSettings.fog = fogT > 0.001f;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = Color.Lerp(defaultFogColor, biome.fogColor, Mathf.Clamp01(0.92f + biome.fogStrength * 0.08f));
-            RenderSettings.fogDensity = Mathf.Lerp(0.006f, 0.042f, biome.fogStrength);
+            RenderSettings.fogColor = Color.Lerp(defaultFogColor, biome.fogColor, fogT);
+            RenderSettings.fogDensity = Mathf.Lerp(0.006f, 0.042f, fogT);
 
-            RenderSettings.ambientSkyColor = Color.Lerp(defaultAmbientSkyColor, biome.ambientTint, 0.68f);
-            RenderSettings.ambientEquatorColor = Color.Lerp(defaultAmbientEquatorColor, biome.ambientTint, 0.48f);
-            RenderSettings.ambientGroundColor = Color.Lerp(defaultAmbientGroundColor, biome.ambientTint * 0.8f, 0.52f);
+            // PR 2.F: ambient is still nudged (so dark biomes stay dark even
+            // without post-fx), but the heavy colored tint now rides through
+            // ColorAdjustments.colorFilter in ArenaPostProcessingController.
+            RenderSettings.ambientSkyColor = Color.Lerp(defaultAmbientSkyColor, biome.ambientTint, 0.35f);
+            RenderSettings.ambientEquatorColor = Color.Lerp(defaultAmbientEquatorColor, biome.ambientTint, 0.25f);
+            RenderSettings.ambientGroundColor = Color.Lerp(defaultAmbientGroundColor, biome.ambientTint * 0.6f, 0.3f);
+        }
+
+        void SpawnReflectionProbe()
+        {
+            if (currentArenaRoot == null || currentCtx == null || currentCtx.layout == null) return;
+            if (currentCtx.layout.rooms.Count == 0) return;
+            var room = currentCtx.layout.rooms[0];
+            var bounds = room.boundsCells;
+            float m = buildConfig.macroCellMeters;
+            float wh = room.wallHeightMeters > 0f ? room.wallHeightMeters : buildConfig.wallHeightMeters;
+
+            Vector3 center = new Vector3(
+                (bounds.xMin + bounds.width * 0.5f) * m,
+                wh * 0.5f,
+                (bounds.yMin + bounds.height * 0.5f) * m);
+            if (arenaParent != null) center += arenaParent.position;
+
+            var probeGo = new GameObject("ArenaReflectionProbe");
+            probeGo.transform.SetParent(currentArenaRoot.transform, false);
+            probeGo.transform.position = center;
+
+            var probe = probeGo.AddComponent<ReflectionProbe>();
+            probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Realtime;
+            probe.refreshMode = UnityEngine.Rendering.ReflectionProbeRefreshMode.ViaScripting;
+            probe.timeSlicingMode = UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.IndividualFaces;
+            probe.resolution = 128;
+            probe.importance = 100;
+            probe.intensity = 1f;
+            probe.boxProjection = true;
+            probe.size = new Vector3(bounds.width * m, wh * 2f, bounds.height * m);
+            probe.center = Vector3.zero;
+            probe.clearFlags = UnityEngine.Rendering.ReflectionProbeClearFlags.SolidColor;
+            probe.backgroundColor = Color.black;
+            probe.nearClipPlane = 0.3f;
+            probe.farClipPlane = Mathf.Max(bounds.width, bounds.height) * m * 1.5f;
+
+            // One-shot bake on spawn, then stay static until next arena.
+            probe.RenderProbe();
+            currentReflectionProbe = probe;
         }
 
         void RestoreAtmosphereDefaults()
