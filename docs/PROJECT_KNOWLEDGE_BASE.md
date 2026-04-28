@@ -32,17 +32,19 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 ## Project Identity
 
 - Project name: `DiplomGame`
+- Current near-term order (2026-04-28): verify PR 3.D role-mix spawning in Unity, then move to PR 3.E combat readability / active attack slots.
+- Captured future direction: Arena Complex / Connected Arena Rooms after the first Phase 3 enemy-AI layer, not before.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: begin Phase 3 — Enemy AI, now that Phase 2 r4 is verified through PR 2.E
+- Main short-term target: finish the first Phase 3 enemy-AI slice (PR 3.D playtest, then PR 3.E readability / active attack slots).
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary (2026-04-24)
+## Current Project Status Summary (2026-04-28)
 
-**Phase 1 complete. Phase 2 complete through PR 2.E. Phase 3 is next.** As of the current state of the repository:
+**Phase 1 complete. Phase 2 complete through PR 2.E. Phase 3 PR 3.A–3.C verified; PR 3.D code and baseline wiring landed, Unity role-mix playtest pending.** As of the current state of the repository:
 
 **Phase 1 (shipped + playtested):**
 - First-person movement fully tuned (walk, jump, double jump, dash with charges, slide, air control, momentum preservation).
@@ -63,7 +65,8 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 
 What is not yet built:
 
-- Advanced enemy types / state-machine AI (Phase 3)
+- Phase 3 PR 3.E combat readability / active attack slots
+- Arena Complex / Connected Arena Rooms: larger maps made from several large combat rooms connected directly by wide gates, deferred until after PR 2.H and initial Phase 3 AI
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling (enemies, projectiles) — deferred performance pass
 
@@ -769,6 +772,18 @@ Phase 1 complete. Phase 2 (Procedural Arena Generation r4) in flight:
 
 See `AI_HANDOFF.md` for the latest active-task context and Phase 3 starting point.
 
+### Future Arena Complex Direction (captured 2026-04-26)
+
+The user sketched a future map structure where one generated map contains several large combat rooms / arena halls connected directly by wide gates in shared walls. This is **not** the old corridor-heavy BSP dungeon direction. The intended design is:
+
+- one `ArenaRoot` and one runtime NavMesh bake per complex;
+- 3-6 large room nodes, each still sized for fast dash / slide / jump combat;
+- direct `ArenaDoorLink` gates between neighboring rooms, not long empty corridors;
+- staged clears: clear current room, open the next internal gate, eventually open the final run exit;
+- existing PR 2.E/F/G/H systems should be reused as room-level or complex-level building blocks.
+
+Suggested implementation timing: after PR 2.G verification, PR 2.H beveled prefabs, and the first Phase 3 enemy-AI layer. Start with a 3-room linear prototype before branching / reward / shop rooms.
+
 Reference specs:
 
 - [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/docs/ARENA_GENERATION_TZ.md) — **APPROVED r4**, active spec
@@ -879,6 +894,7 @@ The most important current truth is:
 - movement and combat are architecturally mature (Phase 1 shipped)
 - procedural arena pipeline (r4) is verified through PR 2.A-2.E: single-arena generation + run graph + async NavMesh + encounters + biome styling + verticality + decor/atmosphere
 - next major step is Phase 3 enemy AI: refactor `SimpleEnemyAI` into a state-machine base, then add enemy types and better spawning behavior
+- future arena scale-up should prefer Connected Arena Rooms with wide gates over corridor-heavy dungeon layouts
 
 This file should let future AI agents understand the project quickly without doing a blind full scan first.
 

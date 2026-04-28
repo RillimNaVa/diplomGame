@@ -88,21 +88,21 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 
 ## 5. `SimpleEnemyAI` scales poorly
 
-- Status: `Open`
+- Status: `Partial` (2026-04-28)
 - Severity: Medium
 - Affected files:
   - [Assets/test/SimpleEnemyAI.cs](C:/Users/assam/DiplomGame/Assets/test/SimpleEnemyAI.cs)
 - Problem:
-  - Calls `SetDestination()` every frame
-  - Computes distance every frame
-  - Logs every attack
-  - Fetches `Health` during attack path instead of caching it
+  - Original prototype behavior called `SetDestination()` every frame, computed distance every frame, logged every attack, and fetched `Health` during the attack path.
+  - PR 3.A mitigated the worst prototype costs: `SimpleEnemyAI` now implements `IEnemyTargetReceiver`, throttles `SetDestination()` through `pathUpdateInterval`, and no longer logs every attack.
+  - Full enemy behavior is now moving to `EnemyBrainBase` / `MeleeEnemyBrain` / `RangedEnemyBrain` / `BruteEnemyBrain`, but the legacy wrapper still exists for compatibility and still is not the long-term scalable AI layer.
 - Impact:
   - CPU waste
   - Worse scaling with more enemies
   - Editor slowdown due to logging
 - Fix direction:
-  - Future AI refactor with state machine, target caching, and reduced path updates
+  - Continue migration to the Phase 3 brain classes, then retire or keep `SimpleEnemyAI` only as a legacy fallback.
+  - PR 3.E should add active attack slots / readability so many enemies do not resolve attacks at once.
 
 ## 6. Dead enemies accumulate in the scene
 

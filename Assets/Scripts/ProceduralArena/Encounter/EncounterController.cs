@@ -16,6 +16,15 @@ namespace VoidSurvivor.ProceduralArena.Encounter
         public ClearCondition clearCondition = ClearCondition.KillAll;
         public int enemyCount = 8;
         public float enemyHealthMultiplier = 1f;
+
+        // PR 3.D — Spawn composition.
+        // arenaIndex is set by ArenaFlowController.SetupEncounter from the
+        // run-graph node and is the single source of truth for composer input
+        // (TZ §7.4 Revision). spawnProfile is optional — null falls back to the
+        // legacy single-prefab path on GameManager.
+        public int arenaIndex;
+        public EnemySpawnProfile spawnProfile;
+
         public readonly List<Transform> spawnPoints = new List<Transform>();
         public readonly List<SoftLockBarrier> barriers = new List<SoftLockBarrier>();
 
@@ -78,6 +87,24 @@ namespace VoidSurvivor.ProceduralArena.Encounter
             }
 
             Transform[] pts = spawnPoints.Count > 0 ? spawnPoints.ToArray() : null;
+
+            // PR 3.D — when a spawn profile is assigned, run the composer and
+            // pass the resolved roster. Composer handles its own LogWarning on
+            // fallback, so we just check UsedFallback to decide whether to call
+            // the legacy single-prefab path.
+            if (spawnProfile != null)
+            {
+                var result = EnemySpawnComposer.Compose(spawnProfile, arenaIndex);
+                if (!result.UsedFallback && result.Roster.Count > 0)
+                {
+                    gm.BeginEncounter(result.Roster, pts, OnEnemyKilled, enemyHealthMultiplier);
+                    // EncounterController's clear-on-N-kills logic uses enemyCount,
+                    // so update it to match the actual roster size.
+                    enemyCount = result.Roster.Count;
+                    return;
+                }
+            }
+
             gm.BeginEncounter(enemyCount, pts, OnEnemyKilled, enemyHealthMultiplier);
         }
 

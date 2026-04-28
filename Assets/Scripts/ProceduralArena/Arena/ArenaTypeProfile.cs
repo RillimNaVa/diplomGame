@@ -42,6 +42,8 @@ namespace VoidSurvivor.ProceduralArena.Arena
 
         [Header("Spawning")]
         [Min(0)] public int enemySpawnCount = 8;
+        [Tooltip("PR 3.D — optional. When assigned, EncounterController runs EnemySpawnComposer using this profile + arenaIndex instead of spawning the legacy single GameManager.enemyPrefab. Null = legacy path.")]
+        public EnemySpawnProfile spawnProfile;
 
         [Header("Biome")]
         public BiomeDefinition biome;

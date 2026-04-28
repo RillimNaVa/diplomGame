@@ -237,6 +237,11 @@ namespace VoidSurvivor.ProceduralArena.Run
             enc.clearCondition = profile.clearCondition;
             enc.enemyCount = room.scaledEnemyCount;
             enc.enemyHealthMultiplier = room.enemyHealthMultiplier;
+            // PR 3.D — wire arenaIndex + spawnProfile so EncounterController can
+            // run the composer. EncounterController is the single owner of
+            // arenaIndex per ENEMY_AI_TZ §7.4 Revision.
+            enc.arenaIndex = node.arenaIndex;
+            enc.spawnProfile = profile.spawnProfile;
             enc.barriers.AddRange(barriers);
 
             // Convert combatSpawnPoints into real Transforms parented under ArenaRoot.

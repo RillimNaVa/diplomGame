@@ -38,6 +38,9 @@ public class GameManager : MonoBehaviour
     Action encounterOnEnemyKilled;
     bool encounterActive;
     float encounterEnemyHealthMultiplier = 1f;
+    // PR 3.D — when set, SpawnEncounter pulls per-enemy prefab/data from this
+    // roster instead of repeating the global enemyPrefab. Cleared by EndEncounter.
+    List<EnemySpawnEntry> encounterRoster;
 
     public static GameManager instance;
 
@@ -164,10 +167,12 @@ public class GameManager : MonoBehaviour
         GameObject enemy = Instantiate(enemyPrefab, point.position, point.rotation);
         enemiesAlive++;
 
-        SimpleEnemyAI enemyAI = enemy.GetComponent<SimpleEnemyAI>();
-        if (enemyAI != null && playerTransform != null)
+        // PR 3.A: talk to IEnemyTargetReceiver so legacy SimpleEnemyAI and
+        // new EnemyBrainBase subclasses are both supported with no fallback.
+        IEnemyTargetReceiver receiver = enemy.GetComponent<IEnemyTargetReceiver>();
+        if (receiver != null && playerTransform != null)
         {
-            enemyAI.SetTarget(playerTransform);
+            receiver.SetTarget(playerTransform);
         }
 
         Health enemyHealth = enemy.GetComponent<Health>();
@@ -247,12 +252,36 @@ public class GameManager : MonoBehaviour
         StartCoroutine(SpawnEncounter());
     }
 
+    /// <summary>
+    /// PR 3.D — composer-driven entry. Roster comes already resolved (one entry
+    /// per enemy to spawn). enemyCount is derived from roster.Count. Falls back
+    /// to the legacy count-based overload if roster is null/empty.
+    /// </summary>
+    public void BeginEncounter(IList<EnemySpawnEntry> roster, Transform[] spawns, Action onEnemyKilledCallback, float healthMultiplier = 1f)
+    {
+        if (roster == null || roster.Count == 0)
+        {
+            BeginEncounter(0, spawns, onEnemyKilledCallback, healthMultiplier);
+            return;
+        }
+
+        if (encounterActive)
+        {
+            Debug.LogWarning("[GameManager] BeginEncounter(roster) called while another encounter is active. Ending previous.");
+            EndEncounter();
+        }
+
+        encounterRoster = new List<EnemySpawnEntry>(roster);
+        BeginEncounter(roster.Count, spawns, onEnemyKilledCallback, healthMultiplier);
+    }
+
     public void EndEncounter()
     {
         encounterActive = false;
         encounterOnEnemyKilled = null;
         encounterSpawnPoints = null;
         encounterEnemyHealthMultiplier = 1f;
+        encounterRoster = null;
         uiManager?.ShowWaveState("Encounter cleared");
     }
 
@@ -269,17 +298,26 @@ public class GameManager : MonoBehaviour
 
     void SpawnEncounterEnemy()
     {
-        if (enemyPrefab == null) return;
         Transform[] pool = encounterSpawnPoints != null && encounterSpawnPoints.Length > 0
             ? encounterSpawnPoints : spawnPoints;
         if (pool == null || pool.Length == 0) return;
 
+        // PR 3.D — pick prefab from roster if available. enemiesSpawned is
+        // pre-increment in SpawnEncounter, so it points at the next slot.
+        GameObject prefabToSpawn = enemyPrefab;
+        if (encounterRoster != null && enemiesSpawned < encounterRoster.Count)
+        {
+            var entry = encounterRoster[enemiesSpawned];
+            if (entry != null && entry.prefab != null) prefabToSpawn = entry.prefab;
+        }
+        if (prefabToSpawn == null) return;
+
         Transform point = pool[UnityEngine.Random.Range(0, pool.Length)];
-        GameObject enemy = Instantiate(enemyPrefab, point.position, point.rotation);
+        GameObject enemy = Instantiate(prefabToSpawn, point.position, point.rotation);
         enemiesAlive++;
 
-        SimpleEnemyAI ai = enemy.GetComponent<SimpleEnemyAI>();
-        if (ai != null && playerTransform != null) ai.SetTarget(playerTransform);
+        IEnemyTargetReceiver receiver = enemy.GetComponent<IEnemyTargetReceiver>();
+        if (receiver != null && playerTransform != null) receiver.SetTarget(playerTransform);
 
         Health hp = enemy.GetComponent<Health>();
         if (hp != null)

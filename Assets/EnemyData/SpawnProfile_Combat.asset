@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2501ba09ee412845b530bc1e7c5349b, type: 3}
+  m_Name: SpawnProfile_Combat
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnProfile
+  entries:
+  - prefab: {fileID: 1857614727316714072, guid: 93f8f07cab152f04a95fcad7d77cc9ce, type: 3}
+    data: {fileID: 11400000, guid: 0d56145583ba1ba44bacc7f230ed123e, type: 2}
+    minArenaIndex: 0
+    spawnCost: 0
+    maxAlive: 0
+    weight: 0
+  - prefab: {fileID: 7674925377668117715, guid: bad3e9519cf36084ab689f0c21a32946, type: 3}
+    data: {fileID: 11400000, guid: 94cf71fe04fa9c24488bbc50ec1d1a78, type: 2}
+    minArenaIndex: 0
+    spawnCost: 0
+    maxAlive: 0
+    weight: 0
+  - prefab: {fileID: 9014213133686316268, guid: 4e77cba642c9b774f88c4e4ba41355cc, type: 3}
+    data: {fileID: 11400000, guid: d2116576a45b68c41bc7504e46944d92, type: 2}
+    minArenaIndex: 0
+    spawnCost: 0
+    maxAlive: 0
+    weight: 0
+  - prefab: {fileID: 8059813468499353843, guid: e32c7333a6b75cc40a4fe39d6ac1938d, type: 3}
+    data: {fileID: 11400000, guid: 247664b4fe2183a4cbbb0850dbf2899b, type: 2}
+    minArenaIndex: 0
+    spawnCost: 0
+    maxAlive: 0
+    weight: 0
+  baseBudget: 16
+  budgetPerArenaIndex: 4
+  maxEnemyTypesPerEncounter: 3
+  maxTanks: 1
+  maxRanged: 3

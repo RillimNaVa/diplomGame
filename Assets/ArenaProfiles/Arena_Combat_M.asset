@@ -31,5 +31,6 @@ MonoBehaviour:
   platformHeightRange: {x: 2.5, y: 4.5}
   platformFootprintRange: {x: 2, y: 3}
   enemySpawnCount: 8
+  spawnProfile: {fileID: 11400000, guid: 6225528882e493e4190c03da2fe08ace, type: 2}
   biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c4, type: 2}
   clearCondition: 1

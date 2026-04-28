@@ -139,12 +139,55 @@
 
 ## Phase 3: Enemy AI (Weeks 5-6)
 
-### Enemy Types
-- [ ] Refactor `SimpleEnemyAI.cs` → state machine base
-- [ ] Drone (grunt): fast melee rusher, swarm behavior
-- [ ] Sentinel (ranged): keeps distance, slow projectiles
-- [ ] Brute (elite): charge attack, ground slam, high HP
-- [ ] Void Warden (mini-boss): 2 phases, summons drones
+> Master spec: [ENEMY_AI_TZ.md](./ENEMY_AI_TZ.md) — Phase 3 scoped as four main enemy roles, state-machine AI, spawn composition, readability, and later pooling.
+
+### PR 3.A — State Machine Base + Drone/Crawler (verified 2026-04-27)
+- [x] `EnemyRole`, `EnemyAIState`, `IEnemyTargetReceiver`, `EnemyData` SO, `EnemyBrainBase`, `MeleeEnemyBrain` *(Assets/Scripts/Combat/Enemies/AI + Data, 2026-04-27)*
+- [x] `SimpleEnemyAI` migrated to `IEnemyTargetReceiver`; throttled `SetDestination`; per-attack `Debug.Log` removed *(2026-04-27)*
+- [x] `GameManager` resolves `IEnemyTargetReceiver` instead of `SimpleEnemyAI` directly (no fallback branch) *(2026-04-27)*
+- [x] `dotnet build Assembly-CSharp.csproj` clean (zero CS errors/warnings) *(2026-04-27, verified after temp-injecting new files into csproj)*
+- [x] Author `Drone.asset` and `Crawler.asset` `EnemyData` SOs in Unity Editor
+- [x] Create `Enemy_Drone.prefab` / `Enemy_Crawler.prefab` variants using `MeleeEnemyBrain` + the two SOs
+- [x] Editor verification: legacy wave mode + encounter mode both still spawn enemies; barriers behave; HP orbs/stagger/glory-kill still trigger; no `SetDestination on inactive agent`
+
+### PR 3.D — Spawn Composition (code + baseline wiring landed 2026-04-27, playtest pending)
+- [x] `EnemySpawnEntry` (Serializable) + override-rule accessors (Resolved* properties: value > 0 overrides EnemyData, 0 inherits)
+- [x] `EnemySpawnProfile` SO with budget curve (`baseBudget` + `budgetPerArenaIndex`), variety cap (`maxEnemyTypesPerEncounter`), bad-combination guards (`maxTanks`, `maxRanged`)
+- [x] `EnemySpawnComposer` static utility — eligibility filter by arenaIndex, weighted distinct role pick (1 in arena 0, 2 in arena 1, 3 in arena 2+), budget-spending loop with maxAlive + role caps, deterministic via optional `System.Random`, `Debug.LogWarning` on every fallback path with reason (TZ §7.4 Revision)
+- [x] `GameManager.BeginEncounter(IList<EnemySpawnEntry> roster, ...)` overload; legacy `BeginEncounter(int count, ...)` preserved
+- [x] `EncounterController.arenaIndex` + `spawnProfile` fields — single owner of arenaIndex per TZ §7.4 Revision; falls back to legacy single-prefab path if profile is null
+- [x] `ArenaTypeProfile.spawnProfile` field — per-arena-type composition (Combat, Elite, Boss can each have their own profile)
+- [x] `ArenaFlowController.SetupEncounter` propagates `node.arenaIndex` and `profile.spawnProfile` into the runtime EncounterController
+- [x] `dotnet build Assembly-CSharp.csproj` clean
+- [x] Author baseline `SpawnProfile_Combat.asset` with Drone/Crawler/Spitter/Brute entries
+- [x] Wire profile reference into `Arena_Combat_M` and `Arena_Elite_L` `ArenaTypeProfile` assets in Editor
+- [ ] Editor verification: arenaIndex 0 spawns only Drone/Crawler; arenaIndex 1+ introduces Spitter; arenaIndex 2+ may introduce Brute (≤1); fallback warning fires when profile unset
+
+### PR 3.C — Station Brute (verified 2026-04-27)
+- [x] `BruteEnemyBrain` *(Move → Telegraph → Attack (area slam) → Recover, FaceTarget during wind-up)*
+- [x] Slam damage via `Physics.OverlapSphereNonAlloc` at impact frame using `EnemyData.slamRadius` + `slamHitMask`; deduped by `Health` so player's parent + child colliders don't apply damage twice
+- [x] Editor Gizmo (`OnDrawGizmosSelected`) draws slam radius — orange while telegraphing, red baseline
+- [x] `dotnet build Assembly-CSharp.csproj` clean
+- [x] Author `Brute.asset` `EnemyData` SO (Role: Tank, slamRadius/slamHitMask, **maxAlive=1 mandatory until PR 3.E slot manager**)
+- [x] Author `Enemy_Brute.prefab` variant of `Enemy.prefab` with `BruteEnemyBrain` + Brute SO
+- [x] Editor verification: Brute slow approach, ~0.9s telegraph readable, escape by leaving slam radius works, only one Brute alive in normal encounters
+
+### PR 3.B — Plasma Spitter / Sentinel (verified 2026-04-27)
+- [x] `RangedEnemyBrain` *(Move/Reposition/Telegraph/Attack/Recover with hysteresis band around `preferredDistance`, throttled LoS raycast, FaceTarget during Telegraph)*
+- [x] `EnemyProjectile` *(owner-filtered trigger collider, manual movement to avoid Rigidbody tunneling, passes through other enemies, damages first non-owner Health, lifetime auto-destruct — pooling deferred to PR 3.F)*
+- [x] LoS check refuses Telegraph entry without clear raycast and re-checks at Attack frame so wall-dashing the player cancels the shot mid-windup
+- [x] `dotnet build Assembly-CSharp.csproj` clean
+- [x] Author `Spitter.asset` `EnemyData` SO (role: Ranged, projectilePrefab assigned, preferredDistance, projectileSpeed)
+- [x] Author `EnemyProjectile.prefab` (SphereCollider trigger + visual + `EnemyProjectile` script)
+- [x] Author `Enemy_Spitter.prefab` variant of `Enemy.prefab` with `RangedEnemyBrain` + Spitter SO
+- [x] Editor verification: Spitter holds preferred distance, does not shoot through walls, projectiles dodgeable
+
+### Enemy Types (full PR 3 set)
+- [ ] Drone (fodder): low-HP melee mass / drop source — code via `MeleeEnemyBrain`, needs SO + prefab in Editor
+- [ ] Crawler (chaser): faster melee pressure with telegraph + recovery — code via `MeleeEnemyBrain`, needs SO + prefab in Editor
+- [ ] Plasma Spitter / Sentinel (ranged): keeps distance, slow dodgeable projectiles — code landed PR 3.B, needs SO + prefab in Editor
+- [ ] Station Brute (tank): high HP, telegraphed area slam, space control — PR 3.C
+- [ ] Optional Gravity Node (zoner): deferred until the four-role core is stable
 
 ### AI Improvements
 - [ ] Strafing behavior
@@ -155,9 +198,33 @@
 
 ### Spawning
 - [ ] Wave composition per arena difficulty
-- [ ] Enemy type introduction (Drone→Sentinel→Brute)
+- [ ] Enemy type introduction (Drone/Crawler→Spitter→Brute)
 - [ ] Object pooling for enemies
-- [ ] HP/damage scaling per arena number (+5%)
+- [ ] HP scaling per arena number (+5% baseline; damage scaling deferred by default)
+
+---
+
+## Phase 3.5: Arena Complex Prototype (deferred idea)
+
+> Captured 2026-04-26 from user sketch. Do **not** implement before PR 2.G/2.H are settled and the first Phase 3 enemy-AI layer exists.
+
+Goal: evolve the current single-arena pipeline into optional larger maps made of several large combat rooms connected directly by wide gates/doors, without long corridors.
+
+### Arena Complex Direction
+- [ ] Add `ArenaComplexData` concept: multiple large room nodes plus direct `ArenaDoorLink` gates
+- [ ] Keep one `ArenaRoot` and one runtime NavMesh bake per complex
+- [ ] Reuse current `ArenaRoomData` / `ArenaBuilder` room-building logic instead of reviving corridor-heavy BSP
+- [ ] Build internal gates between adjacent rooms; avoid narrow corridor traversal
+- [ ] Support staged clears: clear current room -> open next internal gate -> final room opens run exit
+- [ ] Prototype first with 3 rooms, rectangular shapes, one linear path, no branching
+- [ ] Later add branches: combat / elite / reward / shop / rest side rooms
+- [ ] Ensure existing PR 2.E/F/G/H visual layers apply per room or per complex without rewriting them
+
+### Design Constraints
+- Room sizes must stay large enough for dash / slide / double jump combat
+- Gates should be wide, readable arena portals, not small doors
+- No long empty traversal corridors; every transition should immediately lead into another combat/reward space
+- Existing single-arena mode must remain playable as fallback
 
 ---
 
@@ -261,6 +328,15 @@
 
 | Date | What was done |
 |------|---------------|
+| 2026-04-28 | Phase 3 PR 3.A–3.D integration pass: committed the `claude/kind-elgamal-a56350` worktree state after review. `Drone` / `Crawler` / `Spitter` / `Brute` `EnemyData` assets and prefab variants are present, `EnemyProjectile.prefab` is present, and `SpawnProfile_Combat.asset` is wired into `Arena_Combat_M.asset` plus `Arena_Elite_L.asset`. Added a small `GameManager.BeginEncounter(roster, ...)` guard so restarting a roster-driven encounter over an active encounter cannot clear the new roster before the first spawn. External `dotnet build Assembly-CSharp.csproj` passed; Unity PR 3.D role-mix playtest remains pending. |
+| 2026-04-27 | **Phase 3 PR 3.D — Spawn Composition (composer + per-arena profile)** — code landed, Editor wiring pending. New `Assets/Scripts/Combat/Enemies/Data/EnemySpawnEntry.cs` (Serializable, with `Resolved*` accessors implementing the TZ §7.2 Revision override rule: value > 0 overrides `EnemyData`, value 0 inherits). New `Assets/Scripts/Combat/Enemies/Data/EnemySpawnProfile.cs` SO holding the entry roster, budget curve (`baseBudget` + `budgetPerArenaIndex`), variety cap (`maxEnemyTypesPerEncounter`), and the `maxTanks`/`maxRanged` bad-combination guards from TZ §7.6. New `Assets/Scripts/Combat/Enemies/Spawn/EnemySpawnComposer.cs` — static, pure-logic utility. Algorithm: filter eligible entries by arenaIndex; pick `targetVariety` distinct roles (1/2/3 by arena index, capped by profile); spend `baseBudget + arenaIndex * budgetPerArenaIndex` budget by weighted random selection from the picked roles, respecting `maxAlive` per entry, `maxTanks`, `maxRanged`. Determinism: optional `System.Random` parameter for seeded runs. Every fallback path emits `Debug.LogWarning` with a specific reason (null profile / no entries pass arena gate / all caps blocked) per TZ §7.4 Revision — no silent fallbacks. New `GameManager.BeginEncounter(IList<EnemySpawnEntry> roster, ...)` overload; per-enemy prefab pulled from `encounterRoster[enemiesSpawned]` in `SpawnEncounterEnemy`; legacy `BeginEncounter(int count, ...)` preserved unchanged for the wave loop and for null-profile fallback. `EncounterController` got `arenaIndex` (single owner per TZ §7.4 Revision) and `spawnProfile` fields; `SpawnEnemiesViaGameManager` runs the composer when profile != null and passes the resolved roster, otherwise falls through to the legacy count-based call. `ArenaTypeProfile` got a new `spawnProfile` field so Combat / Elite / Boss arena types can each define their own composition. `ArenaFlowController.SetupEncounter` propagates `node.arenaIndex` and `profile.spawnProfile` into the runtime `EncounterController`. `dotnet build Assembly-CSharp.csproj` clean. Pending in Editor: create at least one `EnemySpawnProfile` asset, populate entries pointing at the existing Drone/Crawler/Spitter/Brute prefabs + EnemyData SOs, then drag the profile into existing `Arena_Combat_M` / `Arena_Elite_M` / `Arena_Boss_L` assets. arenaIndex curve from TZ §7.5: arena 0 → Drone+Crawler only, 1 → +Spitter, 2 → +Brute. Until profiles are wired the build behaves identically to PR 3.C (legacy single-prefab spawn). |
+| 2026-04-27 | **Phase 3 PR 3.C — Station Brute (tank enemy)** — code landed, Editor wiring pending. New `Assets/Scripts/Combat/Enemies/AI/BruteEnemyBrain.cs` extends `EnemyBrainBase`. State flow: Move → Telegraph → Attack → Recover, with slow turning during Telegraph (`Quaternion.Slerp` 6/sec, half the speed of Spitter's 12/sec, so the Brute can't pivot to follow a strafing player perfectly). Slam damage applied ONCE at end of `telegraphTime` via `Physics.OverlapSphereNonAlloc` (32-collider buffer, static, allocation-free) at `transform.TransformPoint(slamOriginOffset)` sampled at impact frame — TZ §6.4 contract (player escapes by leaving `slamRadius` during wind-up, not by leaving at telegraph start). Hits are deduped by `Health` reference via a HashSet, because the player has multiple colliders (CharacterController + child weapon volumes) attached to the same Health and we don't want to deal damage twice. `slamHitMask` and `slamRadius` come from the existing `EnemyData` fields added in PR 3.A. `OnDrawGizmosSelected` renders a wire-sphere slam preview in the Scene view (orange while Telegraph, red otherwise) for tuning. Until PR 3.E ships the active-attack slot manager, the Brute `EnemyData.maxAlive = 1` is mandatory (TZ Revision Log v2) — enforced via SO field, not code. `dotnet build Assembly-CSharp.csproj` clean. Pending in Editor: create `Brute.asset` SO (Role=Tank, maxHealth 260, moveSpeed 2.2, damage 28, attackRange 3.0, slamRadius 4.0, attackCooldown 3.0, telegraphTime 0.9, recoveryTime 1.1, **slamHitMask = Default + Player layers**, spawnCost 6, minArenaIndex 2, maxAlive 1, spawnWeight 1) and `Enemy_Brute.prefab` variant. |
+| 2026-04-27 | **Phase 3 PR 3.B — Plasma Spitter / Sentinel (ranged enemy)** — code landed, Editor wiring pending. New `Assets/Scripts/Combat/Enemies/AI/RangedEnemyBrain.cs` extends `EnemyBrainBase` with a hold-distance state machine (Move closes in if dist > preferredDistance + band; Reposition backs off if dist < preferredDistance − band; once inside the hysteresis band the brain stops, faces target, and considers firing). Telegraph entry requires a clear line-of-sight raycast from `muzzleOffset` (default 1m up) to target; LoS is throttled by `EnemyData.lineOfSightCheckInterval` (cached between checks). Attack re-checks LoS at impact — dashing behind cover during the wind-up cancels the projectile per TZ §6.3 ("Spitter does not shoot through walls if line-of-sight check fails") while still consuming the cooldown. Telegraph faces the target via Quaternion.Slerp on flat XZ. New `Assets/Scripts/Combat/Enemies/Projectiles/EnemyProjectile.cs` is owner-filtered: trigger SphereCollider, manual `transform.position` translation (avoids Rigidbody tunneling decisions for slow plasma — at default speed=10 step is ~0.17m/frame, smaller than recommended SphereCollider radius 0.25), passes through self + any other `EnemyBrainBase`/legacy `SimpleEnemyAI`, damages the first non-owner `Health` via `Health.TakeDamage` and self-destructs, also self-destructs after `lifetime` seconds. Pooling deferred to PR 3.F per TZ. `dotnet build Assembly-CSharp.csproj` clean. Pending in Unity Editor: (1) create `EnemyProjectile.prefab` (SphereCollider trigger r≈0.25 + visual mesh/Trail + the `EnemyProjectile` script); (2) create `Spitter.asset` SO (Role=Ranged, fill ranged stats from TZ §6.3 with the projectile prefab dragged into `projectilePrefab`); (3) create `Enemy_Spitter.prefab` variant from `Enemy.prefab`, swap `SimpleEnemyAI` → `RangedEnemyBrain`, drag in Spitter SO; (4) playtest behind cover (Spitter must not shoot through walls). |
+| 2026-04-27 | **Phase 3 PR 3.A — Enemy state-machine base + Drone/Crawler scaffolding** — code landed, Editor wiring pending. New `Assets/Scripts/Combat/Enemies/AI/` module: `EnemyRole` enum (with `Boss` reserved for Phase 4), `EnemyAIState` enum (Spawn/Move/Telegraph/Attack/Recover/Reposition/Staggered/Dead), `IEnemyTargetReceiver` interface (preserves `SetTarget(Transform)` contract), `EnemyBrainBase` abstract MonoBehaviour (NavMeshAgent + Health auto-cache, throttled `RequestPathTo` with 0.2s default interval and `agent.isOnNavMesh` guard, state machine, `Health.onDeath` → `Dead` transition, `EnemyStagger.OnStaggerChanged` → `Staggered` transition with agent stop), `MeleeEnemyBrain` concrete brain (Move → Telegraph → Attack → Recover loop, single-shot impact with re-check at end of telegraph so player can escape during wind-up). New `Assets/Scripts/Combat/Enemies/Data/EnemyData.cs` ScriptableObject covering identity, stats, attack timing, ranged stub fields (for PR 3.B), heavy/slam stub fields (for PR 3.C), and spawn defaults (which `EnemySpawnEntry` will override per PR 3.D). `Assets/test/SimpleEnemyAI.cs` kept as Phase 3 compatibility wrapper but updated to (a) implement `IEnemyTargetReceiver`, (b) throttle `SetDestination` to `pathUpdateInterval` (0.2s default) — fixes the PR 3.A acceptance "no SetDestination every frame", (c) remove the per-attack `Debug.Log` spam. `Assets/test/GameManager.cs` `SpawnEnemy` and `SpawnEncounterEnemy` now resolve `IEnemyTargetReceiver` via `GetComponent` instead of `SimpleEnemyAI` directly — no fallback branch (TZ §5.4). `dotnet build Assembly-CSharp.csproj` ran clean (zero CS errors/warnings) after temp-injecting new files into csproj for verification; Unity will regenerate csproj on next refresh and pick up the files automatically. Pending in Unity Editor: create `Drone.asset` / `Crawler.asset` SOs via *Create > Void Survivor > Enemies > Enemy Data*, then either build prefab variants or swap `SimpleEnemyAI` → `MeleeEnemyBrain` on `Enemy.prefab`. Tuning note: spec values for Drone (3.6 m/s) and Crawler (4.8 m/s) are below `PlayerController.moveSpeed = 10`, so before locking final numbers verify against actual player movement; ENEMY_AI_TZ §6.2 already flags this. |
+| 2026-04-27 | ENEMY_AI_TZ.md DRAFT v2 revision pass before PR 3.A (clarifications only, no structural changes): added `[Header("Ranged")]` and `[Header("Heavy / Brute")]` sections to shared `EnemyData`; documented `EnemySpawnEntry` override rule (>0 overrides `EnemyData`, 0 inherits); specified melee damage path (range re-check at impact, `Health.TakeDamage`, no ghost hits); added stagger integration paragraph (abort attack, release slot, stop agent); marked `EnemyRole.Boss` as reserved for Phase 4; specified Brute slam mechanic (`Physics.OverlapSphere` at impact frame using `slamHitMask`, `maxAlive=1` mandatory until PR 3.E slot manager); noted `SimpleEnemyAI` self-implements `IEnemyTargetReceiver` (no `GameManager` fallback branch); composer must `Debug.LogWarning` on Drone fallback; declared `EncounterController` as single owner of `arenaIndex`; extended PR 3.F scope to include `EnemyProjectilePool` for Spitter projectiles; added Crawler tuning note. |
+| 2026-04-27 | Added `docs/ENEMY_AI_TZ.md` as the master Phase 3 Enemy AI specification. Scope is intentionally realistic for the current project: state-machine base, four main enemy roles, spawn composition by budget/weights/arenaIndex, combat readability/attack slots, and pooling after enemy contracts stabilize. Full AI Director, Arena Complex spawn logic, Shield Drone, complex Brute charge, and final art/VFX are explicitly deferred. |
+| 2026-04-26 | Planning decision: **PR 2.H (beveled prefabs) deferred** until after first Phase 3 enemy-AI pass. Coupling between PR 2.H and Phase 3 is minimal (NavMesh per-arena re-bake handles new obstacles, `combatSpawnPoints` are independent, glory-kill / stagger / pooling are orthogonal); only real follow-up cost is a balance pass on ranged enemies once new cover changes line-of-sight density. Also captured new sub-task **PR 2.H1 — Hand-authored structures** (bunkers / sandbag lines / pillar clusters / broken arches / sniper nests + atmospheric variants like crashed pods, generator stacks, terminals) to be implemented as `StructureDefinition` SO with `List<BoxPart>` reusing `BuildUtils.SpawnBox` — no Blender, no Asset Store, deterministic via new `structureRng` sub-stream. May close ~60% of PR 2.H value before bevels. PR 2.G visual verify is informally accepted (re-open if regressions surface during Phase 3 playtests). Next active task: refactor `Assets/test/SimpleEnemyAI.cs` into a state machine (Phase 3 §Enemy Types). |
+| 2026-04-26 | Captured future **Arena Complex / Connected Arena Rooms** direction from user sketch: larger maps made of several large combat rooms connected by direct wide gates instead of corridors. Deferred implementation until after PR 2.G/2.H and the first Phase 3 enemy-AI layer. Intended future approach: one `ArenaRoot`, one NavMesh bake, multiple room nodes, `ArenaDoorLink` internal gates, staged room clears, final exit to the next run node. Existing PR 2.E/F/G/H work should be reused as room-level building blocks, not rewritten. |
 | 2026-04-24 | Phase 2 PR 2.E (Visual Style Pass) marked verified after the user tested the result in Unity Editor and reported it is acceptable for closure. Review notes: check east/west ramp axis before re-enabling Parkour, and restore `RenderSettings.fogMode` if biome atmosphere starts affecting other scenes/controllers. |
 | 2026-04-25 | Phase 2 PR 2.G second follow-up: switched ceiling fill lights from Point to Spot pointing straight down (110° outer / ~60° inner). Point lights at wh*0.85 lost ~95% of intensity to inverse-square before reaching the floor — that's why the previous pass looked dark. Spots now: intensity = max(2.5, biome.accentLightIntensity × 1.6) (≈3.5 default), range = wh + 6m, mounted at wh-0.45m. Added dedicated `mats.lampPanel` material (`MakeEmissive` with intensity 4.5, color ≈ warm white slightly pulled toward biome.ambientTint) so the panel itself reads as bright and biome-agnostic; previously panels used `mats.emissiveAccent` which on dim biomes barely glowed. Panel size bumped 1.4 → 2.2 m for floor-readability. |
 | 2026-04-25 | Phase 2 PR 2.G follow-up: visible ceiling lamp fixtures. New `ArenaBuilder.SpawnCeilingLamp` co-spawns a dark mounting bracket (`mats.ceiling`/`mats.wall`) flush to the ceiling and an emissive panel (`mats.emissiveAccent`) hanging just below it at every fill-light position (1 for small Start/Shop/Rest arenas, 5 for medium/large). Lamps are visual-only — the underlying fill point light still does the illumination — so light-count budget per renderer is unchanged. Mount is 4cm below the ceiling tile to avoid z-fight. |
@@ -335,6 +411,7 @@ For each of the 4 new weapons (Scatter Gun slot 1, Void Rifle slot 2, Plasma Lau
 - Phase 2 **PR 2.B** (Run Graph + Transitions + fade + door-choice placeholder UI + Victory/GameOver screens + door-opening/lintel/barrier fixes): **verified 2026-04-21** ✅
 - Phase 2 **PR 2.E** visual style pass is verified in Unity Editor by the user (2026-04-24). Phase 2 r4 is complete through PR 2.E.
 - Next: start **Phase 3 — Enemy AI**, beginning with a `SimpleEnemyAI` state-machine refactor that keeps the current encounter/run pipeline intact.
+- Deferred after initial Phase 3: **Arena Complex / Connected Arena Rooms** prototype (multi-room arena map with direct wide gates, no long corridors). Do not implement before PR 2.G/2.H and enemy-AI basics unless reprioritized.
 - TZ: [ARENA_GENERATION_TZ.md](./ARENA_GENERATION_TZ.md) (APPROVED r4).
 
 ### Phase 2 PR 2 — Editor verification checklist
