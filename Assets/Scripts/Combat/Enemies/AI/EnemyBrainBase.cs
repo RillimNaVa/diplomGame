@@ -4,7 +4,9 @@ using UnityEngine.AI;
 // Phase 3 / PR 3.A — shared runtime concerns for all enemy brains:
 // target resolution, NavMeshAgent driving (throttled, never per frame),
 // state transitions, Health/Stagger hooks, agent stop during attack/recover.
-// See docs/ENEMY_AI_TZ.md §5.6.
+// PR 3.E adds: ActiveAttackSlotManager integration, TelegraphFlash hook,
+// fair-spawn delay when spawned too close to the player.
+// See docs/ENEMY_AI_TZ.md §5.6, §8.3, §8.4.
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Health))]
 public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
@@ -24,21 +26,37 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     protected Health health;
     protected Health targetHealth;
     protected EnemyStagger stagger;
+    protected TelegraphFlash telegraphFlash;
 
     float nextPathUpdateTime;
     float stateEnterTime;
+    float spawnHoldUntil;
+    bool spawnInitialized;   // PR 3.F — re-evaluated per OnEnable cycle so pooled rents redo fair-spawn
+
+    protected AttackSlotKind SlotKind { get; private set; } = AttackSlotKind.Melee;
 
     protected virtual void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         health = GetComponent<Health>();
         stagger = GetComponent<EnemyStagger>();
+        telegraphFlash = GetComponentInChildren<TelegraphFlash>(true);
+        if (telegraphFlash == null) telegraphFlash = gameObject.AddComponent<TelegraphFlash>();
+        // PR 4.A — auto-attach combat-feel components so existing prefabs get
+        // hit flash / death burst / spawn warp-in without Editor work.
+        if (GetComponent<HitFlash>() == null) gameObject.AddComponent<HitFlash>();
+        if (GetComponent<EnemyDeathBurst>() == null) gameObject.AddComponent<EnemyDeathBurst>();
+        if (GetComponent<SpawnWarpIn>() == null) gameObject.AddComponent<SpawnWarpIn>();
+        // PR 5.A — shader-driven death + stagger visuals.
+        if (GetComponent<EnemyDissolve>() == null) gameObject.AddComponent<EnemyDissolve>();
+        if (GetComponent<StaggerOutline>() == null) gameObject.AddComponent<StaggerOutline>();
 
         if (data != null)
         {
             health.maxHealth = data.maxHealth;
             health.currentHealth = data.maxHealth;
             agent.speed = data.moveSpeed;
+            SlotKind = ActiveAttackSlotManager.KindForRole(data.role);
         }
     }
 
@@ -46,6 +64,10 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     {
         health.onDeath.AddListener(HandleDeath);
         if (stagger != null) stagger.OnStaggerChanged += HandleStaggerChanged;
+        // PR 3.F: re-arm spawn init so a pooled rent re-evaluates fair-spawn.
+        // Start only runs once per instance lifetime; pool reuse re-fires
+        // OnEnable but not Start.
+        spawnInitialized = false;
         SetState(EnemyAIState.Spawn);
     }
 
@@ -53,6 +75,8 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     {
         health.onDeath.RemoveListener(HandleDeath);
         if (stagger != null) stagger.OnStaggerChanged -= HandleStaggerChanged;
+        ReleaseAttackSlot();
+        if (telegraphFlash != null) telegraphFlash.EndPulse();
     }
 
     protected virtual void Start()
@@ -62,10 +86,32 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
             GameObject tagged = GameObject.FindWithTag("Player");
             if (tagged != null) SetTarget(tagged.transform);
         }
+        // Fair-spawn evaluation now lives in InitializeSpawn(), invoked from
+        // Update() on the first frame after each OnEnable. That way pooled
+        // rents (which fire OnEnable but not Start) also pick up the delay.
+    }
 
-        // Leave Spawn immediately on first frame — Spawn is reserved for
-        // pooled spawn-in delays and PR 3.E fair-spawn warnings.
-        if (State == EnemyAIState.Spawn) SetState(EnemyAIState.Move);
+    /// <summary>
+    /// PR 3.E §8.4: fair-spawn delay when too close to player. Hold in Spawn,
+    /// pulse telegraph briefly so the player can react before damage starts.
+    /// Called once per OnEnable cycle as soon as Target is resolved.
+    /// </summary>
+    void InitializeSpawn()
+    {
+        spawnInitialized = true;
+        float delay = ResolveFairSpawnDelay();
+        if (delay > 0f)
+        {
+            spawnHoldUntil = Time.time + delay;
+            if (telegraphFlash != null && data != null)
+            {
+                telegraphFlash.BeginPulse(delay, data.telegraphColor);
+            }
+        }
+        else
+        {
+            SetState(EnemyAIState.Move);
+        }
     }
 
     public virtual void SetTarget(Transform target)
@@ -77,6 +123,26 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     protected virtual void Update()
     {
         if (State == EnemyAIState.Dead || State == EnemyAIState.Staggered) return;
+
+        if (State == EnemyAIState.Spawn)
+        {
+            if (!spawnInitialized)
+            {
+                // Wait for Target to be resolved (autoResolve in Start, or
+                // GameManager.SetTarget right after Rent) before evaluating
+                // the fair-spawn distance.
+                if (Target == null) return;
+                InitializeSpawn();
+                return;
+            }
+            if (Time.time >= spawnHoldUntil)
+            {
+                if (telegraphFlash != null) telegraphFlash.EndPulse();
+                SetState(EnemyAIState.Move);
+            }
+            return;
+        }
+
         if (Target == null || data == null) return;
 
         TickBrain();
@@ -122,6 +188,55 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
         return targetHealth.currentHealth > 0f;
     }
 
+    // ----- PR 3.E: attack-slot helpers (shared by every brain) -----
+
+    /// <summary>
+    /// Gate before transitioning Move -> Telegraph. Returns true if the slot was
+    /// granted (or already held by this brain). Returning false means the brain
+    /// should keep moving/repositioning until a slot frees up. Idempotent.
+    /// </summary>
+    protected bool TryAcquireAttackSlot()
+    {
+        return ActiveAttackSlotManager.Instance.TryAcquire(this, SlotKind);
+    }
+
+    protected void ReleaseAttackSlot()
+    {
+        // Avoid auto-creating a manager during teardown if one was never built.
+        if (!Application.isPlaying) return;
+        var inst =
+#if UNITY_2023_1_OR_NEWER
+            Object.FindFirstObjectByType<ActiveAttackSlotManager>();
+#else
+            Object.FindObjectOfType<ActiveAttackSlotManager>();
+#endif
+        if (inst != null) inst.Release(this);
+    }
+
+    /// <summary>
+    /// Brains call this when entering Telegraph. Pulses the telegraph emission
+    /// for the brain's telegraphTime in the EnemyData-defined color.
+    /// </summary>
+    protected void BeginTelegraphFlash()
+    {
+        if (telegraphFlash == null || data == null) return;
+        telegraphFlash.BeginPulse(data.telegraphTime, data.telegraphColor);
+    }
+
+    protected void EndTelegraphFlash()
+    {
+        if (telegraphFlash != null) telegraphFlash.EndPulse();
+    }
+
+    float ResolveFairSpawnDelay()
+    {
+        if (data == null) return 0f;
+        if (data.fairSpawnDistance <= 0f || data.fairSpawnDelay <= 0f) return 0f;
+        if (Target == null) return 0f;
+        float d = DistanceToTarget();
+        return d <= data.fairSpawnDistance ? data.fairSpawnDelay : 0f;
+    }
+
     protected virtual void HandleStaggerChanged(bool isStaggered)
     {
         // ENEMY_AI_TZ §5.6: stagger aborts in-progress telegraph/attack,
@@ -129,6 +244,8 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
         if (isStaggered && State != EnemyAIState.Dead)
         {
             StopAgent();
+            ReleaseAttackSlot();
+            EndTelegraphFlash();
             SetState(EnemyAIState.Staggered);
         }
     }
@@ -136,6 +253,8 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     protected virtual void HandleDeath()
     {
         StopAgent();
+        ReleaseAttackSlot();
+        EndTelegraphFlash();
         SetState(EnemyAIState.Dead);
     }
 }

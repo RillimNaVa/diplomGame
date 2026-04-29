@@ -56,4 +56,27 @@ public class Health : MonoBehaviour
     {
         gameObject.SetActive(false);
     }
+
+    // Phase 3 / PR 3.F — pool reset hooks. PooledEnemy calls these before
+    // SetActive(true) on a recycled instance.
+
+    /// <summary>
+    /// Restores currentHealth to maxHealth and re-fires onHealthChanged so the
+    /// HUD / EnemyStagger reset their visuals. Does not touch listeners.
+    /// </summary>
+    public void ResetForPool()
+    {
+        CancelInvoke(nameof(Disable));
+        currentHealth = maxHealth;
+        onHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
+    /// <summary>
+    /// Cancels the pending 1s SetActive(false) scheduled by Die(). PooledEnemy
+    /// owns disable timing once an instance is pool-managed.
+    /// </summary>
+    public void CancelAutoDisable()
+    {
+        CancelInvoke(nameof(Disable));
+    }
 }

@@ -21,6 +21,10 @@ public class GameManager : MonoBehaviour
     [Tooltip("When true, the legacy wave loop is disabled and encounters are driven by EncounterController via BeginEncounter/EndEncounter.")]
     public bool useEncounterMode = false;
 
+    [Header("Spawn Telegraph (PR 5.A)")]
+    [Tooltip("Seconds the spawn-point telegraph (floor circle + vertical beam) plays before the enemy is actually rented. 0 disables.")]
+    public float spawnTelegraphDuration = 0.7f;
+
     [Header("References")]
     public UIManager uiManager;
     public Transform playerTransform;
@@ -129,6 +133,13 @@ public class GameManager : MonoBehaviour
             playerHealth.onHealthChanged.AddListener(UpdatePlayerHealth);
             playerHealth.onDeath.AddListener(OnPlayerDied);
             UpdatePlayerHealth(playerHealth.currentHealth, playerHealth.maxHealth);
+
+            // PR 4.A — auto-attach screen-shake + damage-vignette feedback so
+            // the player gets hit feedback without manual Editor wiring.
+            if (playerHealth.GetComponent<PlayerHitFeedback>() == null)
+            {
+                playerHealth.gameObject.AddComponent<PlayerHitFeedback>();
+            }
         }
     }
 
@@ -150,7 +161,7 @@ public class GameManager : MonoBehaviour
     {
         for (int i = 0; i < enemiesToSpawn; i++)
         {
-            SpawnEnemy();
+            yield return StartCoroutine(SpawnEnemyWithTelegraph());
             enemiesSpawned++;
             yield return new WaitForSeconds(timeBetweenSpawns);
         }
@@ -159,12 +170,34 @@ public class GameManager : MonoBehaviour
         EvaluateWaveEnd();
     }
 
+    // PR 5.A — pre-spawn telegraph wrapper for the legacy wave loop.
+    IEnumerator SpawnEnemyWithTelegraph()
+    {
+        if (spawnPoints == null || spawnPoints.Length == 0 || enemyPrefab == null) yield break;
+        Transform point = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
+        if (point == null) yield break;
+        if (spawnTelegraphDuration > 0f)
+        {
+            SpawnTelegraph.SpawnAt(point.position, spawnTelegraphDuration);
+            yield return new WaitForSeconds(spawnTelegraphDuration);
+        }
+        SpawnEnemyAt(point);
+    }
+
     void SpawnEnemy()
     {
         if (spawnPoints.Length == 0 || enemyPrefab == null) return;
-
         Transform point = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
-        GameObject enemy = Instantiate(enemyPrefab, point.position, point.rotation);
+        SpawnEnemyAt(point);
+    }
+
+    void SpawnEnemyAt(Transform point)
+    {
+        if (point == null || enemyPrefab == null) return;
+        // PR 3.F: rent through EnemyPool. Pool restores Health / EnemyStagger /
+        // EnemyLootTable / NavMeshAgent state via PooledEnemy.PrepareForReuse.
+        GameObject enemy = EnemyPool.Instance.Rent(enemyPrefab, point.position, point.rotation);
+        if (enemy == null) return;
         enemiesAlive++;
 
         // PR 3.A: talk to IEnemyTargetReceiver so legacy SimpleEnemyAI and
@@ -178,6 +211,9 @@ public class GameManager : MonoBehaviour
         Health enemyHealth = enemy.GetComponent<Health>();
         if (enemyHealth != null)
         {
+            // Remove+Add so the same recycled instance does not accumulate
+            // duplicate OnEnemyDied subscriptions across pool rents (PR 3.F).
+            enemyHealth.onDeath.RemoveListener(OnEnemyDied);
             enemyHealth.onDeath.AddListener(OnEnemyDied);
         }
     }
@@ -290,18 +326,35 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < enemiesToSpawn; i++)
         {
             if (!encounterActive) yield break;
-            SpawnEncounterEnemy();
+            yield return StartCoroutine(SpawnEncounterEnemyWithTelegraph());
             enemiesSpawned++;
             yield return new WaitForSeconds(timeBetweenSpawns);
         }
     }
 
-    void SpawnEncounterEnemy()
+    // PR 5.A — telegraph wrapper for encounter mode. Picks the spawn point up
+    // front so the floor circle / vertical beam appears at the exact spot the
+    // enemy will materialize after the delay.
+    IEnumerator SpawnEncounterEnemyWithTelegraph()
     {
         Transform[] pool = encounterSpawnPoints != null && encounterSpawnPoints.Length > 0
             ? encounterSpawnPoints : spawnPoints;
-        if (pool == null || pool.Length == 0) return;
+        if (pool == null || pool.Length == 0) yield break;
+        Transform point = pool[UnityEngine.Random.Range(0, pool.Length)];
+        if (point == null) yield break;
 
+        if (spawnTelegraphDuration > 0f)
+        {
+            SpawnTelegraph.SpawnAt(point.position, spawnTelegraphDuration);
+            yield return new WaitForSeconds(spawnTelegraphDuration);
+            if (!encounterActive) yield break;  // re-check after wait
+        }
+        SpawnEncounterEnemyAt(point);
+    }
+
+    void SpawnEncounterEnemyAt(Transform point)
+    {
+        if (point == null) return;
         // PR 3.D — pick prefab from roster if available. enemiesSpawned is
         // pre-increment in SpawnEncounter, so it points at the next slot.
         GameObject prefabToSpawn = enemyPrefab;
@@ -311,9 +364,11 @@ public class GameManager : MonoBehaviour
             if (entry != null && entry.prefab != null) prefabToSpawn = entry.prefab;
         }
         if (prefabToSpawn == null) return;
-
-        Transform point = pool[UnityEngine.Random.Range(0, pool.Length)];
-        GameObject enemy = Instantiate(prefabToSpawn, point.position, point.rotation);
+        // PR 3.F: rent through EnemyPool. PooledEnemy.PrepareForReuse already
+        // restored hp.maxHealth to the baseline (data.maxHealth), so the
+        // multiplier below applies cleanly without compounding across rents.
+        GameObject enemy = EnemyPool.Instance.Rent(prefabToSpawn, point.position, point.rotation);
+        if (enemy == null) return;
         enemiesAlive++;
 
         IEnemyTargetReceiver receiver = enemy.GetComponent<IEnemyTargetReceiver>();
@@ -328,6 +383,9 @@ public class GameManager : MonoBehaviour
                 hp.currentHealth = hp.maxHealth;
                 hp.onHealthChanged?.Invoke(hp.currentHealth, hp.maxHealth);
             }
+            // Remove+Add so a recycled instance does not accumulate duplicate
+            // OnEncounterEnemyDied subscriptions across rents (PR 3.F).
+            hp.onDeath.RemoveListener(OnEncounterEnemyDied);
             hp.onDeath.AddListener(OnEncounterEnemyDied);
         }
     }

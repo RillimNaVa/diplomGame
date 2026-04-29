@@ -49,6 +49,15 @@ public class EnemyLootTable : MonoBehaviour
         Roll();
     }
 
+    /// <summary>
+    /// Phase 3 / PR 3.F — pool reset. Clears the one-shot `rolled` guard so the
+    /// recycled enemy can drop loot again on its next death.
+    /// </summary>
+    public void ResetForPool()
+    {
+        rolled = false;
+    }
+
     void Roll()
     {
         if (drops == null) return;

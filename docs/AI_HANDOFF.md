@@ -10,12 +10,87 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
-## Current Status (2026-04-27)
+## Current Status (2026-04-30)
+
+- **PR 5.B — Brute Slam Shaders — code landed 2026-04-30, Editor playtest pending.** Replaces the runtime emissive-cylinder visuals on `BruteSlamDecal` (wind-up) and `SlamImpactRing` (impact) with two dedicated HLSL shaders.
+  - New `Assets/Shaders/SlamWarning.shader` — polar-coords ground rune driven by `_Progress`: outer ring + pulsing inner X-cross + clockwise sweep arc (countdown filler) + 12 rotating tick marks.
+  - New `Assets/Shaders/SlamShockwave.shader` — polar-coords impact effect driven by `_Progress` 0 → 1.05: hot core + primary expanding ring at radius=`_Progress` + trailing secondary ring + N radial lightning cracks with per-finger jitter via `hash11(slot)`.
+  - `BruteSlamDecal.cs` and `SlamImpactRing.cs` refactored to detect the new shaders via `Shader.Find` and animate `_Progress`. Both fall back to the original PR 4.A alpha+emission cylinder ramp if the shader is missing — graceful degradation, no crashes on a stripped build.
+  - `dotnet build Assembly-CSharp.csproj` clean (0/0).
+  - **Pending in Unity Editor:** start a fresh run, force a Brute encounter (Combat arenaIndex 2+), and validate (a) wind-up rune now reads as a procedural countdown — clockwise sweep + pulsing X-cross + rotating ticks instead of a static orange disc; (b) impact shockwave shows a bright hot core + expanding shock ring + radiating lightning cracks instead of just an expanding emissive disc.
+- **PR 5.A — Visual Polish Pass (HLSL shaders + spawn telegraph + charge beam) — code landed 2026-04-29, Editor playtest still pending.**
+  - Three new HLSL shaders under `Assets/Shaders/`:
+    - `EnemyDissolve.shader` — hash-based 3D world-space noise + clip threshold + emissive burning edge. Lit by `GetMainLight()` Lambert + ambient.
+    - `StaggerOutline.shader` — inverted-hull `Cull Front` outline pass with HDR pulsing color.
+    - `ForceField.shader` — animated hex-grid + vertical scroll waves + Fresnel rim + slow pulse, transparent two-sided.
+  - New runtime components in `Assets/Scripts/Combat/Enemies/`:
+    - `EnemyDissolve.cs` — auto-attached by `EnemyBrainBase.Awake`. On `Health.onDeath` builds per-renderer instance materials using the dissolve shader (copies `_BaseColor` / `_BaseMap` / `_EmissionColor` from source), ramps `_DissolveAmount` 0 → 1.05 over 1.0s. `ResetForPool` restores original sharedMaterials so pool reuse is clean.
+    - `StaggerOutline.cs` — auto-attached. On `EnemyStagger.OnStaggerChanged(true)` appends an outline material slot to every renderer's `sharedMaterials`. Removes on end / pool return / disable.
+    - `Spawn/SpawnTelegraph.cs` — runtime-built warning marker at every spawn point. Floor rotating emissive circle (0.4× → 1.05× scale) + vertical beam cylinder. Static `SpawnTelegraph.SpawnAt(pos, duration)` factory.
+  - New runtime component in `Assets/Scripts/Combat/Enemies/AI/`:
+    - `SpitterChargeBeam.cs` — auto-attached by `RangedEnemyBrain.Awake`. LineRenderer from muzzle to player during Telegraph state, thickness + brightness ramp accelerates toward firing frame. Ends on Attack / Stagger / Death / pool disable.
+  - `EnemyProjectile.cs` — `autoBuildTrail = true` builds a default cyan plasma `TrailRenderer` (0.25s, 0.18→0.02 width, additive URP particle material) if none exists on the prefab. Existing `ResetForPool` already calls `TrailRenderer.Clear()` on rent.
+  - `ArenaBuildMaterials.MakeForceField` — replaces the plain `MakeEmissive` for the soft-lock barrier slot, falls back to emissive cube if the ForceField shader is missing. Soft-lock barriers now read as animated energy fields, not orange boxes.
+  - `GameManager` — new `spawnTelegraphDuration` (default 0.7s) + `SpawnEnemyWithTelegraph` / `SpawnEncounterEnemyWithTelegraph` coroutine wrappers. Both legacy wave loop and encounter mode pre-pick the spawn point, spawn the telegraph, wait, then rent at the exact point so the spawn is visually telegraphed.
+  - `PooledEnemy.PrepareForReuse` calls `EnemyDissolve.ResetForPool` + `StaggerOutline.ResetForPool` so recycled instances start clean.
+  - `RangedEnemyBrain` overrides `HandleStaggerChanged` + `HandleDeath` to call `chargeBeam.EndCharge()`.
+  - `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings) — verified via temp-injected csproj.
+  - **Pending in Unity Editor (next step):** start a fresh run (Ctrl+P) and validate:
+    1. Killed enemies dissolve over 1.0s with a glowing orange burn edge instead of just disappearing.
+    2. Staggered low-HP enemies show an HDR-orange outline halo around their silhouette in addition to the existing red emissive pulse.
+    3. Soft-lock barriers covering exits read as animated energy fields (hex grid + scrolling vertical waves + rim glow) instead of plain orange cubes.
+    4. Spitter shows a thin cyan laser beam from muzzle to player during its 0.7s wind-up — beam ramps from thin to thick toward the firing frame.
+    5. Spitter plasma projectiles leave a cyan plasma trail behind them.
+    6. Every enemy spawn is preceded by a 0.7s spawn telegraph at the exact spawn point — floor circle (rotating, pulsing) plus a vertical beam from floor to ~5.5m. After the telegraph the enemy materializes via `SpawnWarpIn` (existing 0.4s scale-up).
+    7. All previous PR 4.A / 4.B / 2.H1 / 3.F effects still work (hit flash, screen shake, spawn warp-in, Crawler leap, hand-authored structures, pool returns).
+  - **If the dissolve / outline / force field shaders fail to compile in Unity:** check Unity Console for HLSL errors. Fallbacks: `EnemyDissolve` silently does nothing if the shader isn't found (`ResolveShader` returns null), `StaggerOutline` similarly silent, `ForceField` falls back to `MakeEmissive` (orange cube barrier). So broken shaders downgrade gracefully without crashing the game.
+
+## Previous Status (earlier 2026-04-29)
+
+- **Polish triple landed 2026-04-29 (PR 4.A + PR 4.B + PR 2.H1) — Editor playtest still pending** (carried over from this morning's session).
+  - **Spitter buff** in `Assets/EnemyData/Spitter.asset`: `attackRange 18→28`, `preferredDistance 12→20`, `projectileSpeed 10→14`. Sniper-feel.
+  - **PR 4.A — Combat Feel Pass.** New auto-attached components on every enemy via `EnemyBrainBase.Awake`: `HitFlash` (white emissive flash on damage), `EnemyDeathBurst` (24-particle burst on death, color from `EnemyData.telegraphColor`), `SpawnWarpIn` (0.55→1.0× scale + emissive pulse on every OnEnable, fires for fresh and pooled rents). New `SlamImpactRing` runtime expanding emissive ring at Brute slam frame, plus distance-falloff `CameraShake.AddTrauma` call. New `PlayerHitFeedback` auto-added by `GameManager.ResolveReferences` — drives red `PulseDamageVignette` on `ArenaPostProcessingController` + scaled `CameraShake` trauma. `CameraShake` is a singleton that auto-attaches to `Camera.main` on first `AddTrauma`.
+  - **PR 4.B — Crawler Leap Attack.** New `LeapMeleeEnemyBrain` — Crawler now does a 0.45s telegraph + 0.5s kinematic-arc leap at 14 m/s when the player is at 4-8m, falls through to regular melee inside `attackRange`. Snapshot landing point lets player dodge perpendicular during travel.
+  - **PR 2.H1 — Hand-Authored Cover Structures.** New `StructureDefinition` POCO + `BuiltInStructures` factory ships 4 silhouettes (bunker / sandbag line / pillar cluster / sniper nest). New `ArenaStructurePlanner.Plan` deterministic via dedicated `structureRng = seed ^ 0x8855`. New `ArenaTypeProfile.structureBudget` Range(0..5) default 2. New `ArenaRoomData.structurePlacements`. `SingleArenaGenerator` plans structures **between verticality reservation and cover** so cover/spawns avoid overlaps. `ArenaBuilder.BuildSingleStructures` uses `BuildUtils.SpawnBox` so `WorldUVScaler` + per-biome materials + instancing all apply for free.
+  - `dotnet build Assembly-CSharp.csproj` clean (0/0) — verified via temp-injected csproj.
+  - **Pending in Unity Editor:**
+    1. *PR 4.B Editor wiring* — open `Assets/Prefabs/Enemy_Crawler.prefab`, remove `MeleeEnemyBrain`, add `LeapMeleeEnemyBrain`, drag `Crawler.asset` into the `data` field. Default leap tuning works with existing Crawler stats.
+    2. *Unified playtest* — start a fresh run (Ctrl+P). Validate (a) every shot at every enemy shows a white hit flash; (b) taking a hit shows red vignette + camera shake; (c) killing an enemy spawns a particle burst tinted by its role color; (d) Brute slam shows expanding ring + camera kick; (e) every spawn has a 0.4s warp-in scale animation; (f) Crawler at 4-8m telegraphs + leaps onto player; (g) Combat/Elite arenas now contain 1-3 visible bunkers/pillars/sandbag-lines/sniper-nests without breaking NavMesh / cover / spawn; (h) Spitter sits at ~18-21m holding its hold-distance.
+
+- **Phase 3 PR 3.F — Enemy + Projectile Pooling — code landed 2026-04-29, Editor playtest still pending** (carried over).
+- **Phase 3 PR 3.E — Combat Readability + Active Attack Slots — VERIFIED 2026-04-29 by user.**
+  - New `Assets/Scripts/Combat/Enemies/Spawn/EnemyPool.cs` (auto-creating scene-singleton; per-prefab `Stack<GameObject>` rent/return; tidy re-parent under the pool root on Return; null-safe Rent for scene-reload).
+  - New `Assets/Scripts/Combat/Enemies/Spawn/PooledEnemy.cs` (`[DefaultExecutionOrder(200)]` so Awake captures `health.maxHealth` *after* `EnemyBrainBase.Awake` writes `data.maxHealth`). Listens to its own `Health.onDeath`, cancels Health's auto-disable, schedules pool return after a 1.5s grace window so loot drops + glory-kill detector still complete. `PrepareForReuse()` is called by the pool before `SetActive(true)`: restores Health (`maxHealth = baselineMaxHealth`, `currentHealth = maxHealth`), `EnemyStagger`, `EnemyLootTable`, and warps the `NavMeshAgent` to the new spawn point.
+  - New `Assets/Scripts/Combat/Enemies/Projectiles/EnemyProjectilePool.cs` — same pattern for Spitter plasma shots. `EnemyProjectile` got `BindPool` + `ResetForPool` (clears owner/damage/direction, caches `TrailRenderer[]` and `Clear()`s each on rent), and `Destroy(gameObject)` → `pool.Return(...)` with a fallback to Destroy when no pool is bound.
+  - `RangedEnemyBrain.SpawnProjectile` rents through `EnemyProjectilePool.Instance.Rent` instead of `Instantiate`.
+  - `Health.ResetForPool()` (restores `currentHealth`, re-fires `onHealthChanged`) + `Health.CancelAutoDisable()` (cancels the pending 1s `SetActive(false)` when a pool owns the lifecycle).
+  - `EnemyStagger.ResetForPool()` — drops `IsStaggered`, blacks out the cached material emission, fires `OnStaggerChanged(false)` so the brain leaves `Staggered`.
+  - `EnemyLootTable.ResetForPool()` — clears the one-shot `rolled` guard so each death rolls loot.
+  - `GameManager.SpawnEnemy` + `SpawnEncounterEnemy` switched from `Instantiate` to `EnemyPool.Instance.Rent`. `Health.onDeath` listener uses **Remove+Add** so a recycled instance does not accumulate duplicate `OnEnemyDied` / `OnEncounterEnemyDied` subscriptions across rents (TZ §10 acceptance: kills count exactly once).
+  - `EnemyBrainBase` — fair-spawn init moved out of `Start` (which only runs once per instance lifetime) into a per-`OnEnable` first-frame check in `Update`. `OnEnable` resets `spawnInitialized = false` and re-enters `Spawn`; `Update` waits one tick for `Target` to be resolved before invoking `InitializeSpawn()`. Closes the "pooled rent skips fair-spawn" gap.
+  - `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings) — verified 2026-04-29 via temp-injected csproj using worktree absolute paths.
+  - **Pending in Unity Editor (next step):** long run (5-arena loop ×2) — verify (a) no disabled enemy/projectile GameObjects accumulate in the Hierarchy outside the `EnemyPool` / `EnemyProjectilePool` containers, (b) kill counts match actual deaths (no double-counting from listener accumulation), (c) HP orbs drop on every kill, (d) recycled enemies start at full HP with no stuck red stagger pulse, (e) fair-spawn delay still triggers on close spawns of recycled enemies, (f) projectile trails start cleanly from the muzzle and do not jump from the previous shot's last position.
+
+## Previous Status (2026-04-28)
+
+- **Phase 3 PR 3.D — Spawn Composition — VERIFIED 2026-04-28 by user.** Role mix by `arenaIndex` playtested OK; no fallback warnings during normal play.
+- **Phase 3 PR 3.E — Combat Readability + Active Attack Slots — code landed 2026-04-28, verified 2026-04-29.**
+  - New `Assets/Scripts/Combat/Enemies/AI/AttackSlotKind.cs` (Melee/Ranged/Heavy/Special enum).
+  - New `Assets/Scripts/Combat/Enemies/AI/ActiveAttackSlotManager.cs` — auto-creating scene-singleton, caps 3/3/1/1 (TZ §8.3). Idempotent `TryAcquire`, multi-set `Release` (caller doesn't need to remember which kind).
+  - New `Assets/Scripts/Combat/Enemies/AI/TelegraphFlash.cs` — emissive pulse via MaterialPropertyBlock on every child Renderer; auto-attached by `EnemyBrainBase.Awake` so existing prefabs (Drone/Crawler/Spitter/Brute) get telegraph visuals without any Editor work. Reads each renderer's base `_EmissionColor` at Awake and adds the pulse color on top, then restores to base on EndPulse.
+  - New `Assets/Scripts/Combat/Enemies/AI/BruteSlamDecal.cs` — runtime-built flat Cylinder primitive sized to `slamRadius × 2 × 0.025`, transparent URP Lit emissive orange, alpha + emission ramp toward impact frame. Brute `Show(duration)` on Telegraph, `Hide()` on Attack/Recover/Stagger/Death.
+  - `EnemyData` gained `telegraphColor` (HDR), `fairSpawnDistance`, `fairSpawnDelay`. Defaults 5m / 0.6s; set 0 to disable. SOs ship with the default warm-orange telegraph color until per-enemy tuning lands.
+  - `EnemyBrainBase` integration — cached `TelegraphFlash` + `SlotKind`; new helpers `TryAcquireAttackSlot` / `ReleaseAttackSlot` / `BeginTelegraphFlash` / `EndTelegraphFlash`; fair-spawn delay in `Start` (hold in `Spawn` until `Time.time >= spawnHoldUntil`, telegraph pulses during the hold); `OnDisable` / `HandleStaggerChanged` / `HandleDeath` release the slot + end the pulse so nothing leaks.
+  - `MeleeEnemyBrain` / `RangedEnemyBrain` / `BruteEnemyBrain` gate Move → Telegraph behind `TryAcquireAttackSlot()`; if denied, brain keeps moving/repositioning until a slot frees up (no animation interrupted). `BeginTelegraphFlash()` on Telegraph entry, `EndTelegraphFlash()` on Attack frame, `ReleaseAttackSlot()` on Recover → Move. Brute additionally drives `BruteSlamDecal.Show/Hide` at the matching transitions and overrides stagger/death to hide the decal.
+  - `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings) — verified via temp-injected csproj using worktree absolute paths.
+  - **Pending in Unity Editor (next step):** spawn a heavy encounter (Combat arena 2+, ≥ 8 Drones + 1 Brute via the `SpawnProfile_Combat` budget), confirm only 3 melee + 1 heavy resolve attacks at once, confirm Brute slam decal is visible during the 0.9s wind-up, confirm a player-adjacent spawn holds ~0.6s with a flash before chasing. HP-orb / stagger / glory-kill / barrier-open contracts must remain intact.
+
+## Previous Status (2026-04-27)
 
 - **Phase 3 PR 3.A — Enemy state-machine base — VERIFIED 2026-04-27 by user.** Drone + Crawler SOs + prefab variants, playtest passed.
 - **Phase 3 PR 3.B — Plasma Spitter / Sentinel — VERIFIED 2026-04-27 by user.** Spitter SO + projectile prefab + Enemy_Spitter variant, LoS/dodge/wall-block confirmed.
-- **Phase 3 PR 3.C — Station Brute — VERIFIED 2026-04-27 by user.** Brute SO + Enemy_Brute variant, slam telegraph + escape window playtested. Slam telegraph **visual** explicitly deferred to PR 3.E (will ship as a unified telegraph layer for all enemies — likely URP Decal Projector approach, see Recommended Next Task in older revision).
-- **Phase 3 PR 3.D — Spawn Composition — code + Unity asset wiring landed 2026-04-27, role-mix playtest pending.**
+- **Phase 3 PR 3.C — Station Brute — VERIFIED 2026-04-27 by user.** Brute SO + Enemy_Brute variant, slam telegraph + escape window playtested. Slam telegraph **visual** delivered in PR 3.E (`BruteSlamDecal`).
+- **Phase 3 PR 3.D — Spawn Composition — code + Unity asset wiring landed 2026-04-27, verified 2026-04-28.**
   - New `Assets/Scripts/Combat/Enemies/Data/EnemySpawnEntry.cs` — Serializable row with `Resolved*` accessors implementing the override rule (TZ §7.2 Revision: entry value > 0 overrides `EnemyData`, 0 inherits).
   - New `Assets/Scripts/Combat/Enemies/Data/EnemySpawnProfile.cs` — SO holding entry roster, budget curve (`baseBudget` + `budgetPerArenaIndex`), variety cap, and `maxTanks` / `maxRanged` guards (TZ §7.6).
   - New `Assets/Scripts/Combat/Enemies/Spawn/EnemySpawnComposer.cs` — static pure-logic utility. Filters eligible entries by arenaIndex; picks `targetVariety` distinct roles (1/2/3 by arena index, capped by profile); spends budget weighted-random with maxAlive / role caps. Optional `System.Random` for seeded runs. **Every fallback path emits `Debug.LogWarning` with a specific reason** — no silent fallbacks (TZ §7.4 Revision).
@@ -103,6 +178,47 @@ Captured 2026-04-26 from the user's sketch. The desired future direction is a la
 
 ## Current Goal
 
+**Phase 3 PR 3.F — Editor playtest.** Verify pooling lifecycle in `test.unity`:
+
+1. `GameManager.useEncounterMode = true`. Start a fresh run (Ctrl+P).
+2. Play through the full 5-arena loop **twice** (Start → Mid×3 → Boss → Restart → again). Each arena spawns ~5–14 enemies, so by the end of run 2 you've spawned ~80–140 enemies.
+3. **Hierarchy check:** open the Scene Hierarchy. There should be a single `EnemyPool` GameObject and a single `EnemyProjectilePool` GameObject under the scene root, holding all the disabled (greyed-out) recycled instances. No loose disabled enemy GameObjects should be accumulating outside those pool roots.
+4. **Kill count integrity:** every enemy that dies fires `GameManager.OnEnemyKilled` exactly once. Watch the kill-streak speed boost — if it ever fires twice for one death (or doesn't fire at all on a recycled enemy), the Remove+Add pattern in `GameManager.SpawnEncounterEnemy` got broken.
+5. **Recycled enemy state:** when an enemy is rented from the pool, it must start at full HP with no red stagger pulse stuck on, and the NavMeshAgent must walk normally from the new spawn point.
+6. **HP-orb drop on every death:** the `EnemyLootTable.rolled` reset must be working — every Drone/Crawler kill drops an HP orb (not just the first life of each pooled instance).
+7. **Fair-spawn delay on recycled enemies:** spawn an enemy near the player (e.g. arena with the player standing on a spawn point) — recycled instance should still hold for ~0.6s with the telegraph pulse before chasing.
+8. **Projectile trail:** Spitter plasma should leave a clean trail from the muzzle on every shot, including recycled projectiles. If you see a jump from the previous shot's last position to the new muzzle, `EnemyProjectile.ResetForPool` `TrailRenderer.Clear()` regressed.
+9. **Profiler optional:** open the Memory Profiler before and after a 2-loop run. Total `GameObject` count and `MonoBehaviour` count should plateau, not climb linearly.
+
+If anything regresses, likely suspects:
+- Pool not creating → check Hierarchy after the first spawn for `EnemyPool` GameObject.
+- Recycled enemy at 0 HP → `PooledEnemy.PrepareForReuse` ordering vs `Health.ResetForPool`.
+- Listener accumulation → verify `Remove+Add` pattern in both `SpawnEnemy` and `SpawnEncounterEnemy`.
+- Trail jump → confirm `TrailRenderer.Clear()` runs **after** `transform.SetPositionAndRotation` (it does — `EnemyProjectilePool.Rent` sets position before calling `ResetForPool`).
+
+After PR 3.F is accepted, **Phase 3 is complete** modulo the optional Gravity Node (zoner). Next phase: Phase 4 (boss) or Phase 5 (audio/VFX polish), per GDD priorities.
+
+### Earlier Phase 3 plan (kept for reference)
+
+**Phase 3 PR 3.E — Editor playtest.** Verify combat readability and slot-cap behavior in `test.unity`:
+
+1. `GameManager.useEncounterMode = true`. Start a fresh run (Ctrl+P).
+2. Walk into Arena 2+ (Combat or Elite). Budget should resolve to a mix with 1 Brute + several Drones/Crawlers/Spitter.
+3. **Slot caps:** observe many enemies alive but only ≤3 in Telegraph at the same time across melee, ≤3 across ranged, ≤1 Brute slamming. Other enemies should keep moving/repositioning while waiting for a free slot — no frozen poses.
+4. **Telegraph flash:** Drone/Crawler/Spitter should pulse emissive orange (or whatever color their `EnemyData.telegraphColor` is) during the wind-up, reset to baseline on impact.
+5. **Brute slam decal:** flat orange disc on the floor, sized to `slamRadius`, alpha + emission ramping during the 0.9s wind-up, hidden on Attack/Recover and on stagger/death.
+6. **Fair-spawn delay:** if any enemy spawns within 5m of the player, it should hold in place with a brief flash for ~0.6s before chasing. Tune `EnemyData.fairSpawnDistance` / `fairSpawnDelay` per enemy if it feels too short or too long.
+7. **Contracts intact:** HP orbs drop on kill, stagger pulses at low HP, glory-kill works, soft-lock barriers open after clear. No `SetDestination on inactive agent` errors. No `[EnemySpawnComposer] Fallback` warnings during normal play.
+
+If anything regresses, the most likely suspects are:
+- `ActiveAttackSlotManager` not being created → check Hierarchy for the auto-spawned `ActiveAttackSlotManager` GameObject when the first enemy attempts to acquire a slot.
+- Telegraph flash too dim → raise `EnemyData.telegraphColor` HDR intensity (its alpha-multiplied HDR value) per enemy.
+- Brute slam decal invisible on a specific biome floor → check that the runtime URP Lit transparent shader exists on this platform; fall back to bumping `_EmissionColor` HDR scale in `BruteSlamDecal.Update`.
+
+After playtest passes, **PR 3.F (Enemy + Projectile pooling)** is the last Phase 3 PR before Phase 4 boss prep.
+
+### Earlier Phase 3 plan (kept for reference)
+
 **Phase 3 — Enemy AI.** Decided 2026-04-26: PR 2.H (beveled prefabs) and the hand-authored structures idea are deferred until at least the first Phase 3 enemy-AI pass lands. Visual coupling between Phase 2.H and Phase 3 is minimal (NavMesh re-bakes per arena, `combatSpawnPoints` are independent, glory-kill / stagger / pooling are orthogonal), so deferring is safe. Only real follow-up cost: a balance pass on ranged enemies once new cover structures change line-of-sight density — that's normal Phase 6 work.
 
 First Phase 3 task per [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md) §"Phase 3: Enemy AI": **refactor `Assets/test/SimpleEnemyAI.cs` into a state-machine base** (issue #5), then build out the four-role core (Drone, Crawler, Plasma Spitter/Sentinel, Station Brute) on top of it. AI improvements + spawning composition come after. Gravity Node is optional after the core is stable; Void Warden is not part of the near-term Phase 3 scope.
@@ -170,7 +286,11 @@ Scene wiring reference (`test.unity`):
 
 ## Recommended Next Task
 
-PR 3.A/B/C are verified. PR 3.D code and baseline Unity wiring are in: `SpawnProfile_Combat.asset` references Drone / Crawler / Spitter / Brute and is assigned to `Arena_Combat_M.asset` plus `Arena_Elite_L.asset`. Next is a focused PR 3.D playtest of the role-mix curve.
+PR 3.A/B/C/D are verified. PR 3.E code is in. Next is a focused **PR 3.E Editor playtest** (slot caps + telegraph visuals + fair-spawn). See the *Current Goal* section above for the 7-point check.
+
+After PR 3.E is accepted, the only Phase 3 PR left is **PR 3.F — Enemy + Projectile pooling**: long runs accumulate disabled enemy GameObjects; replace `Instantiate`/`Destroy` with a small pool, reset `Health` / brain state / `EnemyStagger` / NavMeshAgent / loot lifecycle on reuse, and ensure death events fire exactly once per kill. After 3.F, the optional `Gravity Node` (zoner) is the only TZ-deferred Phase 3 work; otherwise we move on to Phase 4 (boss).
+
+### Earlier-PR notes (kept for context — PR 3.D playtest steps)
 
 **A. Playtest PR 3.D composition.**
 1. `GameManager.useEncounterMode = true`. Start a fresh run (`Ctrl+P`).

@@ -20,6 +20,17 @@ public class RangedEnemyBrain : EnemyBrainBase
     float attackReadyTime;
     float nextLosCheckTime;
     bool losCached;
+    SpitterChargeBeam chargeBeam;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        // PR 5.A — auto-attach the charge beam visual. Only ranged brains get
+        // it, since melee/Brute don't have a "windup laser pointer" moment.
+        chargeBeam = GetComponent<SpitterChargeBeam>();
+        if (chargeBeam == null) chargeBeam = gameObject.AddComponent<SpitterChargeBeam>();
+        chargeBeam.muzzleOffset = muzzleOffset;
+    }
 
     protected override void TickBrain()
     {
@@ -58,7 +69,12 @@ public class RangedEnemyBrain : EnemyBrainBase
             FaceTarget();
             if (Time.time >= attackReadyTime && TargetIsAlive() && CheckLineOfSight())
             {
+                // PR 3.E §8.3: ranged slot gate.
+                if (!TryAcquireAttackSlot()) return;
                 SetState(EnemyAIState.Telegraph);
+                BeginTelegraphFlash();
+                // PR 5.A — visible charge beam so the player can read the shot direction.
+                if (chargeBeam != null) chargeBeam.BeginCharge(Target, data.telegraphTime);
             }
         }
     }
@@ -93,6 +109,9 @@ public class RangedEnemyBrain : EnemyBrainBase
         {
             SpawnProjectile();
         }
+        EndTelegraphFlash();
+        // PR 5.A — drop the charge beam at the firing frame.
+        if (chargeBeam != null) chargeBeam.EndCharge();
         SetState(EnemyAIState.Recover);
     }
 
@@ -100,6 +119,7 @@ public class RangedEnemyBrain : EnemyBrainBase
     {
         if (TimeInState < data.recoveryTime) return;
         attackReadyTime = Time.time + data.attackCooldown;
+        ReleaseAttackSlot();
         SetState(EnemyAIState.Move);
     }
 
@@ -149,6 +169,18 @@ public class RangedEnemyBrain : EnemyBrainBase
         return losCached;
     }
 
+    protected override void HandleStaggerChanged(bool isStaggered)
+    {
+        if (isStaggered && chargeBeam != null) chargeBeam.EndCharge();
+        base.HandleStaggerChanged(isStaggered);
+    }
+
+    protected override void HandleDeath()
+    {
+        if (chargeBeam != null) chargeBeam.EndCharge();
+        base.HandleDeath();
+    }
+
     void SpawnProjectile()
     {
         Vector3 from = MuzzleWorld();
@@ -156,8 +188,10 @@ public class RangedEnemyBrain : EnemyBrainBase
         if (aim.sqrMagnitude < 0.0001f) return;
         Vector3 dir = aim.normalized;
 
-        GameObject go = Instantiate(data.projectilePrefab, from, Quaternion.LookRotation(dir));
-        EnemyProjectile p = go.GetComponent<EnemyProjectile>();
+        // PR 3.F: rent through the projectile pool so Spitter cadence does not
+        // accumulate dead projectile instances across long runs.
+        GameObject go = EnemyProjectilePool.Instance.Rent(data.projectilePrefab, from, Quaternion.LookRotation(dir));
+        EnemyProjectile p = go != null ? go.GetComponent<EnemyProjectile>() : null;
         if (p != null)
         {
             p.Configure(gameObject, data.damage, data.projectileSpeed, dir);

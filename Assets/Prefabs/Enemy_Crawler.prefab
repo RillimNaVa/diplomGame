@@ -59,14 +59,14 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3069127475456496353, guid: baeca502d2dbe144aac40a2c86e176f9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -1123813503562585554}
+      addedObject: {fileID: 8513370109303138518}
   m_SourcePrefab: {fileID: 100100000, guid: baeca502d2dbe144aac40a2c86e176f9, type: 3}
 --- !u!1 &7674925377668117715 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3069127475456496353, guid: baeca502d2dbe144aac40a2c86e176f9, type: 3}
   m_PrefabInstance: {fileID: 4617725473620764210}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &-1123813503562585554
+--- !u!114 &8513370109303138518
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -75,9 +75,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 7674925377668117715}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25adb15b1bccdf948af4018bb4cdf1a5, type: 3}
+  m_Script: {fileID: 11500000, guid: 02b93a46ff13c8840b31df2a3d5df0e6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyBrain
+  m_EditorClassIdentifier: Assembly-CSharp::LeapMeleeEnemyBrain
   data: {fileID: 11400000, guid: 94cf71fe04fa9c24488bbc50ec1d1a78, type: 2}
   pathUpdateInterval: 0.2
   autoResolvePlayer: 1
+  leapMinRange: 4
+  leapMaxRange: 8
+  leapTelegraphTime: 0.45
+  leapSpeed: 14
+  leapTravelTime: 0.5
+  leapImpactRadius: 1.9
+  leapCooldown: 1.6
+  leapArcHeight: 0.6
