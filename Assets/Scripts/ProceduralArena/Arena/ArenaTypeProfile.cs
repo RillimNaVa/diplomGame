@@ -26,6 +26,8 @@ namespace VoidSurvivor.ProceduralArena.Arena
         [Header("Cover")]
         [Tooltip("Cover objects per 100 m² of floor area.")]
         [Range(0f, 3f)] public float coverDensity = 1.2f;
+        [Tooltip("PR 2.H1 — number of hand-authored structures (bunker/sandbag line/pillar cluster/sniper nest) placed alongside the box-cover. 0 = none, 1-2 typical for M, 2-3 for L. Reserves cells before cover so box-cover fills around them.")]
+        [Range(0, 5)] public int structureBudget = 2;
 
         [Header("Exits")]
         [Tooltip("Number of exit doors. Start/Boss usually 1; combat/elite/etc usually 2.")]

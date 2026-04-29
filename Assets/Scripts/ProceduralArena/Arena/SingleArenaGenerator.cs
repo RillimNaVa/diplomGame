@@ -31,6 +31,7 @@ namespace VoidSurvivor.ProceduralArena.Arena
             var coverRng   = new System.Random(unchecked(seed ^ 0x5582));
             var ceilingRng = new System.Random(unchecked(seed ^ 0x6673));
             var spawnRng   = new System.Random(unchecked(seed ^ 0x7764));
+            var structureRng = new System.Random(unchecked(seed ^ 0x8855));
 
             // 1. Size with jitter
             Vector2Int baseSize = profile.size.BaseCells();
@@ -78,7 +79,17 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 ? ArenaVerticalityPlanner.Plan(room, profile, cfg, entryCellLocal, verticalRng)
                 : new bool[mask.GetLength(0), mask.GetLength(1)];
 
-            // 7. Cover
+            // 7a. Structures (PR 2.H1) — reserved before cover so box-cover fills around them.
+            //      Skip on Start/Shop/Rest where the player needs an open, calm space.
+            if (AllowsStructures(profile.category) && profile.structureBudget > 0)
+            {
+                var structures = ArenaStructurePlanner.Plan(
+                    cfg, profile.category, mask, bounds, entryCellLocal,
+                    room.exitDoorAnchors, reserved, profile.structureBudget, structureRng);
+                room.structurePlacements.AddRange(structures);
+            }
+
+            // 7b. Cover
             var cover = ArenaCoverPlanner.Plan(cfg, mask, bounds, entryCellLocal,
                 room.exitDoorAnchors, profile.coverDensity, reserved, coverRng);
             room.coverPlacements.AddRange(cover);
@@ -157,6 +168,12 @@ namespace VoidSurvivor.ProceduralArena.Arena
                 default:
                     return false;
             }
+        }
+
+        static bool AllowsStructures(ArenaCategory category)
+        {
+            // Same gate as verticality — keep Start/Shop/Rest open and calm.
+            return AllowsGeneratedVerticality(category);
         }
 
         static int MakeTimeSeed()

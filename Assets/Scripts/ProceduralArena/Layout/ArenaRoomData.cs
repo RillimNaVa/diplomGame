@@ -35,6 +35,8 @@ namespace VoidSurvivor.ProceduralArena.Layout
         public readonly List<Vector3> combatSpawnPoints = new List<Vector3>();
         public readonly List<PlatformPlacement> platformPlacements = new List<PlatformPlacement>();
         public readonly List<RampPlacement> rampPlacements = new List<RampPlacement>();
+        // PR 2.H1 — hand-authored structures placed alongside cover.
+        public readonly List<StructurePlacement> structurePlacements = new List<StructurePlacement>();
         public string biomeId;
         public Color biomeDebugTint = Color.white;
         public int arenaIndex;

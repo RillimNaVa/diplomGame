@@ -126,6 +126,54 @@ namespace VoidSurvivor.ProceduralArena.Run
             ApplyBiome(null);
         }
 
+        // ----- PR 4.A combat readability: damage vignette pulse -----
+
+        float damageVignetteUntil;
+        float damageVignetteStart;
+        float damageVignetteBaseline;
+        Color damageVignetteBaselineColor;
+        const float DamageVignettePeak = 0.55f;
+        static readonly Color DamageVignetteColor = new Color(0.9f, 0.05f, 0.05f);
+
+        /// <summary>
+        /// PR 4.A — flashes the post-FX vignette red, then ramps back to the
+        /// biome baseline. Call from PlayerHitFeedback whenever the player
+        /// takes damage. Stacks correctly across rapid hits.
+        /// </summary>
+        public void PulseDamageVignette(float duration = 0.45f)
+        {
+            if (vignette == null) return;
+            // Capture the pre-pulse intensity ONLY if we're not already pulsing,
+            // otherwise we'd re-capture an already-elevated intensity and
+            // never decay back to the biome baseline.
+            if (Time.time >= damageVignetteUntil)
+            {
+                damageVignetteBaseline = vignette.intensity.value;
+                damageVignetteBaselineColor = vignette.color.value;
+            }
+            damageVignetteStart = Time.time;
+            damageVignetteUntil = Time.time + Mathf.Max(0.05f, duration);
+            vignette.color.overrideState = true;
+        }
+
+        void Update()
+        {
+            if (vignette == null || Time.time >= damageVignetteUntil) return;
+            float total = damageVignetteUntil - damageVignetteStart;
+            float t = total > 0f ? (Time.time - damageVignetteStart) / total : 1f;
+            // Sharp on, ease-out decay back to baseline.
+            float intensity = Mathf.Lerp(DamageVignettePeak, damageVignetteBaseline, t * t);
+            Color c = Color.Lerp(DamageVignetteColor, damageVignetteBaselineColor, t * t);
+            vignette.intensity.value = intensity;
+            vignette.color.value = c;
+
+            if (Time.time >= damageVignetteUntil)
+            {
+                vignette.intensity.value = damageVignetteBaseline;
+                vignette.color.value = damageVignetteBaselineColor;
+            }
+        }
+
         void OnDestroy()
         {
             if (profile != null)

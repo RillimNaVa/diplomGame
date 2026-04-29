@@ -29,8 +29,12 @@ public class MeleeEnemyBrain : EnemyBrainBase
         if (Time.time < attackReadyTime) return;
         if (DistanceToTarget() <= data.attackRange && TargetIsAlive())
         {
+            // PR 3.E §8.3: gate Telegraph entry on an active-attack slot. If the
+            // melee cap is full, keep chasing and try again next frame.
+            if (!TryAcquireAttackSlot()) return;
             StopAgent();
             SetState(EnemyAIState.Telegraph);
+            BeginTelegraphFlash();
         }
     }
 
@@ -48,6 +52,7 @@ public class MeleeEnemyBrain : EnemyBrainBase
         {
             if (targetHealth != null) targetHealth.TakeDamage(data.damage);
         }
+        EndTelegraphFlash();
         SetState(EnemyAIState.Recover);
     }
 
@@ -55,6 +60,7 @@ public class MeleeEnemyBrain : EnemyBrainBase
     {
         if (TimeInState < data.recoveryTime) return;
         attackReadyTime = Time.time + data.attackCooldown;
+        ReleaseAttackSlot();
         SetState(EnemyAIState.Move);
     }
 }

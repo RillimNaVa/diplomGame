@@ -37,6 +37,7 @@ namespace VoidSurvivor.ProceduralArena.Build
 
             BuildSingleShell(room, cfg, wh, mats, shell.transform);
             BuildSingleVerticality(room, mats, root.transform);
+            BuildSingleStructures(room, mats, root.transform);
             BuildSingleCover(room, mats.cover, root.transform);
             BuildSingleExits(room, cfg, wh, mats, root.transform);
             BuildSingleStartMarker(room, cfg, mats.startMarker, root.transform);
@@ -144,6 +145,71 @@ namespace VoidSurvivor.ProceduralArena.Build
                 var go = BuildUtils.SpawnBox(coverRoot.transform, $"Cover_{i}", p.position, p.size, coverMat, true);
                 if (Mathf.Abs(p.yawDeg) > 0.01f)
                     go.transform.rotation = Quaternion.Euler(0f, p.yawDeg, 0f);
+            }
+        }
+
+        // PR 2.H1 — hand-authored structures (bunker / sandbag line / pillar
+        // cluster / sniper nest). Looks up the StructureDefinition by id from
+        // BuiltInStructures (future: per-profile pools), spawns each part via
+        // BuildUtils.SpawnBox so the existing WorldUVScaler + per-biome
+        // material pipeline applies for free. Yaw is quantized to 90° so all
+        // parts stay axis-aligned to the cell grid.
+        static void BuildSingleStructures(ArenaRoomData room, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (room.structurePlacements == null || room.structurePlacements.Count == 0) return;
+
+            var defsById = new Dictionary<string, StructureDefinition>();
+            var defaults = BuiltInStructures.All();
+            for (int i = 0; i < defaults.Length; i++)
+            {
+                if (defaults[i] != null && !string.IsNullOrEmpty(defaults[i].structureId))
+                    defsById[defaults[i].structureId] = defaults[i];
+            }
+
+            var structuresRoot = new GameObject("Structures");
+            structuresRoot.transform.SetParent(parent, false);
+
+            for (int i = 0; i < room.structurePlacements.Count; i++)
+            {
+                var p = room.structurePlacements[i];
+                if (!defsById.TryGetValue(p.structureId, out StructureDefinition def) || def == null) continue;
+
+                var pivot = new GameObject($"Structure_{p.structureId}_{i}");
+                pivot.transform.SetParent(structuresRoot.transform, false);
+                pivot.transform.position = p.position;
+                pivot.transform.rotation = Quaternion.Euler(0f, p.yawDeg, 0f);
+
+                for (int k = 0; k < def.parts.Length; k++)
+                {
+                    StructureBoxPart bp = def.parts[k];
+                    Material partMat = ResolveStructureMaterial(bp.slot, mats);
+                    bool collide = bp.slot != StructureSlot.EmissiveAccent && bp.slot != StructureSlot.Decor;
+                    // Spawn at world-space transformed offset; SpawnBox places the
+                    // box centered, so add half-height on Y to put the base at y=0.
+                    Vector3 worldOffset = pivot.transform.TransformVector(bp.localOffset)
+                                          + Vector3.up * (bp.size.y * 0.5f);
+                    Vector3 spawnPos = p.position + worldOffset;
+                    var go = BuildUtils.SpawnBox(pivot.transform, $"Part_{k}_{bp.slot}", spawnPos, bp.size, partMat, collide);
+                    // Re-apply yaw on the part so its dominant face still maps correctly
+                    // for WorldUVScaler. SpawnBox sets identity rotation otherwise.
+                    if (Mathf.Abs(p.yawDeg) > 0.01f)
+                        go.transform.rotation = Quaternion.Euler(0f, p.yawDeg, 0f);
+                }
+            }
+        }
+
+        static Material ResolveStructureMaterial(StructureSlot slot, ArenaBuildMaterials mats)
+        {
+            if (mats == null) return null;
+            switch (slot)
+            {
+                case StructureSlot.Wall:           return mats.wall;
+                case StructureSlot.Cover:          return mats.cover;
+                case StructureSlot.Trim:           return mats.wallTrim != null ? mats.wallTrim : mats.wall;
+                case StructureSlot.Floor:          return mats.platform != null ? mats.platform : mats.cover;
+                case StructureSlot.Decor:          return mats.prop != null ? mats.prop : mats.cover;
+                case StructureSlot.EmissiveAccent: return mats.emissiveAccent;
+                default: return mats.cover;
             }
         }
 

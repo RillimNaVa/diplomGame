@@ -18,13 +18,13 @@ MonoBehaviour:
   maxHealth: 90
   moveSpeed: 3
   damage: 12
-  attackRange: 18
+  attackRange: 28
   attackCooldown: 2
   telegraphTime: 0.7
   recoveryTime: 0.5
   projectilePrefab: {fileID: 4142569891058345947, guid: 825f0b36611a4cd4a9efe86008fb1d36, type: 3}
-  projectileSpeed: 10
-  preferredDistance: 12
+  projectileSpeed: 14
+  preferredDistance: 20
   lineOfSightCheckInterval: 0.2
   slamRadius: 0
   slamHitMask:

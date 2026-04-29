@@ -48,7 +48,7 @@ namespace VoidSurvivor.ProceduralArena.Build
                 contamination = CreateSurface(shader, biome != null ? biome.contaminationMaterial : null, "ArenaContaminationMat", new Color(0.45f, 0.18f, 0.28f), 0.15f, 0.72f),
                 startMarker = MakeEmissive(shader, "ArenaStartMat", startColor, startIntensity),
                 exitMarker  = MakeEmissive(shader, "ArenaExitMat", exitColor, exitIntensity),
-                barrier     = MakeEmissive(shader, "ArenaBarrierMat", barrierColor, barrierIntensity),
+                barrier     = MakeForceField(shader, "ArenaBarrierMat", barrierColor, barrierIntensity),
                 // Ceiling-lamp panel: bright neutral-warm white, mostly biome-agnostic so
                 // every arena reads as actually lit. Slight tint pull toward biome ambient
                 // for cohesion.
@@ -212,6 +212,26 @@ namespace VoidSurvivor.ProceduralArena.Build
             // Markers are usually small; default density keeps them from looking weird
             // if a future biome attaches a real texture to them.
             WorldUVDensityRegistry.Register(m, 0.5f);
+            return m;
+        }
+
+        /// <summary>
+        /// PR 5.A — animated force-field material for soft-lock barriers.
+        /// Falls back to MakeEmissive if VoidSurvivor/ForceField shader is
+        /// missing (so a stripped build still gets a visible barrier).
+        /// </summary>
+        static Material MakeForceField(Shader fallbackShader, string name, Color c, float intensity)
+        {
+            Shader ff = Shader.Find("VoidSurvivor/ForceField");
+            if (ff == null) return MakeEmissive(fallbackShader, name, c, intensity);
+            var m = new Material(ff);
+            m.name = name;
+            // _BaseColor uses RGB tint with alpha = base transparency.
+            Color tint = c;
+            tint.a = 0.55f;
+            m.SetColor("_BaseColor", tint * intensity);
+            m.SetColor("_RimColor", c * (intensity * 1.6f));
+            m.enableInstancing = false;  // transparent shader, batching not relevant
             return m;
         }
     }

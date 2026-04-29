@@ -40,4 +40,13 @@ public class EnemyData : ScriptableObject
     public int minArenaIndex = 0;
     public int maxAlive = 20;
     public float spawnWeight = 1f;
+
+    [Header("Combat Readability (PR 3.E)")]
+    [ColorUsage(true, true)]
+    [Tooltip("HDR color used by TelegraphFlash during the wind-up. Default warm orange reads as 'incoming melee'; use cyan/violet for ranged / heavy variety.")]
+    public Color telegraphColor = new Color(1.6f, 0.6f, 0.0f, 1f);
+    [Tooltip("If the player is closer than this when the enemy spawns, the brain holds in Spawn for fairSpawnDelay seconds before chasing. 0 disables the delay.")]
+    public float fairSpawnDistance = 5f;
+    [Tooltip("Seconds to hold in Spawn when fair-spawn distance triggers.")]
+    public float fairSpawnDelay = 0.6f;
 }

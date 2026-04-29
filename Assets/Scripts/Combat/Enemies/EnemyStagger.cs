@@ -95,4 +95,19 @@ public class EnemyStagger : MonoBehaviour
             m.SetColor(EmissionColorId, emission);
         }
     }
+
+    /// <summary>
+    /// Phase 3 / PR 3.F — pool reset. Drops the IsStaggered flag and clears
+    /// the pulsed emission color on the cached material instances so the
+    /// recycled enemy comes back at full HP without the red pulse stuck on.
+    /// </summary>
+    public void ResetForPool()
+    {
+        if (IsStaggered)
+        {
+            IsStaggered = false;
+            if (materialInstances != null) ApplyEmission(Color.black);
+            OnStaggerChanged?.Invoke(false);
+        }
+    }
 }
