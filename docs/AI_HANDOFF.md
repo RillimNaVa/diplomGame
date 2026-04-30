@@ -13,6 +13,13 @@ For stable architecture / roadmap / known issues, see:
 ## Current Status (2026-04-30)
 
 - **Post-review runtime bugfix pass - code landed 2026-04-30, Editor playtest pending.** Fixed four findings from the Claude/Codex review: `Health.CancelAutoDisable` now suppresses the later `Invoke(Disable)` scheduling during `onDeath`, `StaggerOutline` restores original `sharedMaterials` on disable/reset, `CameraShake` removes the previous frame's offset before applying the next one, and pooled `NavMeshAgent.Warp` runs only after `SetActive(true)`. `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings).
+- **Arena Complex / PR 3.5 cancelled 2026-04-30 by user decision.**
+  - Removed the prototype `Assets/Scripts/ProceduralArena/Complex/` module.
+  - Removed `docs/ARENA_COMPLEX_TZ.md`.
+  - Restored `SoftLockBarrier` to its regular exit-barrier behavior; no `NavMeshObstacle` gate support remains.
+  - The active arena architecture is the existing single-arena `RunController` / `ArenaFlowController` pipeline.
+  - Do not resume Arena Complex / Connected Arena Rooms unless the user explicitly reopens the idea.
+
 
 - **PR 5.B — Brute Slam Shaders — code landed 2026-04-30, Editor playtest pending.** Replaces the runtime emissive-cylinder visuals on `BruteSlamDecal` (wind-up) and `SlamImpactRing` (impact) with two dedicated HLSL shaders.
   - New `Assets/Shaders/SlamWarning.shader` — polar-coords ground rune driven by `_Progress`: outer ring + pulsing inner X-cross + clockwise sweep arc (countdown filler) + 12 rotating tick marks.
@@ -167,18 +174,15 @@ For stable architecture / roadmap / known issues, see:
 - Roadmap: [PROGRESS.md](C:/Users/assam/DiplomGame/docs/PROGRESS.md)
 - TZ: [ARENA_GENERATION_TZ.md](C:/Users/assam/DiplomGame/docs/ARENA_GENERATION_TZ.md) - APPROVED r4.
 
-### Future Design Note: Arena Complex / Connected Arena Rooms
+### Cancelled Design Note: Arena Complex / Connected Arena Rooms
 
-Captured 2026-04-26 from the user's sketch. The desired future direction is a larger generated map made from several large combat rooms / arena halls connected directly by wide gates in shared walls, not by long corridors.
-
-- Treat this as deferred architecture, not the immediate task.
-- Finish PR 2.G verification, PR 2.H beveled prefabs, and at least the first Phase 3 enemy-AI layer before implementing it.
-- Preferred future shape: one `ArenaRoot`, one runtime NavMesh bake, 3-6 large room nodes, direct `ArenaDoorLink` gates, staged room clears, and one final run exit.
-- Do not revive old corridor-heavy BSP as the main path. Reuse the current single-room builder/material/post-fx/UV/light/prefab work as reusable room-level building blocks.
+Captured 2026-04-26 from the user's sketch, then cancelled 2026-04-30. Do not implement connected multi-room arenas in the current roadmap. Keep the existing single-arena run pipeline as the active architecture.
 
 ---
 
 ## Current Goal
+
+**Arena Complex is cancelled.** No Unity Editor setup or playtest is needed for PR 3.5. Continue with the existing single-arena pipeline.
 
 **Phase 3 PR 3.F — Editor playtest.** Verify pooling lifecycle in `test.unity`:
 
@@ -233,7 +237,7 @@ Phase 3 master spec now lives in [ENEMY_AI_TZ.md](C:/Users/assam/DiplomGame/docs
 
 - **PR 2.H — Beveled prefabs.** Replace `GameObject.CreatePrimitive(Cube)` slabs with proper meshes that have chamfered edges. Platforms (`mats.platform` in `BuildSingleVerticality`) are priority #1 — they're the worst-looking element per user screenshot 2026-04-25. Open question when resuming: Asset Store modular sci-fi pack (Kenney/Synty, CC0/cheap, fast, may fight the runtime PBR pipeline from PR 2.E) vs. Blender custom meshes (full control, diploma-friendly, learning curve since user is first-time in Blender).
 - **PR 2.H1 — Hand-authored structures (idea captured 2026-04-26).** Pre-made structure variants (bunkers, sandbag lines, pillar clusters, broken arches, sniper nests; atmospheric: crashed pods, generator stacks, terminals, dead drone heaps) spawned into existing cover/decor slots via `ArenaCoverPlanner` budget. Implementation sketch: `StructureDefinition` SO with `List<BoxPart>` (offset, size, materialSlot) — stays in code, reuses `BuildUtils.SpawnBox` so `WorldUVScaler` + per-biome materials work for free, no Blender / no Asset Store, fully deterministic via a new `structureRng` sub-stream in `SingleArenaGenerator`. Bias: 1–2 structures on M arenas, 2–3 on L; biome / arena-category gates which set is eligible. This may close ~60% of PR 2.H value (silhouette readability) without bevels — re-evaluate scope of PR 2.H once H1 lands.
-- **Arena Complex / Connected Arena Rooms** (existing deferred design note from 2026-04-26 sketch) stays deferred to Phase 3.5 — revisit after first enemy-AI pass + PR 2.H/H1.
+- **Arena Complex / Connected Arena Rooms** was cancelled 2026-04-30; do not revisit unless the user explicitly reopens it.
 
 ### What's still open from Phase 2
 
@@ -284,7 +288,7 @@ Scene wiring reference (`test.unity`):
 - If bright cyan `VoidStation` blocks/trim reappear, verify that Unity reimported the updated `Biome_VoidStation.asset` and the copied textures; the intended follow-up uses neutral `Panel_007` for `floorAccent`, `wallTrim`, and `propMaterial`, with much weaker emissive accents.
 - `test.unity` is still not in Build Settings (issue #3).
 - Enemy pooling (issue #6), projectile pooling (issue #7), and `SimpleEnemyAI` refactor (issue #5) remain deferred beyond this milestone.
-- Arena Complex / Connected Arena Rooms is only a captured future direction for now. Do not implement it before PR 2.G/2.H and the first Phase 3 enemy-AI architecture pass unless the user explicitly reprioritizes it.
+- Arena Complex / Connected Arena Rooms is cancelled as of 2026-04-30. Do not implement unless the user explicitly reopens the idea.
 
 ---
 
@@ -394,7 +398,7 @@ PR 3.A Editor steps (now done — Drone/Crawler):
 4. **Then PR 3.B (Plasma Spitter).** New `RangedEnemyBrain` + `EnemyProjectile` + LoS + hold-distance. The `EnemyData` SO already has the ranged stub fields (`projectilePrefab`, `projectileSpeed`, `preferredDistance`, `lineOfSightCheckInterval`); no further `EnemyData` schema changes expected.
 5. Keep `GameManager` encounter API compatible with the Phase 2 `ArenaFlowController` / `EncounterController` path — already done in PR 3.A via `IEnemyTargetReceiver`, just don't accidentally re-introduce `SimpleEnemyAI`-typed `GetComponent` calls.
 6. Re-enable or revisit Parkour only after the ramp-axis review and gameplay readability pass (unrelated to Phase 3, parked).
-7. Keep the future Arena Complex idea in mind when designing PR 3.D spawn composition: room-local spawn groups and staged clears should remain possible later.
+7. Arena Complex / Connected Arena Rooms is cancelled as of 2026-04-30; do not route spawn-composition work around future multi-room staged clears unless the user explicitly reopens it.
 
 ---
 
