@@ -109,7 +109,7 @@ Phase 3 should first prove that four roles feel good in the current single-arena
 Do not include these in the first Phase 3 implementation unless the user explicitly reprioritizes:
 
 - full Left 4 Dead-style AI Director;
-- Arena Complex / multi-room spawn logic;
+- Arena Complex / multi-room spawn logic (cancelled 2026-04-30 unless the user explicitly reopens it);
 - Shield Drone support enemy;
 - complex Brute charge/pathfinding;
 - final enemy models, animations, or high-quality VFX;

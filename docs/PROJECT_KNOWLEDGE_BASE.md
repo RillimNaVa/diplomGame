@@ -33,7 +33,7 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 
 - Project name: `DiplomGame`
 - Current near-term order (2026-04-30): run the PR 3.F / PR 5.A / PR 5.B Editor playtests, with special attention to the 2026-04-30 pooling, outline, camera-shake, and NavMeshAgent lifecycle fixes.
-- Captured future direction: Arena Complex / Connected Arena Rooms after the first Phase 3 enemy-AI layer, not before.
+- Cancelled direction: Arena Complex / Connected Arena Rooms was dropped on 2026-04-30; keep the single-arena run pipeline as the active architecture.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
@@ -68,7 +68,7 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 What is not yet built:
 
 - Phase 3 PR 3.E combat readability / active attack slots
-- Arena Complex / Connected Arena Rooms: larger maps made from several large combat rooms connected directly by wide gates, deferred until after PR 2.H and initial Phase 3 AI
+- Arena Complex / Connected Arena Rooms: cancelled 2026-04-30; do not build unless the user explicitly reopens the idea.
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling note: PR 3.F enemy/projectile pooling code has landed and received a 2026-04-30 lifecycle fix pass; long-run Unity Editor verification is still pending
 
@@ -774,9 +774,11 @@ Phase 1 complete. Phase 2 (Procedural Arena Generation r4) in flight:
 
 See `AI_HANDOFF.md` for the latest active-task context and Phase 3 starting point.
 
-### Future Arena Complex Direction (captured 2026-04-26)
+### Cancelled Arena Complex Direction (captured 2026-04-26, cancelled 2026-04-30)
 
-The user sketched a future map structure where one generated map contains several large combat rooms / arena halls connected directly by wide gates in shared walls. This is **not** the old corridor-heavy BSP dungeon direction. The intended design is:
+The user sketched a future map structure where one generated map contains several large combat rooms / arena halls connected directly by wide gates in shared walls. This direction was cancelled on 2026-04-30 after a short prototype attempt. Do not implement or plan Arena Complex / Connected Arena Rooms unless the user explicitly reopens it.
+
+Historical idea, now cancelled:
 
 - one `ArenaRoot` and one runtime NavMesh bake per complex;
 - 3-6 large room nodes, each still sized for fast dash / slide / jump combat;
@@ -784,7 +786,7 @@ The user sketched a future map structure where one generated map contains severa
 - staged clears: clear current room, open the next internal gate, eventually open the final run exit;
 - existing PR 2.E/F/G/H systems should be reused as room-level or complex-level building blocks.
 
-Suggested implementation timing: after PR 2.G verification, PR 2.H beveled prefabs, and the first Phase 3 enemy-AI layer. Start with a 3-room linear prototype before branching / reward / shop rooms.
+Current decision: keep the existing single-arena `RunController` / `ArenaFlowController` pipeline as the active arena architecture.
 
 Reference specs:
 
@@ -896,7 +898,7 @@ The most important current truth is:
 - movement and combat are architecturally mature (Phase 1 shipped)
 - procedural arena pipeline (r4) is verified through PR 2.A-2.E: single-arena generation + run graph + async NavMesh + encounters + biome styling + verticality + decor/atmosphere
 - next major step is Phase 3 enemy AI: refactor `SimpleEnemyAI` into a state-machine base, then add enemy types and better spawning behavior
-- future arena scale-up should prefer Connected Arena Rooms with wide gates over corridor-heavy dungeon layouts
+- Arena Complex / Connected Arena Rooms is cancelled as of 2026-04-30; keep the single-arena run architecture unless the user explicitly reopens the idea
 
 This file should let future AI agents understand the project quickly without doing a blind full scan first.
 
