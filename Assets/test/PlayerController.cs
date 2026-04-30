@@ -85,6 +85,7 @@ public class PlayerController : MonoBehaviour
     private bool dashPressed;
     private bool slideHeld;
 
+    private SpeedBurstFeedback speedBurstFeedback;
 
     void Start()
     {
@@ -115,6 +116,12 @@ public class PlayerController : MonoBehaviour
         }
 
         defaultCameraY = cameraTransform.localPosition.y;
+        speedBurstFeedback = GetComponent<SpeedBurstFeedback>();
+        if (speedBurstFeedback == null)
+        {
+            speedBurstFeedback = gameObject.AddComponent<SpeedBurstFeedback>();
+        }
+        speedBurstFeedback.Configure(cameraTransform);
 
         if (weaponHolder != null)
         {
@@ -163,6 +170,7 @@ public class PlayerController : MonoBehaviour
             dashDirection = move.magnitude > 0.1f ? move.normalized : transform.forward;
             velocity.y = 0f;
             currentSpeed = dashSpeed;
+            if (speedBurstFeedback != null) speedBurstFeedback.PulseDash(dashDuration);
         }
         dashPressed = false;
 
@@ -251,6 +259,7 @@ public class PlayerController : MonoBehaviour
         // Repeatedly resizing the controller caused the player to fall through floors.
         // The visual crouch effect comes from the camera dip in HandleMovement.
         // When low-ceiling arenas are added (Phase 2), revisit this with proper handling.
+        if (speedBurstFeedback != null) speedBurstFeedback.PulseSlide(slideDuration);
     }
 
     private void EndSlide()

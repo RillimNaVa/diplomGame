@@ -32,19 +32,19 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 ## Project Identity
 
 - Project name: `DiplomGame`
-- Current near-term order (2026-04-30): run the PR 3.F / PR 5.A / PR 5.B Editor playtests, with special attention to the 2026-04-30 pooling, outline, camera-shake, and NavMeshAgent lifecycle fixes.
+- Current near-term order (2026-05-01): run the PR 3.F / PR 5.A / PR 5.B / PR 5.C Editor playtests, with special attention to pooling lifecycle, shader/VFX readability, subtle dash/slide speed feedback, reduced ceiling-lamp bloom, and no recurring ParticleSystem warnings.
 - Cancelled direction: Arena Complex / Connected Arena Rooms was dropped on 2026-04-30; keep the single-arena run pipeline as the active architecture.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: verify the landed Phase 3 pooling and Phase 4/5 polish code in Unity Editor before moving on to Phase 4 boss work or broader Phase 5 polish.
+- Main short-term target: verify the landed Phase 3 pooling and Phase 4/5 polish code in Unity Editor, then implement the planned HUD refresh in `docs/UI_HUD_POLISH_PLAN.md`.
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
 ## Current Project Status Summary (2026-04-30)
 
-**Update 2026-04-30:** post-review runtime fixes landed for the latest Claude/Codex pass. `Health.CancelAutoDisable` now suppresses the later `Invoke(Disable)` scheduling during `onDeath`; `PooledEnemy` splits inactive state reset from post-enable `NavMeshAgent.Warp`; `StaggerOutline` restores original `sharedMaterials` on disable/reset; `CameraShake` removes the previous frame's offset before applying the next one. External `dotnet build Assembly-CSharp.csproj` is clean; Unity Editor lifecycle playtest is still pending.
+**Update 2026-05-01:** PR 5.C combat/environment feedback polish code landed. The project now has runtime muzzle flash and bullet-impact decals, HP pickup glow, exit portal shader, ambient dust, reactive lamp flicker, damage direction HUD, subtle dash/slide speed feedback, enemy death shards, Spitter strafing, and lightweight enemy separation. Ceiling lamp bloom was reduced after user screenshot feedback. External `dotnet build Assembly-CSharp.csproj --no-restore` is clean; Unity Editor visual/playtest verification is still pending. The next planned UI pass is captured in `docs/UI_HUD_POLISH_PLAN.md`.
 
 **Phase 1 complete. Phase 2 complete through PR 2.E. Phase 3 PR 3.A–3.C verified; PR 3.D code and baseline wiring landed, Unity role-mix playtest pending.** As of the current state of the repository:
 

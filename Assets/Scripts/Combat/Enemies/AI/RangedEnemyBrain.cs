@@ -17,10 +17,18 @@ public class RangedEnemyBrain : EnemyBrainBase
     [Tooltip("Layers that block line-of-sight. Default Everything except enemy layer; set to walls + props in Editor.")]
     public LayerMask losBlockMask = ~0;
 
+    [Header("Strafing (PR 3.G)")]
+    [Tooltip("Lateral distance the brain holds while inside the firing band. 0 disables strafing.")]
+    public float strafeRadius = 3.5f;
+    [Tooltip("Average seconds before the strafe direction flips. Hash-based jitter so a group of Spitters does not strafe in lockstep.")]
+    public float strafeFlipInterval = 2.2f;
+
     float attackReadyTime;
     float nextLosCheckTime;
     bool losCached;
     SpitterChargeBeam chargeBeam;
+    int strafeDir;            // -1 left, +1 right, 0 not yet picked
+    float nextStrafeFlipTime;
 
     protected override void Awake()
     {
@@ -64,9 +72,18 @@ public class RangedEnemyBrain : EnemyBrainBase
         }
         else
         {
-            // Inside the band — face target and consider firing.
-            StopAgent();
+            // Inside the band — strafe sideways while facing the target so the
+            // player can dodge and the Spitter does not feel like a static turret.
             FaceTarget();
+            if (strafeRadius > 0.01f)
+            {
+                TickStrafe();
+            }
+            else
+            {
+                StopAgent();
+            }
+
             if (Time.time >= attackReadyTime && TargetIsAlive() && CheckLineOfSight())
             {
                 // PR 3.E §8.3: ranged slot gate.
@@ -77,6 +94,31 @@ public class RangedEnemyBrain : EnemyBrainBase
                 if (chargeBeam != null) chargeBeam.BeginCharge(Target, data.telegraphTime);
             }
         }
+    }
+
+    void TickStrafe()
+    {
+        if (strafeDir == 0)
+        {
+            // Hash-based initial direction so a wave of Spitters does not all
+            // strafe the same way.
+            strafeDir = ((GetInstanceID() & 1) == 0) ? -1 : 1;
+            nextStrafeFlipTime = Time.time + strafeFlipInterval * (0.7f + 0.6f * UnityEngine.Random.value);
+        }
+        if (Time.time >= nextStrafeFlipTime)
+        {
+            strafeDir = -strafeDir;
+            nextStrafeFlipTime = Time.time + strafeFlipInterval * (0.7f + 0.6f * UnityEngine.Random.value);
+        }
+
+        Vector3 toTarget = Target.position - transform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.0001f) return;
+        Vector3 right = Vector3.Cross(Vector3.up, toTarget.normalized);
+        // Standoff at preferredDistance, then offset sideways by strafeRadius.
+        Vector3 standOff = Target.position - toTarget.normalized * data.preferredDistance;
+        Vector3 destination = standOff + right * strafeDir * strafeRadius;
+        RequestPathTo(destination);
     }
 
     void TickReposition()

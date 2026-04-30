@@ -53,10 +53,13 @@ public class EnemyDeathBurst : MonoBehaviour
         go.transform.position = origin;
 
         ParticleSystem ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         ParticleSystemRenderer psr = go.GetComponent<ParticleSystemRenderer>();
         if (psr != null) psr.sharedMaterial = ResolveMaterial();
 
         var main = ps.main;
+        main.playOnAwake = false;
         main.duration = 0.05f;
         main.loop = false;
         main.startLifetime = particleLifetime;

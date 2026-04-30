@@ -164,6 +164,12 @@ public abstract class WeaponBase : MonoBehaviour
         {
             muzzleFlash.Play();
         }
+        else if (muzzlePoint != null)
+        {
+            // PR 5.C — runtime fallback so weapons without an authored Particle
+            // System still get a muzzle flash burst. ImpactFXSystem auto-creates.
+            ImpactFXSystem.Instance.SpawnMuzzleFlash(muzzlePoint.position, muzzlePoint.rotation);
+        }
 
         TriggerFireAnim();
         nextFireTime = Time.time + definition.FireCooldown;

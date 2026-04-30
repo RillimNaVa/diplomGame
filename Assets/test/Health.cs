@@ -17,6 +17,14 @@ public class Health : MonoBehaviour
 
     bool autoDisableCancelled;
 
+    /// <summary>
+    /// PR 5.C — world-space position of the most recent damage source. Set by
+    /// the TakeDamage(damage, sourcePos) overload; consumed by the player's
+    /// damage-direction HUD. Defaults to transform.position when unknown.
+    /// </summary>
+    public Vector3 LastDamageSource { get; private set; }
+    public bool HasLastDamageSource { get; private set; }
+
     void Awake()
     {
         currentHealth = maxHealth;
@@ -27,6 +35,29 @@ public class Health : MonoBehaviour
     {
         if (currentHealth <= 0) return;
 
+        HasLastDamageSource = false;
+        currentHealth -= damage;
+        currentHealth = Mathf.Max(0f, currentHealth);
+        onTakeDamage?.Invoke(damage);
+        onHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    /// <summary>
+    /// PR 5.C — same as TakeDamage(damage) but records the world-space position
+    /// of the attacker. Used by the player's damage-direction HUD to draw an
+    /// arc pointing at the attacker when they're outside the camera frustum.
+    /// </summary>
+    public void TakeDamage(float damage, Vector3 sourcePosition)
+    {
+        if (currentHealth <= 0) return;
+
+        LastDamageSource = sourcePosition;
+        HasLastDamageSource = true;
         currentHealth -= damage;
         currentHealth = Mathf.Max(0f, currentHealth);
         onTakeDamage?.Invoke(damage);

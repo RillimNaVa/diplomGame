@@ -60,6 +60,11 @@ public class ShotgunFireMode : FireModeBase
                     {
                         health.TakeDamage(definition.damage);
                     }
+                    else
+                    {
+                        // PR 5.C — bullet impact decal on world surfaces.
+                        ImpactFXSystem.Instance.SpawnBulletDecal(hit.point, hit.normal);
+                    }
 
                     if (impactEffectPrefab != null)
                     {

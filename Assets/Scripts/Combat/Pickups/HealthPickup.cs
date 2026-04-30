@@ -32,6 +32,10 @@ public class HealthPickup : MonoBehaviour
 
         GameObject tagged = GameObject.FindWithTag("Player");
         if (tagged != null) playerTransform = tagged.transform;
+
+        // PR 5.C — auto-attach the glow visual so existing orb prefabs upgrade
+        // without Editor work.
+        if (GetComponent<HealthPickupGlow>() == null) gameObject.AddComponent<HealthPickupGlow>();
     }
 
     void Update()

@@ -50,7 +50,7 @@ public class MeleeEnemyBrain : EnemyBrainBase
         // leaving the range during the wind-up (TZ §5.6 damage contract).
         if (TargetIsAlive() && DistanceToTarget() <= data.attackRange)
         {
-            if (targetHealth != null) targetHealth.TakeDamage(data.damage);
+            if (targetHealth != null) targetHealth.TakeDamage(data.damage, transform.position);
         }
         EndTelegraphFlash();
         SetState(EnemyAIState.Recover);

@@ -65,7 +65,7 @@ public class SimpleEnemyAI : MonoBehaviour, IEnemyTargetReceiver
         Health playerHealth = player.GetComponent<Health>();
         if (playerHealth != null)
         {
-            playerHealth.TakeDamage(damage);
+            playerHealth.TakeDamage(damage, transform.position);
         }
 
         lastAttackTime = Time.time + attackCooldown;

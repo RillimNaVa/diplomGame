@@ -157,7 +157,7 @@ public class LeapMeleeEnemyBrain : EnemyBrainBase
         // Regular melee attack frame.
         if (TargetIsAlive() && DistanceToTarget() <= data.attackRange)
         {
-            if (targetHealth != null) targetHealth.TakeDamage(data.damage);
+            if (targetHealth != null) targetHealth.TakeDamage(data.damage, transform.position);
         }
         EndTelegraphFlash();
         SetState(EnemyAIState.Recover);
@@ -180,7 +180,7 @@ public class LeapMeleeEnemyBrain : EnemyBrainBase
         if (!TargetIsAlive() || targetHealth == null) return;
         if (DistanceToTarget() <= leapImpactRadius)
         {
-            targetHealth.TakeDamage(data.damage);
+            targetHealth.TakeDamage(data.damage, transform.position);
         }
     }
 

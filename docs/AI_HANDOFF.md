@@ -10,7 +10,22 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
-## Current Status (2026-04-30)
+## Current Status (2026-05-01)
+
+- **PR 5.C - Combat / Environment Feedback Polish - code landed 2026-05-01, Editor playtest pending.**
+  - New `ImpactFXSystem` adds runtime muzzle flash and pooled bullet-impact decals.
+  - New `PickupGlow.shader` + `HealthPickupGlow` make HP orbs pulse/glow without prefab rewiring.
+  - New `ExitPortal.shader` replaces flat exit emissive panels with a subtle portal swirl.
+  - New `AmbientDustMotes` adds biome-tinted floating dust per generated arena.
+  - New `LampFlicker` makes ceiling lamps dim/flicker on Brute slam or nearby plasma impact; distance is checked horizontally so tall ceilings still respond.
+  - New `DamageDirectionHUD` uses `Health.TakeDamage(damage, sourcePosition)` to point toward incoming damage.
+  - New `SpeedBurstFeedback` adds a light dash/slide FOV kick, edge tint, and subtle speed-line particles. Keep it subtle: center-screen visibility has priority.
+  - `EnemyDeathShards` adds short-lived debris and a flash-light on enemy death.
+  - Ranged enemies gained simple strafing, and `EnemyBrainBase` gained lightweight separation so enemies stack less.
+  - Ceiling lamp bloom was reduced after playtest feedback: smaller panels, lower fill-light intensity, lower lamp emissive intensity.
+  - `dotnet build Assembly-CSharp.csproj --no-restore` clean (0 errors, 0 warnings).
+  - **Pending in Unity Editor:** verify dash/slide speed feedback does not block aim, lamps are no longer overexposed, HP orb glow reads, exit portal shader compiles, bullet decals/muzzle flash work, and no ParticleSystem duration warnings return.
+- **Next UI direction captured 2026-05-01:** `docs/UI_HUD_POLISH_PLAN.md` records the accepted HUD pass: HP block, ammo/current weapon, dash charges, crosshair, compact enemy counter, restyled damage direction indicator, heal feedback, no timer, arena debug overlay stays for now.
 
 - **Post-review runtime bugfix pass - code landed 2026-04-30, Editor playtest pending.** Fixed four findings from the Claude/Codex review: `Health.CancelAutoDisable` now suppresses the later `Invoke(Disable)` scheduling during `onDeath`, `StaggerOutline` restores original `sharedMaterials` on disable/reset, `CameraShake` removes the previous frame's offset before applying the next one, and pooled `NavMeshAgent.Warp` runs only after `SetActive(true)`. `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings).
 - **Arena Complex / PR 3.5 cancelled 2026-04-30 by user decision.**

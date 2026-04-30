@@ -888,7 +888,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             if (mats == null) return;
             var biome = mats.sourceBiome;
             float baseIntensity = biome != null ? biome.accentLightIntensity : 2.2f;
-            float fillIntensity = Mathf.Max(2.5f, baseIntensity * 1.6f);
+            float fillIntensity = Mathf.Max(1.65f, baseIntensity * 1.05f);
             float fillRange = wh + 6f;       // reach the floor with margin
             float spotAngle = 110f;          // wide enough to overlap neighbours
 
@@ -917,7 +917,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             float qz = spanZ * (0.5f - quadInset);
             if (spanX >= m * 6f && spanZ >= m * 6f)
             {
-                float quadIntensity = fillIntensity * 0.85f;
+                float quadIntensity = fillIntensity * 0.72f;
                 Vector3[] offsets = {
                     new Vector3( qx, 0f,  qz),
                     new Vector3(-qx, 0f,  qz),
@@ -950,6 +950,8 @@ namespace VoidSurvivor.ProceduralArena.Build
             light.innerSpotAngle = spotAngle * 0.55f;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.Auto;
+            // PR 5.C — auto-attach LampFlicker so nearby impacts can dim it.
+            go.AddComponent<LampFlicker>();
         }
 
         // Visible ceiling fixture: a small emissive panel mounted to the ceiling
@@ -968,7 +970,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             // with `Ceiling_*` floors-in-reverse (those have their bottom face
             // exactly at wh).
             float lampTopY = wh - 0.04f;
-            float panelSize = 2.2f;            // bigger = readable from the floor
+            float panelSize = 1.55f;           // readable from the floor without blowing out bloom
             float panelThickness = 0.10f;
             float bracketThickness = 0.08f;
             float bracketSize = panelSize + 0.25f;

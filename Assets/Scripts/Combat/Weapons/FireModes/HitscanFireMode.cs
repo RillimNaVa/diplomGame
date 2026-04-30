@@ -59,6 +59,13 @@ public class HitscanFireMode : FireModeBase
                 {
                     health.TakeDamage(definition.damage);
                 }
+                else
+                {
+                    // PR 5.C — bullet impact decal on world surfaces (walls,
+                    // props, structures). Skipped on enemies because the hit
+                    // flash + dissolve already cover that read.
+                    ImpactFXSystem.Instance.SpawnBulletDecal(hit.point, hit.normal);
+                }
 
                 if (impactEffectPrefab != null)
                 {

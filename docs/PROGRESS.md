@@ -158,6 +158,27 @@
 - [x] `dotnet build Assembly-CSharp.csproj` clean (0/0)
 - [ ] Editor playtest: (a) Brute wind-up shows the new warning rune (rotating ticks, pulsing inner cross, clockwise sweep filling the outer band), (b) Brute slam impact shows hot core + expanding shockwave ring + radiating lightning cracks instead of the simple expanding orange disc
 
+### PR 5.C — Combat / Environment Feedback Polish (code landed 2026-05-01, Editor playtest pending)
+- [x] `ImpactFXSystem` — runtime muzzle flash + FIFO bullet-impact decals with `BulletImpactDecal.shader`
+- [x] `PickupGlow.shader` + `HealthPickupGlow` — HP orbs get a pulsing glow automatically from `HealthPickup`
+- [x] `ExitPortal.shader` + `ArenaBuildMaterials.MakeExitPortal` — exit markers read as portal surfaces instead of flat emissive panels
+- [x] `AmbientDustMotes` — biome-tinted dust particles spawned per generated arena
+- [x] `LampFlicker` — ceiling lamps flicker/dim on Brute slam or nearby enemy projectile impact; uses horizontal distance and also dims the visible lamp panel
+- [x] `DamageDirectionHUD` — player hit direction arcs driven by `Health.TakeDamage(damage, sourcePosition)`
+- [x] `SpeedBurstFeedback` — subtle dash/slide FOV kick, edge tint, and camera-local speed-line particles
+- [x] `EnemyDeathShards` — short-lived debris + flash-light on enemy death
+- [x] Ranged enemy strafing + lightweight enemy separation to reduce stacking
+- [x] Reduced ceiling lamp overexposure after playtest feedback: smaller panels, lower fill-light intensity, lower emissive intensity
+- [x] ParticleSystem runtime setup warnings fixed (`StopEmittingAndClear` + `playOnAwake = false` before changing duration)
+- [x] `dotnet build Assembly-CSharp.csproj --no-restore` clean (0/0)
+- [ ] Editor playtest: verify dash/slide effect remains subtle, lamps are not overexposed, lamp flicker is visible during Brute slam/plasma wall hits, HP glow/exit portal/bullet decals/muzzle flash work, and no ParticleSystem warnings return
+
+### Planned UI HUD Polish Pass (captured 2026-05-01)
+- [ ] See `docs/UI_HUD_POLISH_PLAN.md`
+- [ ] Replace legacy combat HUD with HP block, ammo/current weapon, dash charges, crosshair, compact enemy counter, restyled damage direction indicator, and heal feedback
+- [ ] Remove legacy timer from the main combat HUD
+- [ ] Keep arena debug info visible for now
+
 ### PR 5.A — Visual Polish Pass (code landed 2026-04-29, Editor playtest pending)
 - [x] **EnemyDissolve shader** (`Assets/Shaders/EnemyDissolve.shader`) — HLSL custom shader with hash-based 3D world-space noise + clip threshold + emissive burning edge. Lit by `GetMainLight()` Lambert + ambient (no full PBR — overkill for a 1-second death animation)
 - [x] **EnemyDissolve C#** — listens to `Health.onDeath`, swaps each Renderer's sharedMaterials to per-instance dissolve materials (copying `_BaseColor` / `_BaseMap` / `_EmissionColor` from the source), ramps `_DissolveAmount` 0 → 1.05 over 1.0s. `ResetForPool` restores original sharedMaterials so pool reuse is clean. Auto-attached by `EnemyBrainBase.Awake`

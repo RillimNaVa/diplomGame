@@ -158,7 +158,14 @@ namespace VoidSurvivor.ProceduralArena.Run
 
         void Update()
         {
-            if (vignette == null || Time.time >= damageVignetteUntil) return;
+            if (vignette == null) return;
+            UpdateDamagePulse();
+            UpdateLowHealthPulse();
+        }
+
+        void UpdateDamagePulse()
+        {
+            if (Time.time >= damageVignetteUntil) return;
             float total = damageVignetteUntil - damageVignetteStart;
             float t = total > 0f ? (Time.time - damageVignetteStart) / total : 1f;
             // Sharp on, ease-out decay back to baseline.
@@ -172,6 +179,52 @@ namespace VoidSurvivor.ProceduralArena.Run
                 vignette.intensity.value = damageVignetteBaseline;
                 vignette.color.value = damageVignetteBaselineColor;
             }
+        }
+
+        // ----- PR 5.C: low-HP heartbeat vignette -----
+
+        bool lowHealthActive;
+        float lowHealthBaselineIntensity;
+        Color lowHealthBaselineColor;
+        const float LowHealthPulseHz = 1.7f;     // ~100 BPM
+        const float LowHealthPeak = 0.50f;
+        static readonly Color LowHealthColor = new Color(0.85f, 0.05f, 0.05f);
+
+        /// <summary>
+        /// PR 5.C — drives the continuous heartbeat vignette while the player
+        /// is below 25% HP. Call SetLowHealthPulse(true) when threshold crossed
+        /// downward, false when crossed upward. Idempotent.
+        /// </summary>
+        public void SetLowHealthPulse(bool active)
+        {
+            if (vignette == null) return;
+            if (active == lowHealthActive) return;
+            if (active)
+            {
+                lowHealthBaselineIntensity = vignette.intensity.value;
+                lowHealthBaselineColor = vignette.color.value;
+                vignette.color.overrideState = true;
+            }
+            else
+            {
+                vignette.intensity.value = lowHealthBaselineIntensity;
+                vignette.color.value = lowHealthBaselineColor;
+            }
+            lowHealthActive = active;
+        }
+
+        void UpdateLowHealthPulse()
+        {
+            if (!lowHealthActive) return;
+            // Damage pulse takes priority — don't fight it.
+            if (Time.time < damageVignetteUntil) return;
+            float k = 0.5f + 0.5f * Mathf.Sin(Time.time * LowHealthPulseHz * Mathf.PI * 2f);
+            // Sharpen the curve so it reads as a heartbeat, not a sine wave.
+            k = Mathf.Pow(k, 2.5f);
+            float intensity = Mathf.Lerp(lowHealthBaselineIntensity, LowHealthPeak, k);
+            Color c = Color.Lerp(lowHealthBaselineColor, LowHealthColor, k * 0.85f);
+            vignette.intensity.value = intensity;
+            vignette.color.value = c;
         }
 
         void OnDestroy()

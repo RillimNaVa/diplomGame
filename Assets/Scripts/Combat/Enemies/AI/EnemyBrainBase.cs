@@ -19,8 +19,20 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
     [Tooltip("Auto-resolve player by tag if SetTarget is never called.")]
     public bool autoResolvePlayer = true;
 
+    [Header("Group separation (PR 3.G)")]
+    [Tooltip("Radius within which other active brains push this brain sideways while moving toward the target. 0 disables.")]
+    public float separationRadius = 1.6f;
+    [Tooltip("Strength of the lateral push. Multiplied by (1 - dist/radius) so far neighbors have no effect.")]
+    public float separationStrength = 1.4f;
+
     public EnemyAIState State { get; protected set; } = EnemyAIState.Spawn;
     public Transform Target { get; private set; }
+
+    // PR 3.G — static registry of every live brain so neighbors can be queried
+    // without going through Physics.OverlapSphere on a dedicated layer. Cheap
+    // for the small enemy counts we ship (max 16 melee + 4 ranged + 1 brute).
+    static readonly System.Collections.Generic.List<EnemyBrainBase> ActiveBrains
+        = new System.Collections.Generic.List<EnemyBrainBase>();
 
     protected NavMeshAgent agent;
     protected Health health;
@@ -50,6 +62,8 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
         // PR 5.A — shader-driven death + stagger visuals.
         if (GetComponent<EnemyDissolve>() == null) gameObject.AddComponent<EnemyDissolve>();
         if (GetComponent<StaggerOutline>() == null) gameObject.AddComponent<StaggerOutline>();
+        // PR 3.G — physics shards on death.
+        if (GetComponent<EnemyDeathShards>() == null) gameObject.AddComponent<EnemyDeathShards>();
 
         if (data != null)
         {
@@ -69,6 +83,7 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
         // OnEnable but not Start.
         spawnInitialized = false;
         SetState(EnemyAIState.Spawn);
+        if (!ActiveBrains.Contains(this)) ActiveBrains.Add(this);
     }
 
     protected virtual void OnDisable()
@@ -77,6 +92,7 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
         if (stagger != null) stagger.OnStaggerChanged -= HandleStaggerChanged;
         ReleaseAttackSlot();
         if (telegraphFlash != null) telegraphFlash.EndPulse();
+        ActiveBrains.Remove(this);
     }
 
     protected virtual void Start()
@@ -152,14 +168,42 @@ public abstract class EnemyBrainBase : MonoBehaviour, IEnemyTargetReceiver
 
     /// <summary>
     /// Throttled SetDestination. Skips the call when the agent is not yet on the
-    /// NavMesh (PR 2.C async-bake guard).
+    /// NavMesh (PR 2.C async-bake guard). Applies group-separation offset so
+    /// brains do not stack on top of each other when chasing the player.
     /// </summary>
     protected void RequestPathTo(Vector3 worldPos)
     {
         if (agent == null || !agent.isOnNavMesh) return;
         if (Time.time < nextPathUpdateTime) return;
         nextPathUpdateTime = Time.time + pathUpdateInterval;
-        agent.SetDestination(worldPos);
+        agent.SetDestination(ApplySeparation(worldPos));
+    }
+
+    /// <summary>
+    /// PR 3.G — group coordination. Pushes the requested destination sideways
+    /// based on nearby active brains so a Crawler swarm fans out around the
+    /// player instead of stacking on the same point. Returns the adjusted pos.
+    /// </summary>
+    protected Vector3 ApplySeparation(Vector3 desired)
+    {
+        if (separationRadius <= 0.001f || separationStrength <= 0.001f) return desired;
+        Vector3 push = Vector3.zero;
+        Vector3 self = transform.position;
+        for (int i = 0; i < ActiveBrains.Count; i++)
+        {
+            var other = ActiveBrains[i];
+            if (other == null || other == this) continue;
+            Vector3 d = self - other.transform.position;
+            d.y = 0f;
+            float distSqr = d.sqrMagnitude;
+            if (distSqr < 0.0001f || distSqr > separationRadius * separationRadius) continue;
+            float dist = Mathf.Sqrt(distSqr);
+            // Linear falloff: full push at touch distance, zero at radius edge.
+            float w = 1f - dist / separationRadius;
+            push += d.normalized * w;
+        }
+        if (push.sqrMagnitude < 0.0001f) return desired;
+        return desired + push.normalized * separationStrength;
     }
 
     protected void StopAgent()

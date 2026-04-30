@@ -157,7 +157,17 @@ public class EnemyProjectile : MonoBehaviour
         Health hp = other.GetComponentInParent<Health>();
         if (hp != null)
         {
-            hp.TakeDamage(damage);
+            // PR 5.C — pass projectile origin so the player's damage-direction
+            // HUD points at the actual incoming shot, not the spitter that
+            // fired it (which the player may have already moved away from).
+            hp.TakeDamage(damage, transform.position);
+        }
+        else
+        {
+            // PR 5.C — wall hit: leave a scorch decal where the plasma ate.
+            ImpactFXSystem.Instance.SpawnBulletDecal(transform.position, -direction);
+            // Nearby lamps flicker briefly when a plasma round detonates.
+            LampFlicker.NudgeAt(transform.position, 5.5f);
         }
 
         ReturnOrDestroy();

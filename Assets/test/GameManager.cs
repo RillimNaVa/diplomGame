@@ -140,6 +140,11 @@ public class GameManager : MonoBehaviour
             {
                 playerHealth.gameObject.AddComponent<PlayerHitFeedback>();
             }
+            // PR 5.C — damage-direction HUD.
+            if (playerHealth.GetComponent<DamageDirectionHUD>() == null)
+            {
+                playerHealth.gameObject.AddComponent<DamageDirectionHUD>();
+            }
         }
     }
 

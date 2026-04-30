@@ -85,6 +85,7 @@ namespace VoidSurvivor.ProceduralArena.Run
             {
                 SpawnExitTriggers(node, controller, out var barriers);
                 SpawnReflectionProbe();
+                SpawnAmbientDust(biome);
 
                 if (!skipEncounterSystems)
                 {
@@ -381,6 +382,30 @@ namespace VoidSurvivor.ProceduralArena.Run
             RenderSettings.ambientSkyColor = Color.Lerp(defaultAmbientSkyColor, biome.ambientTint, 0.35f);
             RenderSettings.ambientEquatorColor = Color.Lerp(defaultAmbientEquatorColor, biome.ambientTint, 0.25f);
             RenderSettings.ambientGroundColor = Color.Lerp(defaultAmbientGroundColor, biome.ambientTint * 0.6f, 0.3f);
+        }
+
+        void SpawnAmbientDust(BiomeDefinition biome)
+        {
+            if (currentArenaRoot == null || currentCtx == null || currentCtx.layout == null) return;
+            if (currentCtx.layout.rooms.Count == 0) return;
+            var room = currentCtx.layout.rooms[0];
+            var bounds = room.boundsCells;
+            float m = buildConfig.macroCellMeters;
+            float wh = room.wallHeightMeters > 0f ? room.wallHeightMeters : buildConfig.wallHeightMeters;
+
+            Vector3 center = new Vector3(
+                (bounds.xMin + bounds.width * 0.5f) * m,
+                wh * 0.5f,
+                (bounds.yMin + bounds.height * 0.5f) * m);
+            if (arenaParent != null) center += arenaParent.position;
+
+            // Slightly inset so motes don't spawn inside walls or under the floor.
+            Vector3 size = new Vector3(
+                Mathf.Max(1f, bounds.width * m - m * 0.5f),
+                Mathf.Max(1f, wh - 0.4f),
+                Mathf.Max(1f, bounds.height * m - m * 0.5f));
+
+            AmbientDustMotes.Spawn(currentArenaRoot.transform, center, size, biome);
         }
 
         void SpawnReflectionProbe()

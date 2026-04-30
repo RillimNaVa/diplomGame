@@ -47,14 +47,14 @@ namespace VoidSurvivor.ProceduralArena.Build
                 emissiveAccent = CreateSurface(shader, biome != null ? biome.emissiveAccent : null, "ArenaEmissiveAccentMat", new Color(0.1f, 0.65f, 0.95f), 0f, 0.35f),
                 contamination = CreateSurface(shader, biome != null ? biome.contaminationMaterial : null, "ArenaContaminationMat", new Color(0.45f, 0.18f, 0.28f), 0.15f, 0.72f),
                 startMarker = MakeEmissive(shader, "ArenaStartMat", startColor, startIntensity),
-                exitMarker  = MakeEmissive(shader, "ArenaExitMat", exitColor, exitIntensity),
+                exitMarker  = MakeExitPortal(shader, "ArenaExitMat", exitColor, exitIntensity),
                 barrier     = MakeForceField(shader, "ArenaBarrierMat", barrierColor, barrierIntensity),
                 // Ceiling-lamp panel: bright neutral-warm white, mostly biome-agnostic so
                 // every arena reads as actually lit. Slight tint pull toward biome ambient
                 // for cohesion.
                 lampPanel   = MakeEmissive(shader, "ArenaLampPanelMat",
-                    Color.Lerp(new Color(1f, 0.97f, 0.92f), biome != null ? biome.ambientTint : Color.white, 0.2f),
-                    4.5f),
+                    Color.Lerp(new Color(0.86f, 0.9f, 0.92f), biome != null ? biome.ambientTint : Color.white, 0.16f),
+                    1.65f),
             };
             return mats;
         }
@@ -212,6 +212,22 @@ namespace VoidSurvivor.ProceduralArena.Build
             // Markers are usually small; default density keeps them from looking weird
             // if a future biome attaches a real texture to them.
             WorldUVDensityRegistry.Register(m, 0.5f);
+            return m;
+        }
+
+        /// <summary>
+        /// PR 5.C — animated swirl portal material for exit doors. Falls back
+        /// to MakeEmissive if VoidSurvivor/ExitPortal shader is missing.
+        /// </summary>
+        static Material MakeExitPortal(Shader fallbackShader, string name, Color c, float intensity)
+        {
+            Shader portal = Shader.Find("VoidSurvivor/ExitPortal");
+            if (portal == null) return MakeEmissive(fallbackShader, name, c, intensity);
+            var m = new Material(portal) { name = name };
+            m.SetColor("_CoreColor", c * (intensity * 1.4f));
+            m.SetColor("_OuterColor", c * intensity);
+            m.SetColor("_RimColor", c * (intensity * 1.8f));
+            m.enableInstancing = false;
             return m;
         }
 

@@ -77,6 +77,8 @@ public class BruteEnemyBrain : EnemyBrainBase
         // spawns regardless of whether the player is in range; readability
         // matters more than strict simulation here.
         SlamImpactRing.Spawn(slamOrigin, data.slamRadius);
+        // PR 5.C — slam shake makes lamps in a wide radius flicker.
+        LampFlicker.NudgeAt(slamOrigin, data.slamRadius * 2.2f);
         if (CameraShake.Instance != null)
         {
             // Trauma scaled by distance — close slam shakes hard, far slam
@@ -129,7 +131,7 @@ public class BruteEnemyBrain : EnemyBrainBase
             Health hp = col.GetComponentInParent<Health>();
             if (hp == null || hp.gameObject == gameObject) continue;
             if (seen == null) seen = new HashSet<Health>();
-            if (seen.Add(hp)) hp.TakeDamage(data.damage);
+            if (seen.Add(hp)) hp.TakeDamage(data.damage, origin);
         }
     }
 
