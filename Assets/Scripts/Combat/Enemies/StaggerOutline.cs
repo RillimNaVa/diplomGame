@@ -49,9 +49,7 @@ public class StaggerOutline : MonoBehaviour
     void OnDisable()
     {
         if (stagger != null) stagger.OnStaggerChanged -= HandleStaggerChanged;
-        // RemoveOutline runs on pool reuse via ResetForPool; here we just drop
-        // the in-memory flag so the next OnEnable + stagger re-applies cleanly.
-        outlined = false;
+        RemoveOutline();
     }
 
     void HandleStaggerChanged(bool isStaggered)
@@ -62,8 +60,7 @@ public class StaggerOutline : MonoBehaviour
 
     public void ResetForPool()
     {
-        if (outlined) RemoveOutline();
-        outlined = false;
+        RemoveOutline();
     }
 
     void AddOutline()

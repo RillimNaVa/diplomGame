@@ -93,7 +93,15 @@ public class PooledEnemy : MonoBehaviour
         // textured enemy, not a frozen 100%-dissolved or stagger-outlined GO.
         if (dissolve != null) dissolve.ResetForPool();
         if (outline != null) outline.ResetForPool();
-        if (agent != null && agent.enabled)
+    }
+
+    /// <summary>
+    /// Called by EnemyPool.Rent after SetActive(true). NavMeshAgent rejects Warp
+    /// while its GameObject is inactive, so agent reset is kept post-enable.
+    /// </summary>
+    public void FinishReuseAfterEnable()
+    {
+        if (agent != null && agent.enabled && agent.isActiveAndEnabled)
         {
             // Warp to current position so the agent picks up the new spawn point;
             // ResetPath clears any leftover destination from the previous life.

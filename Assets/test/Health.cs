@@ -15,6 +15,8 @@ public class Health : MonoBehaviour
     public UnityEvent<float> onTakeDamage;
     public HealthChangedEvent onHealthChanged;
 
+    bool autoDisableCancelled;
+
     void Awake()
     {
         currentHealth = maxHealth;
@@ -47,9 +49,13 @@ public class Health : MonoBehaviour
 
     void Die()
     {
+        autoDisableCancelled = false;
         Debug.Log($"{name} DIED!");
         onDeath?.Invoke();
-        Invoke(nameof(Disable), 1f);
+        if (!autoDisableCancelled)
+        {
+            Invoke(nameof(Disable), 1f);
+        }
     }
 
     void Disable()
@@ -67,6 +73,7 @@ public class Health : MonoBehaviour
     public void ResetForPool()
     {
         CancelInvoke(nameof(Disable));
+        autoDisableCancelled = false;
         currentHealth = maxHealth;
         onHealthChanged?.Invoke(currentHealth, maxHealth);
     }
@@ -77,6 +84,7 @@ public class Health : MonoBehaviour
     /// </summary>
     public void CancelAutoDisable()
     {
+        autoDisableCancelled = true;
         CancelInvoke(nameof(Disable));
     }
 }

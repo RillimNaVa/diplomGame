@@ -12,6 +12,8 @@ For stable architecture / roadmap / known issues, see:
 
 ## Current Status (2026-04-30)
 
+- **Post-review runtime bugfix pass - code landed 2026-04-30, Editor playtest pending.** Fixed four findings from the Claude/Codex review: `Health.CancelAutoDisable` now suppresses the later `Invoke(Disable)` scheduling during `onDeath`, `StaggerOutline` restores original `sharedMaterials` on disable/reset, `CameraShake` removes the previous frame's offset before applying the next one, and pooled `NavMeshAgent.Warp` runs only after `SetActive(true)`. `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings).
+
 - **PR 5.B — Brute Slam Shaders — code landed 2026-04-30, Editor playtest pending.** Replaces the runtime emissive-cylinder visuals on `BruteSlamDecal` (wind-up) and `SlamImpactRing` (impact) with two dedicated HLSL shaders.
   - New `Assets/Shaders/SlamWarning.shader` — polar-coords ground rune driven by `_Progress`: outer ring + pulsing inner X-cross + clockwise sweep arc (countdown filler) + 12 rotating tick marks.
   - New `Assets/Shaders/SlamShockwave.shader` — polar-coords impact effect driven by `_Progress` 0 → 1.05: hot core + primary expanding ring at radius=`_Progress` + trailing secondary ring + N radial lightning cracks with per-finger jitter via `hash11(slot)`.
@@ -60,7 +62,7 @@ For stable architecture / roadmap / known issues, see:
 - **Phase 3 PR 3.F — Enemy + Projectile Pooling — code landed 2026-04-29, Editor playtest still pending** (carried over).
 - **Phase 3 PR 3.E — Combat Readability + Active Attack Slots — VERIFIED 2026-04-29 by user.**
   - New `Assets/Scripts/Combat/Enemies/Spawn/EnemyPool.cs` (auto-creating scene-singleton; per-prefab `Stack<GameObject>` rent/return; tidy re-parent under the pool root on Return; null-safe Rent for scene-reload).
-  - New `Assets/Scripts/Combat/Enemies/Spawn/PooledEnemy.cs` (`[DefaultExecutionOrder(200)]` so Awake captures `health.maxHealth` *after* `EnemyBrainBase.Awake` writes `data.maxHealth`). Listens to its own `Health.onDeath`, cancels Health's auto-disable, schedules pool return after a 1.5s grace window so loot drops + glory-kill detector still complete. `PrepareForReuse()` is called by the pool before `SetActive(true)`: restores Health (`maxHealth = baselineMaxHealth`, `currentHealth = maxHealth`), `EnemyStagger`, `EnemyLootTable`, and warps the `NavMeshAgent` to the new spawn point.
+  - New `Assets/Scripts/Combat/Enemies/Spawn/PooledEnemy.cs` (`[DefaultExecutionOrder(200)]` so Awake captures `health.maxHealth` *after* `EnemyBrainBase.Awake` writes `data.maxHealth`). Listens to its own `Health.onDeath`, cancels Health's auto-disable, schedules pool return after a 1.5s grace window so loot drops + glory-kill detector still complete. `PrepareForReuse()` is called by the pool before `SetActive(true)` and restores Health (`maxHealth = baselineMaxHealth`, `currentHealth = maxHealth`), `EnemyStagger`, `EnemyLootTable`, dissolve, and outline state; `FinishReuseAfterEnable()` runs post-enable and resets/warps the `NavMeshAgent` to the new spawn point.
   - New `Assets/Scripts/Combat/Enemies/Projectiles/EnemyProjectilePool.cs` — same pattern for Spitter plasma shots. `EnemyProjectile` got `BindPool` + `ResetForPool` (clears owner/damage/direction, caches `TrailRenderer[]` and `Clear()`s each on rent), and `Destroy(gameObject)` → `pool.Return(...)` with a fallback to Destroy when no pool is bound.
   - `RangedEnemyBrain.SpawnProjectile` rents through `EnemyProjectilePool.Instance.Rent` instead of `Instantiate`.
   - `Health.ResetForPool()` (restores `currentHealth`, re-fires `onHealthChanged`) + `Health.CancelAutoDisable()` (cancels the pending 1s `SetActive(false)` when a pool owns the lifecycle).
@@ -180,6 +182,8 @@ Captured 2026-04-26 from the user's sketch. The desired future direction is a la
 
 **Phase 3 PR 3.F — Editor playtest.** Verify pooling lifecycle in `test.unity`:
 
+Post-review note (2026-04-30): rerun this checklist after the pooling lifecycle fixes above. Pay special attention to enemies returning under `EnemyPool`, recycled staggered enemies not keeping outline material slots, and no `NavMeshAgent` active-state errors on reused enemies.
+
 1. `GameManager.useEncounterMode = true`. Start a fresh run (Ctrl+P).
 2. Play through the full 5-arena loop **twice** (Start → Mid×3 → Boss → Restart → again). Each arena spawns ~5–14 enemies, so by the end of run 2 you've spawned ~80–140 enemies.
 3. **Hierarchy check:** open the Scene Hierarchy. There should be a single `EnemyPool` GameObject and a single `EnemyProjectilePool` GameObject under the scene root, holding all the disabled (greyed-out) recycled instances. No loose disabled enemy GameObjects should be accumulating outside those pool roots.
@@ -286,9 +290,9 @@ Scene wiring reference (`test.unity`):
 
 ## Recommended Next Task
 
-PR 3.A/B/C/D are verified. PR 3.E code is in. Next is a focused **PR 3.E Editor playtest** (slot caps + telegraph visuals + fair-spawn). See the *Current Goal* section above for the 7-point check.
+Next is a focused **PR 3.F + polish lifecycle Editor playtest**. Use the *Current Goal* checklist above and also verify the 2026-04-30 fixes: pooled enemies return under `EnemyPool`, no stuck stagger outline slot after reuse, camera shake settles back to the expected local position, and no `NavMeshAgent` active-state errors appear on reused enemies.
 
-After PR 3.E is accepted, the only Phase 3 PR left is **PR 3.F — Enemy + Projectile pooling**: long runs accumulate disabled enemy GameObjects; replace `Instantiate`/`Destroy` with a small pool, reset `Health` / brain state / `EnemyStagger` / NavMeshAgent / loot lifecycle on reuse, and ensure death events fire exactly once per kill. After 3.F, the optional `Gravity Node` (zoner) is the only TZ-deferred Phase 3 work; otherwise we move on to Phase 4 (boss).
+After PR 3.F is accepted, **Phase 3 is complete** modulo the optional Gravity Node (zoner). Then choose between Phase 4 boss work and Phase 5 audio/VFX polish based on the current GDD priority.
 
 ### Earlier-PR notes (kept for context — PR 3.D playtest steps)
 

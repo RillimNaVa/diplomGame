@@ -163,6 +163,7 @@
 - [x] **EnemyDissolve C#** — listens to `Health.onDeath`, swaps each Renderer's sharedMaterials to per-instance dissolve materials (copying `_BaseColor` / `_BaseMap` / `_EmissionColor` from the source), ramps `_DissolveAmount` 0 → 1.05 over 1.0s. `ResetForPool` restores original sharedMaterials so pool reuse is clean. Auto-attached by `EnemyBrainBase.Awake`
 - [x] **StaggerOutline shader** (`Assets/Shaders/StaggerOutline.shader`) — inverted-hull outline pass (`Cull Front`, vertex inflated along normal by `_OutlineWidth`), HDR pulsing color
 - [x] **StaggerOutline C#** — listens to `EnemyStagger.OnStaggerChanged`, appends an outline material as an extra slot on every renderer's `sharedMaterials`. Removes on stagger end / pool return / disable. Auto-attached
+- [x] 2026-04-30 post-review fix: `StaggerOutline.OnDisable` and `ResetForPool` restore original `sharedMaterials` unconditionally, so a staggered enemy cannot keep the outline material slot after pooling
 - [x] **ForceField shader** (`Assets/Shaders/ForceField.shader`) — animated hex-grid + vertical scroll waves + Fresnel rim + slow color pulse. Transparent, two-sided, ZWrite off
 - [x] **ArenaBuildMaterials.MakeForceField** — replaces `MakeEmissive` for the soft-lock barrier; falls back to emissive cube if the shader is missing. Soft-lock barriers now read as energy fields, not orange boxes
 - [x] **SpitterChargeBeam C#** (`Assets/Scripts/Combat/Enemies/AI/SpitterChargeBeam.cs`) — LineRenderer from muzzle to player during the Telegraph state; thickness + brightness ramp accelerates toward the firing frame; auto-attached by `RangedEnemyBrain.Awake`. Cleaned up on Stagger / Death / pool disable
@@ -175,6 +176,7 @@
 ### PR 4.A — Combat Feel Pass (code landed 2026-04-29, Editor playtest pending)
 - [x] `HitFlash` — auto-attached emissive white flash on `Health.onTakeDamage` (0.07s, ease-out cubic), MPB-based so no runtime material instances
 - [x] `CameraShake` — auto-attaches to `Camera.main`, additive Perlin-noise offset on top of `PlayerController.HandleMovement` writes via LateUpdate, trauma decay 4.5/sec, `Instance.AddTrauma(amount)` API
+- [x] 2026-04-30 post-review fix: `CameraShake` now removes the previous frame's position/roll shake before gameplay Update and before applying the next LateUpdate shake, preventing permanent camera drift
 - [x] `PlayerHitFeedback` — auto-added to player by `GameManager.ResolveReferences`; on `playerHealth.onTakeDamage` triggers (a) red vignette pulse via new `ArenaPostProcessingController.PulseDamageVignette` + (b) camera shake scaled by damage / `shakeReferenceDamage` (default 18)
 - [x] `EnemyDeathBurst` — runtime ParticleSystem burst on `Health.onDeath` (24 particles, lifetime 0.9s, color from `EnemyData.telegraphColor`), detached from enemy so the burst survives the pool return
 - [x] `SlamImpactRing` — runtime expanding emissive ring (0.4× → 1.05× radius over 0.32s) spawned by `BruteEnemyBrain.TickAttack` at the slam frame; also calls `CameraShake.AddTrauma` with distance falloff
@@ -211,6 +213,7 @@
 - [x] `EnemyPool` (scene-singleton, auto-creates) — per-prefab `Stack<GameObject>` rent/return; tidy re-parenting under the pool root on Return; null-entry skip on Rent for scene-reload safety
 - [x] `PooledEnemy` (`[DefaultExecutionOrder(200)]` so Awake captures post-`EnemyBrainBase.Awake` `health.maxHealth`) — caches `baselineMaxHealth`, listens to its own `Health.onDeath`, cancels `Health`'s `Invoke(Disable)` and schedules `EnemyPool.Return` after a 1.5s grace window so loot/glory-kill have time to complete
 - [x] `Health.ResetForPool` + `Health.CancelAutoDisable` — restore `currentHealth = maxHealth` and re-fire `onHealthChanged`; cancel the pending 1s SetActive(false) when an enemy is pool-managed (TZ §9 PR 3.F reset rules)
+- [x] 2026-04-30 post-review fix: `Health.CancelAutoDisable` now suppresses the auto-disable even when called during `onDeath` before `Die()` schedules `Invoke(Disable)`; `PooledEnemy` now splits inactive component reset from post-enable `NavMeshAgent.Warp`
 - [x] `EnemyStagger.ResetForPool` — clear `IsStaggered`, restore black emission on cached material instances, fire `OnStaggerChanged(false)` so brain transitions out of `Staggered`
 - [x] `EnemyLootTable.ResetForPool` — clear the one-shot `rolled` guard so the recycled enemy can drop loot again on its next death
 - [x] `GameManager.SpawnEnemy` + `SpawnEncounterEnemy` rent through `EnemyPool.Instance.Rent`; `Health.onDeath` listener uses Remove+Add to avoid duplicate subscriptions across rents (TZ §10 acceptance: kills count exactly once)
@@ -406,6 +409,8 @@ Goal: evolve the current single-arena pipeline into optional larger maps made of
 ---
 
 ## Change Log
+
+| 2026-04-30 | **Post-review runtime bugfix pass** - fixed four findings from the Claude/Codex review: pooled enemies now return to `EnemyPool` instead of being disabled by `Health`, stagger outline material slots are restored on disable/reset, camera shake no longer accumulates permanent local-position drift, and pooled `NavMeshAgent.Warp` runs only after `SetActive(true)`. `dotnet build Assembly-CSharp.csproj` clean (0 errors, 0 warnings). Unity Editor playtest is still needed for the PR 3.F / PR 5.A lifecycle. |
 
 | Date | What was done |
 |------|---------------|

@@ -61,6 +61,7 @@ public class EnemyPool : MonoBehaviour
                 PooledEnemy pe = go.GetComponent<PooledEnemy>();
                 if (pe != null) pe.PrepareForReuse();
                 go.SetActive(true);
+                if (pe != null) pe.FinishReuseAfterEnable();
                 return go;
             }
         }

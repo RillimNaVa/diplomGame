@@ -1,13 +1,13 @@
 using UnityEngine;
 
-// Phase 4 / PR 4.A — additive camera shake on top of existing camera offsets.
+// Phase 4 / PR 4.A - additive camera shake on top of existing camera offsets.
 // Auto-attaches to Camera.main when first AddTrauma() is called, so callers
 // (PlayerHitFeedback, Brute slam impact) do not need Inspector wiring.
 //
 // PlayerController writes cameraTransform.localPosition.y in HandleMovement
-// (slide camera dip). We use LateUpdate so our additive shake offset goes on
-// top of that write each frame. The shake decays in ~0.15s so any conflict
-// with the slide lerp is invisible.
+// (slide camera dip). We remove the previous frame's shake before gameplay
+// Update logic runs, then apply the current frame in LateUpdate.
+[DefaultExecutionOrder(-1000)]
 public class CameraShake : MonoBehaviour
 {
     static CameraShake s_instance;
@@ -18,13 +18,13 @@ public class CameraShake : MonoBehaviour
     public float maxRotation = 1.6f;
     [Tooltip("Trauma decays linearly per second. Higher = shorter shake.")]
     public float decayPerSecond = 4.5f;
-    [Tooltip("Trauma is squared before applying — gives nicer falloff curve.")]
+    [Tooltip("Trauma is squared before applying - gives nicer falloff curve.")]
     public bool squareTrauma = true;
 
     float trauma;
-    Vector3 baseLocalPos;
-    Quaternion baseLocalRot;
-    bool capturedBase;
+    Vector3 lastOffset;
+    Quaternion lastRotationOffset = Quaternion.identity;
+    bool shakeApplied;
     float seedX, seedY, seedZ, seedRoll;
 
     public static CameraShake Instance
@@ -50,8 +50,14 @@ public class CameraShake : MonoBehaviour
         seedRoll = Random.value * 100f;
     }
 
+    void OnDisable()
+    {
+        RemovePreviousShake();
+    }
+
     void OnDestroy()
     {
+        RemovePreviousShake();
         if (s_instance == this) s_instance = null;
     }
 
@@ -64,17 +70,17 @@ public class CameraShake : MonoBehaviour
         trauma = Mathf.Clamp01(trauma + amount);
     }
 
+    void Update()
+    {
+        RemovePreviousShake();
+    }
+
     void LateUpdate()
     {
+        RemovePreviousShake();
+
         if (trauma <= 0f)
         {
-            if (capturedBase)
-            {
-                // Don't fight PlayerController's per-frame writes — once shake
-                // is over, just stop overriding. PlayerController will reclaim
-                // localPosition/localRotation on its next Update.
-                capturedBase = false;
-            }
             return;
         }
 
@@ -86,10 +92,23 @@ public class CameraShake : MonoBehaviour
         float oz = (Mathf.PerlinNoise(seedZ, t) - 0.5f) * 2f;
         float or = (Mathf.PerlinNoise(seedRoll, t) - 0.5f) * 2f;
 
-        // Apply additive on top of the value PlayerController just wrote.
-        transform.localPosition += new Vector3(ox, oy, oz) * (maxOffset * intensity);
-        transform.localRotation = transform.localRotation * Quaternion.Euler(0f, 0f, or * maxRotation * intensity);
+        lastOffset = new Vector3(ox, oy, oz) * (maxOffset * intensity);
+        lastRotationOffset = Quaternion.Euler(0f, 0f, or * maxRotation * intensity);
+        transform.localPosition += lastOffset;
+        transform.localRotation = transform.localRotation * lastRotationOffset;
+        shakeApplied = true;
 
         trauma = Mathf.Max(0f, trauma - decayPerSecond * Time.unscaledDeltaTime);
+    }
+
+    void RemovePreviousShake()
+    {
+        if (!shakeApplied) return;
+
+        transform.localPosition -= lastOffset;
+        transform.localRotation = transform.localRotation * Quaternion.Inverse(lastRotationOffset);
+        lastOffset = Vector3.zero;
+        lastRotationOffset = Quaternion.identity;
+        shakeApplied = false;
     }
 }

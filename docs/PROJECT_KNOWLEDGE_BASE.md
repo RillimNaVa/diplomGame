@@ -32,17 +32,19 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 ## Project Identity
 
 - Project name: `DiplomGame`
-- Current near-term order (2026-04-28): verify PR 3.D role-mix spawning in Unity, then move to PR 3.E combat readability / active attack slots.
+- Current near-term order (2026-04-30): run the PR 3.F / PR 5.A / PR 5.B Editor playtests, with special attention to the 2026-04-30 pooling, outline, camera-shake, and NavMeshAgent lifecycle fixes.
 - Captured future direction: Arena Complex / Connected Arena Rooms after the first Phase 3 enemy-AI layer, not before.
 - Game concept: fast first-person arcade survival / roguelike
 - Inspiration: `DOOM Eternal` + `Ultrakill`
 - Engine: Unity 6 with URP
-- Main short-term target: finish the first Phase 3 enemy-AI slice (PR 3.D playtest, then PR 3.E readability / active attack slots).
+- Main short-term target: verify the landed Phase 3 pooling and Phase 4/5 polish code in Unity Editor before moving on to Phase 4 boss work or broader Phase 5 polish.
 - Main long-term target: diploma-ready playable prototype by June 2026
 
 ---
 
-## Current Project Status Summary (2026-04-28)
+## Current Project Status Summary (2026-04-30)
+
+**Update 2026-04-30:** post-review runtime fixes landed for the latest Claude/Codex pass. `Health.CancelAutoDisable` now suppresses the later `Invoke(Disable)` scheduling during `onDeath`; `PooledEnemy` splits inactive state reset from post-enable `NavMeshAgent.Warp`; `StaggerOutline` restores original `sharedMaterials` on disable/reset; `CameraShake` removes the previous frame's offset before applying the next one. External `dotnet build Assembly-CSharp.csproj` is clean; Unity Editor lifecycle playtest is still pending.
 
 **Phase 1 complete. Phase 2 complete through PR 2.E. Phase 3 PR 3.A–3.C verified; PR 3.D code and baseline wiring landed, Unity role-mix playtest pending.** As of the current state of the repository:
 
@@ -68,7 +70,7 @@ What is not yet built:
 - Phase 3 PR 3.E combat readability / active attack slots
 - Arena Complex / Connected Arena Rooms: larger maps made from several large combat rooms connected directly by wide gates, deferred until after PR 2.H and initial Phase 3 AI
 - Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
-- Object pooling (enemies, projectiles) — deferred performance pass
+- Object pooling note: PR 3.F enemy/projectile pooling code has landed and received a 2026-04-30 lifecycle fix pass; long-run Unity Editor verification is still pending
 
 ---
 

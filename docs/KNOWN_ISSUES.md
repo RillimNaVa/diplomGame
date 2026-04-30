@@ -58,7 +58,7 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 
 ## 3. `Assets/test.unity` is not added to Build Settings
 
-- Status: `Open`
+- Status: `Partial` (2026-04-30; pooling code landed, long-run Editor verification pending)
 - Severity: Medium
 - Affected files:
   - [ProjectSettings/EditorBuildSettings.asset](C:/Users/assam/DiplomGame/ProjectSettings/EditorBuildSettings.asset)
@@ -111,14 +111,17 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 - Affected files:
   - [Assets/test/Health.cs](C:/Users/assam/DiplomGame/Assets/test/Health.cs)
   - [Assets/test/GameManager.cs](C:/Users/assam/DiplomGame/Assets/test/GameManager.cs)
+  - [Assets/Scripts/Combat/Enemies/Spawn/EnemyPool.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Enemies/Spawn/EnemyPool.cs)
+  - [Assets/Scripts/Combat/Enemies/Spawn/PooledEnemy.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Enemies/Spawn/PooledEnemy.cs)
 - Problem:
-  - Enemies are disabled after death instead of being pooled or cleaned up
+  - Before PR 3.F, enemies were disabled after death instead of being pooled or cleaned up.
+  - PR 3.F added enemy pooling; the 2026-04-30 post-review pass fixed the lifecycle bug where `Health` could still auto-disable a pool-managed enemy before `PooledEnemy.ReturnNow`.
 - Impact:
   - Scene hierarchy growth
   - Memory growth over longer sessions
   - Poor scalability for endless waves
 - Fix direction:
-  - Later object pooling or enemy lifecycle redesign
+  - Run the PR 3.F long-run Unity Editor playtest: enemies should return under `EnemyPool`, kill counts should fire exactly once, HP orbs should drop on every death, and reused enemies should start at full HP with working NavMeshAgent movement.
 
 ## 7. Projectile and combat effects still use instantiate/destroy flow
 

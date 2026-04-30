@@ -927,7 +927,7 @@ Camera:
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
-  m_FocalLength: 50
+  m_FocalLength: 20.78461
   m_BladeCount: 5
   m_Curvature: {x: 2, y: 11}
   m_BarrelClipping: 0.25
@@ -942,7 +942,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 60.000004
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -1397,6 +1397,7 @@ MonoBehaviour:
   timeBetweenWaves: 16.7
   timeBetweenSpawns: 0.78
   useEncounterMode: 1
+  spawnTelegraphDuration: 0.7
   uiManager: {fileID: 682604053}
   playerTransform: {fileID: 0}
   playerHealth: {fileID: 0}
