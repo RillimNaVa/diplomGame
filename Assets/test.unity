@@ -738,6 +738,7 @@ MonoBehaviour:
   healthBar: {fileID: 1100029526}
   waveText: {fileID: 2015048835}
   timerText: {fileID: 1213495230}
+  suppressLegacyHud: 0
 --- !u!114 &682604054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1292,6 +1293,9 @@ MonoBehaviour:
   onTakeDamage:
     m_PersistentCalls:
       m_Calls: []
+  onHeal:
+    m_PersistentCalls:
+      m_Calls: []
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1338,6 +1342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f6cee64d4ee4d4da455b40804d3ca02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloryKillDetector
+  legacyAutoKillEnabled: 0
   weaponManager: {fileID: 0}
   playerHealth: {fileID: 0}
   playerStats: {fileID: 0}

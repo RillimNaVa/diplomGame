@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Events;
 
 [System.Serializable]
@@ -13,7 +14,14 @@ public class Health : MonoBehaviour
     [Header("Events")]
     public UnityEvent onDeath;
     public UnityEvent<float> onTakeDamage;
+    public UnityEvent<float> onHeal;
     public HealthChangedEvent onHealthChanged;
+
+    // Global hit/heal channel for systems that don't want to subscribe to every
+    // Health instance individually (e.g., CombatHUDController for hit markers).
+    // Args: (Health victim, float amount). Subscribers must filter by victim if needed.
+    public static event Action<Health, float> AnyDamaged;
+    public static event Action<Health, float> AnyHealed;
 
     bool autoDisableCancelled;
 
@@ -40,6 +48,7 @@ public class Health : MonoBehaviour
         currentHealth = Mathf.Max(0f, currentHealth);
         onTakeDamage?.Invoke(damage);
         onHealthChanged?.Invoke(currentHealth, maxHealth);
+        AnyDamaged?.Invoke(this, damage);
 
         if (currentHealth <= 0)
         {
@@ -62,6 +71,7 @@ public class Health : MonoBehaviour
         currentHealth = Mathf.Max(0f, currentHealth);
         onTakeDamage?.Invoke(damage);
         onHealthChanged?.Invoke(currentHealth, maxHealth);
+        AnyDamaged?.Invoke(this, damage);
 
         if (currentHealth <= 0)
         {
@@ -74,8 +84,15 @@ public class Health : MonoBehaviour
         if (currentHealth <= 0f) return;
         if (amount <= 0f) return;
 
+        float before = currentHealth;
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        float applied = currentHealth - before;
         onHealthChanged?.Invoke(currentHealth, maxHealth);
+        if (applied > 0f)
+        {
+            onHeal?.Invoke(applied);
+            AnyHealed?.Invoke(this, applied);
+        }
     }
 
     void Die()

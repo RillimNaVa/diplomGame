@@ -37,6 +37,11 @@ public class GameManager : MonoBehaviour
     private int enemiesSpawned;
     private int enemiesAlive;
 
+    public int EnemiesAlive => enemiesAlive;
+    public int EnemiesTotal => enemiesToSpawn;
+    public int CurrentWave => currentWave;
+    public bool EncounterActive => encounterActive;
+
     // ---- Encounter mode state (PR 2.C) ----
     Transform[] encounterSpawnPoints;
     Action encounterOnEnemyKilled;
@@ -144,6 +149,17 @@ public class GameManager : MonoBehaviour
             if (playerHealth.GetComponent<DamageDirectionHUD>() == null)
             {
                 playerHealth.gameObject.AddComponent<DamageDirectionHUD>();
+            }
+            // Glory kill executor must exist before the HUD so the prompt block
+            // can resolve it during BuildBlocks().
+            if (playerHealth.GetComponent<GloryKillExecutor>() == null)
+            {
+                playerHealth.gameObject.AddComponent<GloryKillExecutor>();
+            }
+            // UI HUD Polish — auto-attach combat HUD so no Editor wiring is needed.
+            if (playerHealth.GetComponent<CombatHUDController>() == null)
+            {
+                playerHealth.gameObject.AddComponent<CombatHUDController>();
             }
         }
     }
