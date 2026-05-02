@@ -13,14 +13,14 @@ using UnityEngine.UI;
 public class DamageDirectionHUD : MonoBehaviour
 {
     [Tooltip("Seconds the indicator stays visible after a hit before fading out.")]
-    public float visibleDuration = 0.55f;
+    public float visibleDuration = 0.45f;
     [Tooltip("Seconds for the fade-out tail.")]
-    public float fadeDuration = 0.45f;
+    public float fadeDuration = 0.35f;
     [Tooltip("Pixel offset from screen center to the inner edge of the indicator.")]
-    public float radiusPixels = 180f;
+    public float radiusPixels = 240f;
     [Tooltip("Indicator color.")]
     [ColorUsage(true, true)]
-    public Color indicatorColor = new Color(1f, 0.15f, 0.15f, 0.9f);
+    public Color indicatorColor = new Color(1f, 0.22f, 0.30f, 0.85f);
 
     Health health;
     Camera mainCam;
@@ -78,7 +78,8 @@ public class DamageDirectionHUD : MonoBehaviour
         rt.anchorMin = new Vector2(0.5f, 1f);
         rt.anchorMax = new Vector2(0.5f, 1f);
         rt.pivot = new Vector2(0.5f, 1.7f);
-        rt.sizeDelta = new Vector2(220f, 60f);
+        // Thinner / smaller — was 220x60, now 130x28 with a sharper chevron sprite.
+        rt.sizeDelta = new Vector2(130f, 28f);
         rt.anchoredPosition = Vector2.zero;
     }
 
@@ -92,14 +93,18 @@ public class DamageDirectionHUD : MonoBehaviour
         for (int y = 0; y < H; y++)
         for (int x = 0; x < W; x++)
         {
-            // Centered arrow shape: thicker at the top center, fading toward
-            // edges and bottom. Reads as a chevron pointing up (toward attacker).
+            // Sharp thin chevron pointing up. v=0 is bottom; the line of the
+            // chevron is where |u| * slope == (1 - v), so we measure distance
+            // to that diagonal and gate it to a thin band.
             float u = (x / (float)(W - 1)) * 2f - 1f;     // -1..1
             float v = y / (float)(H - 1);                 // 0..1 (0 bottom)
-            float topness = v;
-            float chevron = 1f - Mathf.Abs(u) * 0.85f;
-            float band = Mathf.SmoothStep(0.4f, 1.0f, topness * chevron);
-            float a = Mathf.Pow(band, 2.2f);
+            const float slope = 0.55f;
+            float dist = Mathf.Abs((1f - v) - Mathf.Abs(u) * slope);
+            // Thin stroke (~3 pixels) with a soft edge.
+            float stroke = Mathf.Clamp01(1f - dist * 12f);
+            // Fade out near the bottom and at the very top so ends taper.
+            float taper = Mathf.SmoothStep(0f, 0.25f, v) * Mathf.SmoothStep(1f, 0.7f, v);
+            float a = stroke * taper;
             tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
         }
         tex.Apply();

@@ -46,6 +46,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private float xRotation;
 
+    // Allows external systems (e.g. GloryKillExecutor) to nudge the camera pitch
+    // and have PlayerController keep applying it without a snap on re-enable.
+    public float CameraPitch { get => xRotation; set => xRotation = Mathf.Clamp(value, -80f, 80f); }
+
     // Jump
     private int jumpCount;
 
@@ -55,6 +59,13 @@ public class PlayerController : MonoBehaviour
     private Vector3 dashDirection;
     private int dashCharges;
     private float dashRechargeTimer;
+
+    public int DashCharges => dashCharges;
+    public int MaxDashCharges => maxDashCharges;
+    public float DashRechargeProgress01 =>
+        dashChargeCooldown <= 0f || dashCharges >= maxDashCharges
+            ? 0f
+            : Mathf.Clamp01(dashRechargeTimer / dashChargeCooldown);
 
     // Slide
     private bool isSliding;

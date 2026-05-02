@@ -9,9 +9,17 @@ using UnityEngine;
 /// Deliberately side-channel: WeaponBase / MeleeArcFireMode are never mutated.
 /// Bound to Void Blade via weaponId == "void_blade" (WeaponCategory.Melee alone
 /// would also match future melee weapons, which shouldn't glory-kill).
+///
+/// **2026-05-01 — Disabled by default.** Glory kills are now player-driven via
+/// `GloryKillExecutor` (F-press near a staggered enemy). Set `legacyAutoKillEnabled`
+/// to true to re-enable the old swing-triggered behavior.
 /// </summary>
 public class GloryKillDetector : MonoBehaviour
 {
+    [Header("Legacy")]
+    [Tooltip("If false, the old auto-glory-kill on swing is disabled. F-press via GloryKillExecutor is the canonical path.")]
+    public bool legacyAutoKillEnabled = false;
+
     private const string VoidBladeId = "void_blade";
 
     [Header("References")]
@@ -84,6 +92,7 @@ public class GloryKillDetector : MonoBehaviour
 
     void OnVoidBladeFired(WeaponBase weapon)
     {
+        if (!legacyAutoKillEnabled) return;
         if (weapon == null || weapon.Definition == null) return;
         if (cameraTransform == null) return;
         if (playerHealth == null || playerStats == null) return;

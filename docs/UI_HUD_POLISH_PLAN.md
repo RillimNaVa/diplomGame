@@ -1,6 +1,6 @@
 # UI / HUD Polish Plan
 
-**Status:** PLANNED
+**Status:** IMPLEMENTED (first pass) — 2026-05-01
 **Created:** 2026-05-01
 **Scope:** next focused UI pass after PR 5.C visual polish
 
@@ -116,11 +116,32 @@ Before implementation, inspect:
 
 ## Acceptance Checklist
 
-- [ ] HP is readable at a glance and pulses on damage/heal.
-- [ ] Ammo and current weapon are visible without blocking combat.
-- [ ] Dash charges show full/empty/recharging state.
-- [ ] Crosshair supports aiming and hit feedback.
-- [ ] Enemy counter is compact and no longer dominates the center.
-- [ ] Time counter is removed from the main HUD.
-- [ ] Arena debug info remains visible for development.
-- [ ] New HUD compiles cleanly and requires minimal Unity Editor setup.
+- [x] HP is readable at a glance and pulses on damage/heal.
+- [x] Ammo and current weapon are visible without blocking combat.
+- [x] Dash charges show full/empty/recharging state.
+- [x] Crosshair supports aiming and hit feedback.
+- [x] Enemy counter is compact and no longer dominates the center.
+- [x] Time counter is removed from the main HUD (legacy UIManager suppressed).
+- [x] Arena debug info remains visible for development (untouched).
+- [x] New HUD compiles cleanly and requires minimal Unity Editor setup (zero wiring — auto-attached by GameManager).
+
+## Implementation Summary (2026-05-01)
+
+New files under `Assets/Scripts/Combat/Player/HUD/`:
+- `CombatHUDController.cs` — owns Canvas + ScreenSpaceOverlay; auto-attached by `GameManager.ResolveReferences`. Optional `hudPrefab` slot for future authored UI.
+- `CombatHUDStyle.cs` — palette + procedural sprite cache (`WhiteSprite`, `SoftCircleSprite`, `DiamondSprite`).
+- `HpBlock.cs` — bottom-left, 12-segment angled bar + large numeric HP, damage/heal pulse.
+- `AmmoBlock.cs` — bottom-right, clip / reserve / weapon name / slot / state. Handles `usesAmmo == false` (`∞` / `BLADE READY`).
+- `DashChargesBlock.cs` — lower-center, data-driven from `MaxDashCharges`; pip fills by `DashRechargeProgress01`.
+- `CrosshairBlock.cs` — center crosshair + hit marker (subscribes to `Health.AnyDamaged`) + kill marker (subscribes to `GameManager.OnEnemyKilled`).
+- `EnemyCounterBlock.cs` — top-right `ENEMIES N`, subtle pulse on kill.
+- `HealFloatBlock.cs` — `+N HP` float-up text near HP block on heal events.
+
+Restyle:
+- `DamageDirectionHUD` — thinner sharp-chevron sprite, smaller size (130×28), wider radius (240px).
+
+Minimal API additions (non-breaking):
+- `Health`: `UnityEvent<float> onHeal`, `static event Action<Health, float> AnyDamaged`, `static event Action<Health, float> AnyHealed`.
+- `PlayerController`: `DashCharges`, `MaxDashCharges` (re-exposed), `DashRechargeProgress01`.
+- `GameManager`: `EnemiesAlive`, `EnemiesTotal`, `CurrentWave`, `EncounterActive`.
+- `UIManager`: `SuppressLegacyHud()` — called by HUD on Start so legacy slider/text widgets stop drawing without removing existing call sites.
