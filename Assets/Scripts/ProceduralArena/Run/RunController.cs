@@ -72,6 +72,18 @@ namespace VoidSurvivor.ProceduralArena.Run
                 if (logTransitions) Debug.Log($"[Run] encounter cleared stage={node.stage} cat={node.typeProfile?.category}");
                 NotifyArenaClearedIfReady();
             };
+
+            // Phase 4 / PR 4.PC — wire the reward gate. RPC subscribes to enc.Cleared,
+            // sets HoldBarriers=true, and opens the 3-card UI before exits unlock.
+            // Elite category determines whether the rarity table gets the §10.3 boost.
+            bool isElite = node != null && node.typeProfile != null
+                && node.typeProfile.category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Elite;
+            var rpc = RunProgressionController.Instance;
+            if (rpc != null)
+            {
+                if (rpc.runSeed == 0) rpc.runSeed = graph != null ? graph.runSeed : 0;
+                rpc.WatchEncounter(enc, node != null ? node.arenaIndex : 0, isElite);
+            }
         }
 
         IEnumerator Start()
@@ -91,6 +103,11 @@ namespace VoidSurvivor.ProceduralArena.Run
             if (runConfig == null) { Debug.LogWarning("[RunController] No runConfig."); return; }
             if (flow == null) { Debug.LogWarning("[RunController] No ArenaFlowController."); return; }
             HideScreen();
+            // Phase 4 / PR 4.PC — fresh run wipes all active upgrades + rerolls
+            // the reward seed so the same run produces the same cards (§16).
+            UpgradeSystem.Instance?.ResetForNewRun();
+            var rpc = RunProgressionController.Instance;
+            if (rpc != null) rpc.runSeed = runSeed;
             graph = RunGraphGenerator.Build(runSeed, runConfig);
             current = graph.startNode;
             if (logTransitions) Debug.Log($"[Run] start seed={graph.runSeed} nodes={graph.nodes.Count}");
@@ -131,7 +148,7 @@ namespace VoidSurvivor.ProceduralArena.Run
             state = RunState.Transitioning;
             yield return flow.EnterArena(current, this, fadeIn, hold, fadeOut);
             state = RunState.Playing;
-            if (current != null && current.stage == RunStage.Boss && (runConfig == null || runConfig.skipClearCondition))
+            if (current != null && current.Category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Boss && (runConfig == null || runConfig.skipClearCondition))
             {
                 // Boss has no children — for PR 2.B we complete the run when player
                 // reaches the boss's exit. But boss profile has exitCount=1, which

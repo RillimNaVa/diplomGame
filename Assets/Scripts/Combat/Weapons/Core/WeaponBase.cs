@@ -35,6 +35,50 @@ public abstract class WeaponBase : MonoBehaviour
     public bool IsReloading => isReloading;
     public Transform MuzzlePoint => muzzlePoint;
 
+    // Phase 4 / PR 4.PB — runtime stat resolvers. Fire modes and Tick read these
+    // instead of the raw definition fields so the active UpgradeSystem can scale
+    // per-shot damage, fire rate, and reload duration without mutating the SO
+    // (TZ §9.5 modifier seams).
+    public float EffectiveDamage
+    {
+        get
+        {
+            if (definition == null) return 0f;
+            UpgradeSystem sys = UpgradeSystem.Instance;
+            if (sys == null) return definition.damage;
+            float globalMul = sys.GetMultiplier(UpgradeEffectType.WeaponDamageMultiplier);
+            float weaponMul = sys.GetWeaponMultiplier(definition.weaponId, UpgradeEffectType.WeaponDamageMultiplier);
+            return definition.damage * globalMul * weaponMul;
+        }
+    }
+
+    public float EffectiveFireCooldown
+    {
+        get
+        {
+            if (definition == null) return 0f;
+            UpgradeSystem sys = UpgradeSystem.Instance;
+            if (sys == null) return definition.FireCooldown;
+            float mul = sys.GetMultiplier(UpgradeEffectType.FireRateMultiplier)
+                      * sys.GetWeaponMultiplier(definition.weaponId, UpgradeEffectType.FireRateMultiplier);
+            // Higher fire-rate multiplier => shorter cooldown.
+            return mul > 0.01f ? definition.FireCooldown / mul : definition.FireCooldown;
+        }
+    }
+
+    public float EffectiveReloadDuration
+    {
+        get
+        {
+            if (definition == null) return 0f;
+            UpgradeSystem sys = UpgradeSystem.Instance;
+            if (sys == null) return definition.reloadDuration;
+            float mul = sys.GetMultiplier(UpgradeEffectType.ReloadSpeedMultiplier)
+                      * sys.GetWeaponMultiplier(definition.weaponId, UpgradeEffectType.ReloadSpeedMultiplier);
+            return mul > 0.01f ? definition.reloadDuration / mul : definition.reloadDuration;
+        }
+    }
+
     public event Action<WeaponBase> OnFired;
     public event Action<WeaponBase> OnAmmoChanged;
     public event Action<WeaponBase> OnReloadStarted;
@@ -121,7 +165,7 @@ public abstract class WeaponBase : MonoBehaviour
         if (currentClipAmmo >= definition.clipSize) return;
         if (currentReserveAmmo <= 0) return;
 
-        if (context != null && context.CoroutineHost != null && definition.reloadDuration > 0f)
+        if (context != null && context.CoroutineHost != null && EffectiveReloadDuration > 0f)
         {
             context.CoroutineHost.StartCoroutine(ReloadCoroutine());
         }
@@ -172,8 +216,9 @@ public abstract class WeaponBase : MonoBehaviour
         }
 
         TriggerFireAnim();
-        nextFireTime = Time.time + definition.FireCooldown;
+        nextFireTime = Time.time + EffectiveFireCooldown;
         OnFired?.Invoke(this);
+        UpgradeSystem.Instance?.NotifyWeaponFired(this);
         return true;
     }
 
@@ -188,7 +233,7 @@ public abstract class WeaponBase : MonoBehaviour
     {
         isReloading = true;
         OnReloadStarted?.Invoke(this);
-        yield return new WaitForSeconds(definition.reloadDuration);
+        yield return new WaitForSeconds(EffectiveReloadDuration);
         if (isReloading)
         {
             FinishReload();

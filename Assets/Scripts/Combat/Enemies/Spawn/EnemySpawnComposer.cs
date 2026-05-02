@@ -25,7 +25,7 @@ public static class EnemySpawnComposer
         public string FallbackReason;
     }
 
-    public static Result Compose(EnemySpawnProfile profile, int arenaIndex, System.Random rng = null)
+    public static Result Compose(EnemySpawnProfile profile, int arenaIndex, System.Random rng = null, float budgetMultiplier = 1f)
     {
         var result = new Result();
 
@@ -37,7 +37,7 @@ public static class EnemySpawnComposer
             return result;
         }
 
-        result.Budget = profile.baseBudget + arenaIndex * profile.budgetPerArenaIndex;
+        result.Budget = Mathf.RoundToInt((profile.baseBudget + arenaIndex * profile.budgetPerArenaIndex) * Mathf.Max(0.1f, budgetMultiplier));
         if (result.Budget <= 0)
         {
             result.UsedFallback = true;

@@ -161,6 +161,11 @@ public class GameManager : MonoBehaviour
             {
                 playerHealth.gameObject.AddComponent<CombatHUDController>();
             }
+            // Phase 4 / PR 4.PB — debug hotkeys (F9 add upgrade, F10 log, F11 reset).
+            if (playerHealth.GetComponent<UpgradeDebugProbe>() == null)
+            {
+                playerHealth.gameObject.AddComponent<UpgradeDebugProbe>();
+            }
         }
     }
 
@@ -243,6 +248,7 @@ public class GameManager : MonoBehaviour
     {
         enemiesAlive = Mathf.Max(0, enemiesAlive - 1);
         OnEnemyKilled?.Invoke();
+        UpgradeSystem.Instance?.NotifyEnemyKilled(null);
         EvaluateWaveEnd();
     }
 
@@ -415,6 +421,7 @@ public class GameManager : MonoBehaviour
     {
         enemiesAlive = Mathf.Max(0, enemiesAlive - 1);
         OnEnemyKilled?.Invoke();
+        UpgradeSystem.Instance?.NotifyEnemyKilled(null);
         encounterOnEnemyKilled?.Invoke();
     }
 }

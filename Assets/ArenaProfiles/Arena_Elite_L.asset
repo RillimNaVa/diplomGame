@@ -23,6 +23,7 @@ MonoBehaviour:
   - shape: 1
     weight: 0.2
   coverDensity: 0.9
+  structureBudget: 2
   exitCount: 2
   enableVerticality: 0
   platformCountRange: {x: 0, y: 0}
@@ -32,3 +33,4 @@ MonoBehaviour:
   spawnProfile: {fileID: 11400000, guid: 6225528882e493e4190c03da2fe08ace, type: 2}
   biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c5, type: 2}
   clearCondition: 1
+  eliteModifier: {fileID: 11400000, guid: 5df82c416bbe4cc4c8b870c1c9878b81, type: 2}

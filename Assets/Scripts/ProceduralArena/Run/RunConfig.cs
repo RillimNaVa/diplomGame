@@ -14,12 +14,22 @@ namespace VoidSurvivor.ProceduralArena.Run
         public ArenaTypeProfile startProfile;
         public ArenaTypeProfile bossProfile;
 
-        [Header("Mid-stage pools (weighted picks per stage)")]
-        [Tooltip("Candidates for Mid1 (after Start).")]
+        [Header("PR 4.PD category pools (10-stage run)")]
+        [Tooltip("Combat-only profiles. Used for stages 1, 2, 5 and as fallback elsewhere.")]
+        public ArenaTypeProfile[] combatPool;
+        [Tooltip("Elite profiles. Used for stages 3, 6 (offered alongside Combat).")]
+        public ArenaTypeProfile[] elitePool;
+        [Tooltip("Shop profiles. Used for wide tier (stages 4, 7, 8).")]
+        public ArenaTypeProfile[] shopPool;
+        [Tooltip("Rest profiles. Used for wide tier (stages 4, 7, 8).")]
+        public ArenaTypeProfile[] restPool;
+
+        [Header("[Legacy] Mid-stage pools (5-room generator, deprecated)")]
+        [Tooltip("[DEPRECATED — replaced by combatPool] kept for migration only.")]
         public ArenaTypeProfile[] mid1Pool;
-        [Tooltip("Candidates for Mid2 (after Mid1 choice).")]
+        [Tooltip("[DEPRECATED — replaced by combat/shop/rest pools]")]
         public ArenaTypeProfile[] mid2Pool;
-        [Tooltip("Candidates for Mid3 (last before Boss — combat-heavy).")]
+        [Tooltip("[DEPRECATED — replaced by combat/elite pools]")]
         public ArenaTypeProfile[] mid3Pool;
 
         [Header("Transitions")]

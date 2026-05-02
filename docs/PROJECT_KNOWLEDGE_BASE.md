@@ -42,7 +42,9 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 
 ---
 
-## Current Project Status Summary (2026-04-30)
+## Current Project Status Summary (2026-05-02)
+
+**Update 2026-05-02:** Phase 4 Roguelike Progression — PR 4.PA + PR 4.PB + PR 4.PC + PR 4.PD code landed. New `Assets/Scripts/Progression/` module owns runs and upgrades (`UpgradeData` SO + `UpgradeSystem` auto-singleton + `RewardCardGenerator` + `RewardPreview` + `RewardCardCanvas` + `RunProgressionController` + `UpgradeDebugProbe`). Run graph rebuilt for 10-room standard layout (`RunGraphGenerator` 10-stage `StageTemplates`). New `EliteEncounterModifier` SO drives Elite-arena scaling. Player input pipeline now exposes `PlayerController.IsFrozen` + `SetFrozen(bool)` so reward UI / future cutscenes can freeze input cleanly without the disabled-script SendMessage pitfall. 8 baseline `UpgradeData` YAML in `Assets/Resources/Progression/Upgrades/`. Master spec: `docs/PHASE_4_ROGUELIKE_PROGRESSION_TZ.md` revision v3. Editor playtest of the full Phase 4 stack still pending after the same-day bugfix pass.
 
 **Update 2026-05-01:** PR 5.C combat/environment feedback polish code landed. The project now has runtime muzzle flash and bullet-impact decals, HP pickup glow, exit portal shader, ambient dust, reactive lamp flicker, damage direction HUD, subtle dash/slide speed feedback, enemy death shards, Spitter strafing, and lightweight enemy separation. Ceiling lamp bloom was reduced after user screenshot feedback. External `dotnet build Assembly-CSharp.csproj --no-restore` is clean; Unity Editor visual/playtest verification is still pending. The next planned UI pass is captured in `docs/UI_HUD_POLISH_PLAN.md`.
 
@@ -67,9 +69,13 @@ Do not start with a blind full scan of `Library`, `obj`, or package cache.
 
 What is not yet built:
 
-- Phase 3 PR 3.E combat readability / active attack slots
+- Phase 4 PR 4.PE Kill Points economy (clear reward + style points + payout UI)
+- Phase 4 PR 4.PF Shop Room (offers, reroll, KP spend)
+- Phase 4 PR 4.PG Rest Room (heal / max HP / reward boost choice)
+- Phase 4 PR 4.PH Balance pass + run stats screen
+- Phase 4 PR 4.PI Scenario playtest pass (S1-S10)
+- Phase 4 triggered-effect upgrades (Combat Injector, Vampiric Momentum, etc. — `Notify*` hooks exist but no subscribers wire actual gameplay effects yet)
 - Arena Complex / Connected Arena Rooms: cancelled 2026-04-30; do not build unless the user explicitly reopens the idea.
-- Roguelike progression / upgrade system (hooks ready via `PlayerStats` / `IGloryKillPolicy` seams)
 - Object pooling note: PR 3.F enemy/projectile pooling code has landed and received a 2026-04-30 lifecycle fix pass; long-run Unity Editor verification is still pending
 
 ---

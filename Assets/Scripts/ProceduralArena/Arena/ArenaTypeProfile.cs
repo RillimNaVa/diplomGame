@@ -52,5 +52,9 @@ namespace VoidSurvivor.ProceduralArena.Arena
 
         [Header("Clear condition")]
         public ClearCondition clearCondition = ClearCondition.KillAll;
+
+        [Header("Elite (PR 4.PD)")]
+        [Tooltip("Optional. When assigned (typically only on Elite-category profiles) the EncounterController applies its budget / HP / tempo multipliers + guaranteed enemies on top of the base spawn profile.")]
+        public EliteEncounterModifier eliteModifier;
     }
 }

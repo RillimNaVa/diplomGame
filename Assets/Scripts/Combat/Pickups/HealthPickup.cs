@@ -31,7 +31,20 @@ public class HealthPickup : MonoBehaviour
         }
 
         GameObject tagged = GameObject.FindWithTag("Player");
-        if (tagged != null) playerTransform = tagged.transform;
+        if (tagged != null)
+        {
+            playerTransform = tagged.transform;
+            // Phase 4 / PR 4.PB — pull magnet radius from PlayerStats so
+            // HpOrbMagnetRadius upgrades extend orb attraction at spawn time.
+            // (Re-evaluating per-frame would let mid-flight upgrades scale a
+            //  flying orb, which is rare and not worth the cost.)
+            PlayerStats stats = tagged.GetComponentInParent<PlayerStats>();
+            if (stats != null)
+            {
+                float resolved = stats.GetOrbMagnetRadius();
+                if (resolved > magnetRange) magnetRange = resolved;
+            }
+        }
 
         // PR 5.C — auto-attach the glow visual so existing orb prefabs upgrade
         // without Editor work.
@@ -59,7 +72,7 @@ public class HealthPickup : MonoBehaviour
         if (health == null || health.currentHealth <= 0f) return;
 
         PlayerStats stats = other.GetComponentInParent<PlayerStats>();
-        float amount = stats != null ? stats.orbHealAmount : 5f;
+        float amount = stats != null ? stats.GetOrbHealAmount() : 5f;
 
         health.Heal(amount);
         consumed = true;

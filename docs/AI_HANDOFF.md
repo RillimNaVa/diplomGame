@@ -10,6 +10,34 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
+## Current Status (2026-05-02)
+
+**Phase 4 Roguelike Progression — PR 4.PA + PR 4.PB + PR 4.PC + PR 4.PD code landed.** All four PRs build clean, three user-reported bugs from PR 4.PC + PR 4.PD playtest fixed in same-day pass. Detailed scope in [PROGRESS.md](./PROGRESS.md) Phase 4 section + changelog block 2026-05-02.
+
+**Master spec:** [PHASE_4_ROGUELIKE_PROGRESSION_TZ.md](./PHASE_4_ROGUELIKE_PROGRESSION_TZ.md) revision v3.
+
+**Done so far in Phase 4:**
+- **PR 4.PA — UpgradeSystem core.** `UpgradeData` SO, `UpgradeSystem` auto-singleton with stacking math (additive within effect type, multiplicative between, capped per §15), modifier API (`GetAdditive` / `GetMultiplier` / `GetWeaponMultiplier`), event hooks (`Notify*`), `ResetForNewRun`. Enums: `UpgradeRarity` / `UpgradeCategory` / `UpgradeEffectType` (with `BonusCap` lookup encoding §15).
+- **PR 4.PB — Runtime modifier hooks.** `WeaponBase.EffectiveDamage / EffectiveFireCooldown / EffectiveReloadDuration`. 4 fire modes use `weapon.EffectiveDamage`. `PlayerController.MaxDashCharges / EffectiveDashCooldown` + top-up listener. `PlayerStats` baseline+resolver (`GetOrbHealAmount` / `GetGloryHealAmount` / `GetOrbMagnetRadius` + `MaxHpFlat` listener). `HealthPickup`, `GloryKillDetector`, `GloryKillExecutor`, `GameManager` notify hooks. 8 baseline `UpgradeData` YAML in `Assets/Resources/Progression/Upgrades/`. `UpgradeDebugProbe` auto-attached via `GameManager.ResolveReferences` (F9 add / F10 log / F11 reset).
+- **PR 4.PC — Reward cards + reward-gated exits.** `EncounterController.HoldBarriers` + idempotent `OpenBarriers()`. `RewardCardGenerator` (seeded weighted-without-replacement). `RewardPreview.Build` for 8 effect types. `RewardCardCanvas` (procedural sortingOrder 6000, rarity-coloured borders, Skip button, 1/2/3 + Esc input via new Input System). `RunProgressionController` orchestrator with player freeze + cursor unlock + seeded reward counter. `RunController.OnArenaBuilt` calls `WatchEncounter`; `StartRun` calls `UpgradeSystem.ResetForNewRun()`.
+- **PR 4.PD — 10-room run graph + door preview + Elite modifier.** `RunGraphNode.stageIndex` (0..9) + `Category` shortcut. `RunGraphGenerator` rewritten on hardcoded 10-stage `StageTemplates[]` with shared-subtree wiring. `RunConfig.combatPool / elitePool / shopPool / restPool`. `DefaultRunConfig.asset` updated YAML wiring all 4 pools. `EliteEncounterModifier` SO (`Assets/Scripts/ProceduralArena/Arena/EliteEncounterModifier.cs`) — budget × HP × tempo multipliers + guaranteed `EnemySpawnEntry[]`. `ArenaTypeProfile.eliteModifier` slot + `ArenaFlowController` propagation. `EnemySpawnComposer.Compose` accepts `budgetMultiplier`. `EncounterController.SpawnEnemiesViaGameManager` applies modifier and prepends guaranteed enemies. `DoorChoiceLabel` 2-line category-coloured preview per TZ §6.3. `RunController` Boss check uses `Category == Boss`.
+
+**Bugfix pass (same day):**
+1. Reward UI was dropping player through the floor (skybox visible) — `playerController.enabled = false` stopped `controller.Move()` so CharacterController fell, AND SendMessage input callbacks still fired through disabled scripts. Fix: `PlayerController.IsFrozen` flag + `SetFrozen(bool)`. `Update()` early-returns with `controller.Move(Vector3.zero)`. Every `OnXxx` input callback checks `IsFrozen` and no-ops. `OnFire` additionally force-clears `weaponManager.SetFireHeld(false)` + an `isTriggerHeldExternal` shadow.
+2. Weapon stutter / invisible tracers after taking any reward card — same root cause (LMB on cards reached `OnFire`), same fix. `RunProgressionController.FreezePlayer/UnfreezePlayer` switched to `SetFrozen` and unfreeze additionally calls `SetFireHeld(false)` for safety.
+3. `ArenaRuntimeDebugOverlay` top-left counter `Arena: N/5` → `Arena: N/10` to match new Standard Run length; dropped legacy `current.stage` enum print, kept category.
+
+**Editor playtest still pending for the entire Phase 4 stack.** User has informally confirmed PR 4.PA/PR 4.PB/PR 4.PC happy paths work; the bugfix pass has not been retested yet.
+
+**Suggested next direction:** PR 4.PE — Kill Points economy (KP runtime state + clear reward + style points + payout UI per TZ §12). KP is a prerequisite for PR 4.PF Shop. Alternatively, formalize a playtest pass on the post-bugfix PR 4.PC/D before adding more economy systems.
+
+**Known follow-ups deferred from Phase 4 so far:**
+- Author at least one `EliteEncounterModifier.asset` and drop into `Arena_Elite_L.eliteModifier` (user did this in their playtest session).
+- Triggered-effect upgrades (Combat Injector, Vampiric Momentum, etc.) — TZ §9.4.2 matrix specified but not yet implemented; the `Notify*` event hooks exist but no subscribers wire actual gameplay effects.
+- Curse system / `RareMutator` Legendaries — explicitly deferred per TZ §3.3.
+
+---
+
 ## Current Status (2026-05-01)
 
 - **Glory Kill — Space Slice rework — VERIFIED by user 2026-05-01.** Final F-press glory kill design after iterating through a camera-animation version that had multiple physics/pitch bugs. New flow: hit-stop (0.06s freeze + camera shake) → spawn `SpaceSliceFX` (7m white LineRenderer slash through enemy, randomized roll) + `WhiteFlashFX` (full-screen white flash, own Canvas at sortingOrder 5000, peak 0.55 alpha) → drop to `Time.timeScale = 0.45` slow-mo → lethal damage (existing `EnemyDissolve` + `EnemyDeathBurst` handle the death visuals) → heal player → linger 0.30s → restore. **Player is no longer locked / camera no longer rotated** — the original camera-pitch lerp + body-yaw rotation + CC/Rigidbody freeze approach caused (a) camera tilting under the map, (b) player falling through the floor, (c) snap on restore due to `PlayerController.xRotation` desync. Dropped that approach entirely. New files: `Assets/Scripts/Combat/Player/{SpaceSliceFX, WhiteFlashFX}.cs`. Wiring fixes: `GameManager.ResolveReferences` adds `GloryKillExecutor` before `CombatHUDController` so the prompt block resolves the executor; `GloryKillPromptBlock.Tick` lazy-resolves executor as a safety net; `GloryKillExecutor.FindExecuteTarget` lazy-resolves `cameraTransform` from `Camera.main` or `playerController.GetComponentInChildren<Camera>` since `Camera.main` was null at executor `Awake`. New public `PlayerController.CameraPitch` seam is unused by the final design but kept (cheap, future-proof). Debug logs in `GloryKillExecutor` (gated by `debugLog` field, default true) — leave on for now or flip to false after Phase 2 work begins.

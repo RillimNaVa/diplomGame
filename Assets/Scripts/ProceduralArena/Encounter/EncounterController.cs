@@ -25,10 +25,20 @@ namespace VoidSurvivor.ProceduralArena.Encounter
         public int arenaIndex;
         public EnemySpawnProfile spawnProfile;
 
+        // Phase 4 / PR 4.PD — Elite modifier wired from ArenaTypeProfile.eliteModifier.
+        // When non-null, multiplies budget + per-enemy HP and prepends guaranteed enemies.
+        public EliteEncounterModifier eliteModifier;
+
         public readonly List<Transform> spawnPoints = new List<Transform>();
         public readonly List<SoftLockBarrier> barriers = new List<SoftLockBarrier>();
 
         public event Action Cleared;
+
+        // Phase 4 / PR 4.PC — reward gate. When a listener (RunProgressionController)
+        // sets HoldBarriers=true during the Cleared event, FinishCleared defers
+        // the barrier.Open() calls until OpenBarriers() is invoked explicitly.
+        public bool HoldBarriers { get; set; }
+        bool barriersOpened;
 
         enum State { Idle, Active, Done }
         State state = State.Idle;
@@ -94,12 +104,26 @@ namespace VoidSurvivor.ProceduralArena.Encounter
             // the legacy single-prefab path.
             if (spawnProfile != null)
             {
-                var result = EnemySpawnComposer.Compose(spawnProfile, arenaIndex);
+                float budgetMul = eliteModifier != null ? eliteModifier.budgetMultiplier : 1f;
+                float hpMul = enemyHealthMultiplier * (eliteModifier != null ? eliteModifier.enemyHpMultiplier : 1f);
+                var result = EnemySpawnComposer.Compose(spawnProfile, arenaIndex, null, budgetMul);
                 if (!result.UsedFallback && result.Roster.Count > 0)
                 {
-                    gm.BeginEncounter(result.Roster, pts, OnEnemyKilled, enemyHealthMultiplier);
-                    // EncounterController's clear-on-N-kills logic uses enemyCount,
-                    // so update it to match the actual roster size.
+                    // PR 4.PD — prepend Elite-guaranteed enemies before composer roster
+                    // so they spawn first regardless of weighted picks.
+                    if (eliteModifier != null && eliteModifier.guaranteedEnemies != null)
+                    {
+                        var prepended = new List<EnemySpawnEntry>(result.Roster.Count + eliteModifier.guaranteedEnemies.Length);
+                        for (int i = 0; i < eliteModifier.guaranteedEnemies.Length; i++)
+                        {
+                            var entry = eliteModifier.guaranteedEnemies[i];
+                            if (entry == null || !entry.IsValid) continue;
+                            prepended.Add(entry);
+                        }
+                        prepended.AddRange(result.Roster);
+                        result.Roster = prepended;
+                    }
+                    gm.BeginEncounter(result.Roster, pts, OnEnemyKilled, hpMul);
                     enemyCount = result.Roster.Count;
                     return;
                 }
@@ -124,11 +148,23 @@ namespace VoidSurvivor.ProceduralArena.Encounter
         void FinishCleared()
         {
             state = State.Done;
-            for (int i = 0; i < barriers.Count; i++)
-                if (barriers[i] != null) barriers[i].Open();
             var gm = GameManager.instance;
             if (gm != null) gm.EndEncounter();
+            // Cleared first so listeners can set HoldBarriers=true synchronously.
             Cleared?.Invoke();
+            if (!HoldBarriers) OpenBarriers();
+        }
+
+        /// <summary>
+        /// Idempotent — safe to call multiple times. RunProgressionController
+        /// calls this once a reward card is applied (or the player skips).
+        /// </summary>
+        public void OpenBarriers()
+        {
+            if (barriersOpened) return;
+            barriersOpened = true;
+            for (int i = 0; i < barriers.Count; i++)
+                if (barriers[i] != null) barriers[i].Open();
         }
     }
 }

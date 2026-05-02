@@ -39,6 +39,6 @@ MonoBehaviour:
     weight: 0
   baseBudget: 16
   budgetPerArenaIndex: 4
-  maxEnemyTypesPerEncounter: 3
+  maxEnemyTypesPerEncounter: 4
   maxTanks: 1
   maxRanged: 3

@@ -15,6 +15,14 @@ MonoBehaviour:
   runSeed: 0
   startProfile: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c1, type: 2}
   bossProfile: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c3, type: 2}
+  combatPool:
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
+  elitePool:
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c6, type: 2}
+  shopPool:
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c8, type: 2}
+  restPool:
+  - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c9, type: 2}
   mid1Pool:
   - {fileID: 11400000, guid: a1e2a4e20000000000000000000000c2, type: 2}
   mid2Pool:

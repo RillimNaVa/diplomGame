@@ -38,8 +38,8 @@ namespace VoidSurvivor.ProceduralArena.Run
             sb.Append("\nArena: ");
             if (current != null)
             {
-                sb.Append(current.arenaIndex + 1).Append("/5");
-                sb.Append("  ").Append(current.stage);
+                // PR 4.PD — total visited rooms in a Standard Run = 10 (stages 0..9 inclusive).
+                sb.Append(current.arenaIndex + 1).Append("/10");
                 sb.Append("  ").Append(current.typeProfile != null ? current.typeProfile.category.ToString() : "Unknown");
             }
             else

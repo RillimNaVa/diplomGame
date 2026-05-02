@@ -134,7 +134,8 @@ public class GloryKillDetector : MonoBehaviour
         if (ctx.target == null) return;
 
         ctx.target.TakeDamage(playerStats.gloryBonusDamage);
-        playerHealth.Heal(playerStats.gloryHealAmount);
+        playerHealth.Heal(playerStats.GetGloryHealAmount());
+        UpgradeSystem.Instance?.NotifyGloryKill(ctx.target.gameObject);
 
         if (gloryKillSfx != null) AudioSource.PlayClipAtPoint(gloryKillSfx, ctx.target.transform.position);
         if (gloryKillVfx != null) Instantiate(gloryKillVfx, ctx.target.transform.position, Quaternion.identity);

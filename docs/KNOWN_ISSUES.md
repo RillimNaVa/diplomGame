@@ -380,6 +380,36 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 
 ---
 
+## 21. Phase 4 progression — entire Phase 4 stack pending Editor playtest after bugfix pass
+
+- Status: Open
+- Severity: Medium (gates closing PR 4.PA-D before adding economy / shop layers).
+- Affected:
+  - PR 4.PA `UpgradeSystem` core (Editor verify of stack caps + `ResetForNewRun`).
+  - PR 4.PB modifier hooks (weapon damage / fire rate / max HP / orb / dash) — F9-driven smoke test passed once but full gameplay validation not redone after bugfixes.
+  - PR 4.PC reward UI + reward-gated exits — bugfix pass on 2026-05-02 (player no longer falls through floor / weapon trigger no longer leaks) needs replay.
+  - PR 4.PD 10-room graph + Elite modifier + door labels — only basic walkthrough done.
+- Concrete check-list:
+  - F9-spam upgrades, post-bugfix: weapon, dash, HP, orb radius/heal still scale; `F11` resets cleanly.
+  - Clear arena → 3 cards appear with rarity colours + previews; player frozen but not falling; cursor unlocked; pick → upgrade applies + exits unlock; Esc → exits unlock without reward.
+  - Same `runConfig.runSeed` produces identical 10-stage layout + identical card sequence (TZ scenario S2).
+  - Stage 4 / 7 show 3 doors with distinct category colours (Combat / Shop / Rest).
+  - Elite arenas with `eliteModifier` assigned use bumped budget + HP.
+- Fix direction: replay through one full 10-room run, jot any regressions, then close together.
+
+## 22. Triggered-effect upgrades unimplemented (Phase 4 backlog)
+
+- Status: Planned
+- Severity: Low (no breakage; upgrades currently exist as data only).
+- Affected:
+  - `UpgradeData` upgrades whose `effectType.Kind() == Triggered` (Combat Injector, Vampiric Momentum, Execution Armor, Blood Rush, Crisis Protocol, Last Round Detonation, Chain Spark, Slow-Mo on Execute, Storm Circuit, Overdrive Loop).
+- Exact problem:
+  - `UpgradeSystem.Notify*` hooks fire correctly, but no subscribers translate them into actual gameplay effects yet. Triggered upgrades from §11 are not in the PR 4.PB authored pool either.
+- Fix direction:
+  - After PR 4.PE (KP economy) and PR 4.PF (Shop), add a dedicated `TriggeredEffects/` module with one MonoBehaviour per effect, subscribing to the matching `UpgradeSystem.OnXxx` event and following the §9.4.2 trigger / refresh / stack-scaling matrix.
+
+---
+
 ## How To Use This File
 
 When adding a new issue, include:

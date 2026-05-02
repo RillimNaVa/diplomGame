@@ -21,11 +21,14 @@ MonoBehaviour:
   - shape: 0
     weight: 0.4
   coverDensity: 0.6
+  structureBudget: 2
   exitCount: 1
   enableVerticality: 1
   platformCountRange: {x: 1, y: 2}
   platformHeightRange: {x: 3.5, y: 5.5}
   platformFootprintRange: {x: 2, y: 3}
   enemySpawnCount: 1
+  spawnProfile: {fileID: 0}
   biome: {fileID: 11400000, guid: a1e2a4e20000000000000000000000c5, type: 2}
   clearCondition: 1
+  eliteModifier: {fileID: 0}

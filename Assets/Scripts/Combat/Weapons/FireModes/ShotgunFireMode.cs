@@ -58,7 +58,7 @@ public class ShotgunFireMode : FireModeBase
                     Health health = hit.collider.GetComponentInParent<Health>();
                     if (health != null)
                     {
-                        health.TakeDamage(definition.damage);
+                        health.TakeDamage(weapon != null ? weapon.EffectiveDamage : definition.damage);
                     }
                     else
                     {

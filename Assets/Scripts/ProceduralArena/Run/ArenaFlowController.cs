@@ -243,6 +243,8 @@ namespace VoidSurvivor.ProceduralArena.Run
             // arenaIndex per ENEMY_AI_TZ §7.4 Revision.
             enc.arenaIndex = node.arenaIndex;
             enc.spawnProfile = profile.spawnProfile;
+            // PR 4.PD — Elite-category arenas inherit budget/HP/guaranteed-enemy modifiers.
+            enc.eliteModifier = profile.eliteModifier;
             enc.barriers.AddRange(barriers);
 
             // Convert combatSpawnPoints into real Transforms parented under ArenaRoot.

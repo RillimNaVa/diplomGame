@@ -33,7 +33,7 @@ public class MeleeArcFireMode : FireModeBase
             Health health = col.GetComponentInParent<Health>();
             if (health != null && damaged.Add(health))
             {
-                health.TakeDamage(definition.damage);
+                health.TakeDamage(weapon != null ? weapon.EffectiveDamage : definition.damage);
             }
         }
     }

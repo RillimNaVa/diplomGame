@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 598ea2675b00e7649a756730a0a0fa99, type: 3}
+  m_Name: Upgrade_BloodCircuit
+  m_EditorClassIdentifier: Assembly-CSharp::UpgradeData
+  id: blood_circuit
+  displayName: Blood Circuit
+  description: '+8 HP from glory kills per stack.'
+  rarity: 0
+  category: 2
+  effectType: 8
+  maxStacks: 2
+  valueA: 8
+  valueB: 0
+  duration: 0
+  targetWeaponId:
+  canAppearInReward: 1
+  canAppearInShop: 1
+  minArenaIndex: 1
+  baseShopPrice: 26

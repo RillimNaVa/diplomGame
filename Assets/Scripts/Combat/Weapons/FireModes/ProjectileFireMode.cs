@@ -32,7 +32,7 @@ public class ProjectileFireMode : FireModeBase
 
         IgnoreOwnerCollisions(projectile, context.Owner);
 
-        projectile.Launch(direction, definition.damage);
+        projectile.Launch(direction, weapon != null ? weapon.EffectiveDamage : definition.damage);
     }
 
     private static void IgnoreOwnerCollisions(Projectile projectile, Transform owner)

@@ -10,7 +10,23 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4216d8e3-99a4-45fb-8ffb-d4439b91d2d4" name="Changes" comment="" />
+    <list default="true" id="4216d8e3-99a4-45fb-8ffb-d4439b91d2d4" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.DiplomGame/.idea/indexLayout.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/EnemyData/SpawnProfile_Combat.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/EnemyData/SpawnProfile_Combat.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Pickups/HealthPickup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Pickups/HealthPickup.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/GloryKillDetector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/GloryKillDetector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/GloryKillExecutor.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/GloryKillExecutor.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/PlayerStats.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Player/PlayerStats.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/Core/WeaponBase.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/Core/WeaponBase.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/HitscanFireMode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/HitscanFireMode.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/MeleeArcFireMode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/MeleeArcFireMode.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/ProjectileFireMode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/ProjectileFireMode.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/ShotgunFireMode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/Weapons/FireModes/ShotgunFireMode.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/test/GameManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/test/GameManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/test/PlayerController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/test/PlayerController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/PROGRESS.md" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -115,6 +131,7 @@
       <workItem from="1775928821156" duration="1209000" />
       <workItem from="1776242441542" duration="5562000" />
       <workItem from="1776257386615" duration="2632000" />
+      <workItem from="1777723397347" duration="5000" />
     </task>
     <servers />
   </component>

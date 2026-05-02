@@ -61,11 +61,60 @@ public class PlayerController : MonoBehaviour
     private float dashRechargeTimer;
 
     public int DashCharges => dashCharges;
-    public int MaxDashCharges => maxDashCharges;
-    public float DashRechargeProgress01 =>
-        dashChargeCooldown <= 0f || dashCharges >= maxDashCharges
-            ? 0f
-            : Mathf.Clamp01(dashRechargeTimer / dashChargeCooldown);
+
+    // Phase 4 / PR 4.PC bug 1+2 fix — instead of disabling the script
+    // (which stopped controller.Move and let CC fall + still let SendMessage
+    // OnFire callbacks fire weapons), keep Update running but skip movement /
+    // look / weapon input when frozen. Reward UI sets this true.
+    public bool IsFrozen { get; private set; }
+    public void SetFrozen(bool frozen)
+    {
+        IsFrozen = frozen;
+        if (frozen)
+        {
+            jumpPressed = false;
+            dashPressed = false;
+            slideHeld = false;
+            isTriggerHeldExternal = false;
+            if (weaponManager != null) weaponManager.SetFireHeld(false);
+        }
+    }
+    bool isTriggerHeldExternal; // shadow input state so we can ignore stale OnFire(true) during freeze
+
+    // Phase 4 / PR 4.PB — dash charges and cooldown read from UpgradeSystem.
+    // DashChargeFlat adds extra charges on top of the authored maximum;
+    // DashCooldownMultiplier scales recharge time (negative valueA = faster).
+    public int MaxDashCharges
+    {
+        get
+        {
+            UpgradeSystem sys = UpgradeSystem.Instance;
+            int bonus = sys != null ? Mathf.RoundToInt(sys.GetAdditive(UpgradeEffectType.DashChargeFlat)) : 0;
+            return Mathf.Max(1, maxDashCharges + bonus);
+        }
+    }
+
+    public float EffectiveDashCooldown
+    {
+        get
+        {
+            UpgradeSystem sys = UpgradeSystem.Instance;
+            if (sys == null) return dashChargeCooldown;
+            return Mathf.Max(0.05f, dashChargeCooldown * sys.GetMultiplier(UpgradeEffectType.DashCooldownMultiplier));
+        }
+    }
+
+    public float DashRechargeProgress01
+    {
+        get
+        {
+            float cd = EffectiveDashCooldown;
+            int max = MaxDashCharges;
+            return cd <= 0f || dashCharges >= max
+                ? 0f
+                : Mathf.Clamp01(dashRechargeTimer / cd);
+        }
+    }
 
     // Slide
     private bool isSliding;
@@ -105,8 +154,14 @@ public class PlayerController : MonoBehaviour
         originalHeight = controller.height;
         originalCenter = controller.center;
 
-        dashCharges = maxDashCharges;
+        dashCharges = MaxDashCharges;
         currentSpeed = moveSpeed;
+
+        UpgradeSystem upgradeSys = UpgradeSystem.Instance;
+        if (upgradeSys != null)
+        {
+            upgradeSys.OnUpgradesChanged += HandleUpgradesChanged;
+        }
 
         if (weaponManager == null)
         {
@@ -142,8 +197,31 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (IsFrozen)
+        {
+            // Keep CharacterController alive (zero move) but don't accumulate
+            // velocity, don't rotate camera, don't read weapon trigger.
+            if (controller != null) controller.Move(Vector3.zero);
+            jumpPressed = false;
+            dashPressed = false;
+            return;
+        }
         HandleMovement();
         HandleLook();
+    }
+
+    void OnDestroy()
+    {
+        UpgradeSystem sys = UpgradeSystem.Instance;
+        if (sys != null) sys.OnUpgradesChanged -= HandleUpgradesChanged;
+    }
+
+    void HandleUpgradesChanged()
+    {
+        // Top up dash charges when a +charge upgrade is applied so the player
+        // immediately benefits. Run reset (bonus → 0) clamps in HandleMovement.
+        int max = MaxDashCharges;
+        if (dashCharges < max && max > maxDashCharges) dashCharges = max;
     }
 
     void HandleMovement()
@@ -159,14 +237,20 @@ public class PlayerController : MonoBehaviour
         // 2. Cooldown ticks
         if (slideCooldownTimer > 0f) slideCooldownTimer -= Time.deltaTime;
 
-        if (dashCharges < maxDashCharges)
+        int maxCharges = MaxDashCharges;
+        if (dashCharges < maxCharges)
         {
             dashRechargeTimer += Time.deltaTime;
-            if (dashRechargeTimer >= dashChargeCooldown)
+            if (dashRechargeTimer >= EffectiveDashCooldown)
             {
                 dashCharges++;
                 dashRechargeTimer = 0f;
             }
+        }
+        else if (dashCharges > maxCharges)
+        {
+            // Run reset / upgrade removed — clamp to new ceiling.
+            dashCharges = maxCharges;
         }
 
         // 3. Movement direction (camera-relative via player rotation)
@@ -299,17 +383,29 @@ public class PlayerController : MonoBehaviour
     }
 
     // --- INPUT CALLBACKS (Send Messages) ---
-    public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
-    public void OnLook(InputValue value) => lookInput = value.Get<Vector2>() * 0.01f;
-    public void OnJump(InputValue value) { if (value.isPressed) jumpPressed = true; }
-    public void OnDash(InputValue value) { if (value.isPressed) dashPressed = true; }
-    public void OnSlide(InputValue value) => slideHeld = value.isPressed;
+    // SendMessage delivers callbacks even when the script is disabled, so we
+    // gate every action on IsFrozen. Reward UI / cutscenes set IsFrozen=true
+    // and rely on these no-ops (TZ §10.2 — block movement + weapon input).
+    public void OnMove(InputValue value) { if (IsFrozen) { moveInput = Vector2.zero; return; } moveInput = value.Get<Vector2>(); }
+    public void OnLook(InputValue value) { if (IsFrozen) { lookInput = Vector2.zero; return; } lookInput = value.Get<Vector2>() * 0.01f; }
+    public void OnJump(InputValue value) { if (IsFrozen) return; if (value.isPressed) jumpPressed = true; }
+    public void OnDash(InputValue value) { if (IsFrozen) return; if (value.isPressed) dashPressed = true; }
+    public void OnSlide(InputValue value) { if (IsFrozen) { slideHeld = false; return; } slideHeld = value.isPressed; }
 
     // Fire action is now Value-typed: this fires on both press and release with
     // value.isPressed reflecting the new trigger state. WeaponManager handles
     // semi-auto vs full-auto internally.
     public void OnFire(InputValue value)
     {
+        if (IsFrozen)
+        {
+            // Force-stop and remember the press so we don't leak a stale
+            // half-pressed state into the weapon when the freeze lifts.
+            if (weaponManager != null) weaponManager.SetFireHeld(false);
+            isTriggerHeldExternal = false;
+            return;
+        }
+        isTriggerHeldExternal = value.isPressed;
         if (weaponManager != null)
         {
             weaponManager.SetFireHeld(value.isPressed);
@@ -318,20 +414,22 @@ public class PlayerController : MonoBehaviour
 
     public void OnReload(InputValue value)
     {
+        if (IsFrozen) return;
         if (value.isPressed && weaponManager != null)
         {
             weaponManager.Reload();
         }
     }
 
-    public void OnSlotSelect1(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(0); }
-    public void OnSlotSelect2(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(1); }
-    public void OnSlotSelect3(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(2); }
-    public void OnSlotSelect4(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(3); }
-    public void OnSlotSelect5(InputValue value) { if (value.isPressed) weaponManager?.EquipSlot(4); }
+    public void OnSlotSelect1(InputValue value) { if (IsFrozen) return; if (value.isPressed) weaponManager?.EquipSlot(0); }
+    public void OnSlotSelect2(InputValue value) { if (IsFrozen) return; if (value.isPressed) weaponManager?.EquipSlot(1); }
+    public void OnSlotSelect3(InputValue value) { if (IsFrozen) return; if (value.isPressed) weaponManager?.EquipSlot(2); }
+    public void OnSlotSelect4(InputValue value) { if (IsFrozen) return; if (value.isPressed) weaponManager?.EquipSlot(3); }
+    public void OnSlotSelect5(InputValue value) { if (IsFrozen) return; if (value.isPressed) weaponManager?.EquipSlot(4); }
 
     public void OnSwitchScroll(InputValue value)
     {
+        if (IsFrozen) return;
         if (weaponManager == null) return;
         Vector2 scroll = value.Get<Vector2>();
         if (scroll.y > 0f) weaponManager.CycleSlot(+1);

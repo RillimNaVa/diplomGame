@@ -188,7 +188,11 @@ public class GloryKillExecutor : MonoBehaviour
         }
         if (playerHealth != null && playerStats != null)
         {
-            playerHealth.Heal(playerStats.gloryHealAmount);
+            playerHealth.Heal(playerStats.GetGloryHealAmount());
+        }
+        if (targetHealth != null)
+        {
+            UpgradeSystem.Instance?.NotifyGloryKill(targetHealth.gameObject);
         }
         OnGloryKill?.Invoke(targetHealth);
 
