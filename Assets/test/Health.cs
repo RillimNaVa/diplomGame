@@ -22,6 +22,10 @@ public class Health : MonoBehaviour
     // Args: (Health victim, float amount). Subscribers must filter by victim if needed.
     public static event Action<Health, float> AnyDamaged;
     public static event Action<Health, float> AnyHealed;
+    // Phase 4 / PR 4.PE — global death channel. Subscribers (StylePointsTracker)
+    // can read role/tag from the source Health to classify the kill without
+    // having to per-instance subscribe.
+    public static event Action<Health> AnyDeath;
 
     bool autoDisableCancelled;
 
@@ -100,6 +104,7 @@ public class Health : MonoBehaviour
         autoDisableCancelled = false;
         Debug.Log($"{name} DIED!");
         onDeath?.Invoke();
+        AnyDeath?.Invoke(this);
         if (!autoDisableCancelled)
         {
             Invoke(nameof(Disable), 1f);

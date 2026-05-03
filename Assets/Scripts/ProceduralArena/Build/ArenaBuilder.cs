@@ -9,6 +9,7 @@ namespace VoidSurvivor.ProceduralArena.Build
     public static class ArenaBuilder
     {
         public const string RootName = "ArenaRoot";
+        static Material s_shopParticleMaterial;
 
         // =====================================================================
         // r4 single-arena entry point. Uses the room's shape mask + per-arena
@@ -43,6 +44,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             BuildSingleStartMarker(room, cfg, mats.startMarker, root.transform);
             BuildSingleArchitecture(room, cfg, wh, mats, root.transform);
             BuildSingleFloorPatterns(room, cfg, mats, root.transform);
+            BuildSingleShopTerminal(room, cfg, mats, root.transform);
             BuildSingleDecor(room, cfg, wh, mats, root.transform);
             BuildSingleAtmosphere(room, cfg, wh, mats, root.transform);
             BuildSingleEdgeStrips(room, cfg, mats, root.transform);
@@ -446,6 +448,203 @@ namespace VoidSurvivor.ProceduralArena.Build
             }
         }
 
+        static void BuildSingleShopTerminal(ArenaRoomData room, ArenaRunConfig cfg, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (room.category != ArenaCategory.Shop || cfg == null || mats == null) return;
+
+            var root = new GameObject("ShopTerminal");
+            root.transform.SetParent(parent, false);
+
+            float m = cfg.macroCellMeters;
+            Vector3 center = BoundsCenter(room.boundsCells, m, 0.08f);
+            Material plateMat = mats.floorAccent != null ? mats.floorAccent : mats.floor;
+            Material propMat = mats.prop != null ? mats.prop : mats.cover;
+            Color shopGlow = ResolveShopGlowColor(mats);
+            Material glowMat = CreateShopGlowMaterial(shopGlow);
+
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_Base",
+                center,
+                new Vector3(m * 1.55f, 0.10f, m * 1.55f),
+                plateMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_SoftGlow",
+                center + new Vector3(0f, 0.115f, 0f),
+                new Vector3(m * 1.24f, 0.025f, m * 1.24f),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_GlowLine_X",
+                center + new Vector3(0f, 0.145f, 0f),
+                new Vector3(m * 1.02f, 0.025f, m * 0.08f),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_GlowLine_Z",
+                center + new Vector3(0f, 0.15f, 0f),
+                new Vector3(m * 0.08f, 0.025f, m * 1.02f),
+                glowMat,
+                false);
+
+            float ring = Mathf.Max(0.18f, m * 0.10f);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_Ring_N",
+                center + new Vector3(0f, 0.04f, m * 0.72f),
+                new Vector3(m * 1.55f, 0.06f, ring),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_Ring_S",
+                center + new Vector3(0f, 0.04f, -m * 0.72f),
+                new Vector3(m * 1.55f, 0.06f, ring),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_Ring_E",
+                center + new Vector3(m * 0.72f, 0.04f, 0f),
+                new Vector3(ring, 0.06f, m * 1.55f),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "ShopPlatform_Ring_W",
+                center + new Vector3(-m * 0.72f, 0.04f, 0f),
+                new Vector3(ring, 0.06f, m * 1.55f),
+                glowMat,
+                false);
+
+            Vector3 kioskBase = center + new Vector3(0f, 0f, -m * 0.95f);
+            BuildUtils.SpawnBox(root.transform, "ShopKiosk_Base",
+                kioskBase + new Vector3(0f, 0.45f, 0f),
+                new Vector3(m * 0.42f, 0.9f, m * 0.28f),
+                propMat,
+                true);
+            BuildUtils.SpawnBox(root.transform, "ShopKiosk_Screen",
+                kioskBase + new Vector3(0f, 1.05f, m * 0.16f),
+                new Vector3(m * 0.62f, 0.36f, 0.05f),
+                glowMat,
+                false);
+
+            AttachPointLight(root.transform, "ShopPlatform_Light",
+                center + new Vector3(0f, 0.35f, 0f),
+                shopGlow,
+                2.2f,
+                Mathf.Max(5f, m * 2.2f));
+            SpawnShopPlatformParticles(root.transform, center, m, shopGlow);
+
+            var triggerGo = new GameObject("ShopPlatformTrigger");
+            triggerGo.transform.SetParent(root.transform, false);
+            triggerGo.transform.position = center + new Vector3(0f, 1f, 0f);
+            var trigger = triggerGo.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(m * 1.55f, 2f, m * 1.55f);
+            triggerGo.AddComponent<ShopTerminalTrigger>();
+        }
+
+        static Color ResolveShopGlowColor(ArenaBuildMaterials mats)
+        {
+            Color fallback = new Color(0.25f, 0.85f, 1f);
+            var biome = mats != null ? mats.sourceBiome : null;
+            if (biome == null) return fallback;
+
+            Color color = biome.emissiveAccent != null && biome.emissiveAccent.emissionIntensity > 0.01f
+                ? biome.emissiveAccent.emissionColor
+                : biome.barrierColor;
+            return color.maxColorComponent > 0.05f ? color : fallback;
+        }
+
+        static Material CreateShopGlowMaterial(Color tint)
+        {
+            Color glow = tint.maxColorComponent > 0.05f ? tint : new Color(0.25f, 0.85f, 1f);
+            Color visible = Color.Lerp(Color.white, glow, 0.72f);
+            visible.a = 1f;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Color");
+            if (shader == null) shader = Shader.Find("Standard");
+
+            var mat = new Material(shader) { name = "ShopPlatformGlow(Runtime)" };
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", visible * 1.7f);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", visible * 1.7f);
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", glow * 2.8f);
+            }
+            mat.enableInstancing = true;
+            WorldUVDensityRegistry.Register(mat, 0.5f);
+            return mat;
+        }
+
+        static void SpawnShopPlatformParticles(Transform parent, Vector3 center, float m, Color tint)
+        {
+            var go = new GameObject("ShopPlatformParticles");
+            go.transform.SetParent(parent, false);
+            go.transform.position = center + new Vector3(0f, 0.16f, 0f);
+
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = ResolveShopParticleMaterial();
+                renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                renderer.sortingFudge = 0.1f;
+            }
+
+            Color particleColor = Color.Lerp(Color.white, tint, 0.65f);
+            particleColor.a = 0.55f;
+
+            var main = ps.main;
+            main.playOnAwake = false;
+            main.duration = 4f;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(1.3f, 2.2f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.045f, 0.105f);
+            main.startColor = particleColor;
+            main.gravityModifier = 0f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 90;
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 22f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(m * 1.1f, 0.04f, m * 1.1f);
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0.65f, 1.15f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(particleColor, 0f),
+                    new GradientColorKey(particleColor, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.6f, 0.2f),
+                    new GradientAlphaKey(0.45f, 0.75f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(grad);
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(
+                    new Keyframe(0f, 0.7f),
+                    new Keyframe(0.45f, 1f),
+                    new Keyframe(1f, 0.2f)));
+
+            ps.Play();
+        }
+
         static void BuildSingleAtmosphere(
             ArenaRoomData room, ArenaRunConfig cfg, float wh, ArenaBuildMaterials mats, Transform parent)
         {
@@ -710,6 +909,26 @@ namespace VoidSurvivor.ProceduralArena.Build
             light.range = range;
             light.shadows = LightShadows.None; // keep cheap; additional-light shadows fill up fast
             light.renderMode = LightRenderMode.Auto;
+        }
+
+        static Material ResolveShopParticleMaterial()
+        {
+            if (s_shopParticleMaterial != null) return s_shopParticleMaterial;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (shader == null) shader = Shader.Find("Particles/Standard Unlit");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+
+            s_shopParticleMaterial = new Material(shader) { name = "ShopPlatformParticles(Runtime)" };
+            if (s_shopParticleMaterial.HasProperty("_Surface")) s_shopParticleMaterial.SetFloat("_Surface", 1f);
+            if (s_shopParticleMaterial.HasProperty("_Blend")) s_shopParticleMaterial.SetFloat("_Blend", 0f);
+            if (s_shopParticleMaterial.HasProperty("_BaseColor"))
+            {
+                Color white = Color.white;
+                white.a = 0.85f;
+                s_shopParticleMaterial.SetColor("_BaseColor", white);
+            }
+            return s_shopParticleMaterial;
         }
 
         static void BuildContaminationPatches(

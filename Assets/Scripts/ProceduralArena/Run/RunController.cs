@@ -76,13 +76,27 @@ namespace VoidSurvivor.ProceduralArena.Run
             // Phase 4 / PR 4.PC — wire the reward gate. RPC subscribes to enc.Cleared,
             // sets HoldBarriers=true, and opens the 3-card UI before exits unlock.
             // Elite category determines whether the rarity table gets the §10.3 boost.
-            bool isElite = node != null && node.typeProfile != null
-                && node.typeProfile.category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Elite;
+            var category = node != null && node.typeProfile != null
+                ? node.typeProfile.category
+                : VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Combat;
+            bool isElite = category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Elite;
             var rpc = RunProgressionController.Instance;
             if (rpc != null)
             {
                 if (rpc.runSeed == 0) rpc.runSeed = graph != null ? graph.runSeed : 0;
-                rpc.WatchEncounter(enc, node != null ? node.arenaIndex : 0, isElite);
+                rpc.WatchEncounter(enc, node != null ? node.arenaIndex : 0, isElite, category);
+            }
+
+            // Phase 4 / PR 4.PF — Shop rooms are safe utility rooms
+            // (ClearCondition.None), so they do not use the reward gate.
+            // Prepare deterministic inventory here; the UI opens only when
+            // the player steps onto the generated Shop platform.
+            if (category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Shop)
+            {
+                ShopController.Instance?.PrepareForArena(
+                    category,
+                    node != null ? node.arenaIndex : 0,
+                    graph != null ? graph.runSeed : 0);
             }
         }
 
@@ -106,6 +120,8 @@ namespace VoidSurvivor.ProceduralArena.Run
             // Phase 4 / PR 4.PC — fresh run wipes all active upgrades + rerolls
             // the reward seed so the same run produces the same cards (§16).
             UpgradeSystem.Instance?.ResetForNewRun();
+            // Phase 4 / PR 4.PE — wipe Kill Points; new run, fresh wallet (TZ §16).
+            KillPointsWallet.Instance?.ResetForNewRun();
             var rpc = RunProgressionController.Instance;
             if (rpc != null) rpc.runSeed = runSeed;
             graph = RunGraphGenerator.Build(runSeed, runConfig);

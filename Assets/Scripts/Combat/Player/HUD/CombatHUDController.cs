@@ -34,6 +34,8 @@ public class CombatHUDController : MonoBehaviour
     EnemyCounterBlock enemyCounterBlock;
     HealFloatBlock healFloat;
     GloryKillPromptBlock gloryPrompt;
+    KillPointsBlock kpBlock;
+    StyleMeterBlock styleBlock;
 
     // Cached state
     float lastDisplayedHp;
@@ -91,6 +93,8 @@ public class CombatHUDController : MonoBehaviour
         enemyCounterBlock?.Tick(dt);
         healFloat?.Tick(dt);
         gloryPrompt?.Tick(dt);
+        kpBlock?.Tick(dt);
+        styleBlock?.Tick(dt);
     }
 
     // --- Resolution / building ---
@@ -147,6 +151,8 @@ public class CombatHUDController : MonoBehaviour
             ? playerHealth.GetComponent<GloryKillExecutor>()
             : UnityEngine.Object.FindAnyObjectByType<GloryKillExecutor>();
         gloryPrompt = GloryKillPromptBlock.Build(rootRect, executor);
+        kpBlock = KillPointsBlock.Build(rootRect);
+        styleBlock = StyleMeterBlock.Build(rootRect);
     }
 
     void OnDestroy()
@@ -154,6 +160,8 @@ public class CombatHUDController : MonoBehaviour
         ammoBlock?.Unbind();
         crosshairBlock?.Unsubscribe();
         enemyCounterBlock?.Unsubscribe();
+        kpBlock?.Unsubscribe();
+        styleBlock?.Unsubscribe();
     }
 
     // --- Health event handlers ---

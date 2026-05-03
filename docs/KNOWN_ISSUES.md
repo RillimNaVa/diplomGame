@@ -380,24 +380,52 @@ Kept open for Phase 3+: #3, #4, #5, #6, #7, #9, #10, #11, #12, #14, #15, #16, #1
 
 ---
 
-## 21. Phase 4 progression — entire Phase 4 stack pending Editor playtest after bugfix pass
+## 21. Phase 4 progression — PR 4.PA-4.PE stack pending Editor playtest after bugfix/economy pass
 
-- Status: Open
-- Severity: Medium (gates closing PR 4.PA-D before adding economy / shop layers).
+- Status: Partial (2026-05-02; user reported PR 4.PE playtest was performed, no regressions reported in this thread; PR 4.PF Shop still pending Editor validation)
+- Severity: Medium (gates closing PR 4.PA-4.PE before adding shop/rest layers).
 - Affected:
   - PR 4.PA `UpgradeSystem` core (Editor verify of stack caps + `ResetForNewRun`).
   - PR 4.PB modifier hooks (weapon damage / fire rate / max HP / orb / dash) — F9-driven smoke test passed once but full gameplay validation not redone after bugfixes.
   - PR 4.PC reward UI + reward-gated exits — bugfix pass on 2026-05-02 (player no longer falls through floor / weapon trigger no longer leaks) needs replay.
   - PR 4.PD 10-room graph + Elite modifier + door labels — only basic walkthrough done.
+  - PR 4.PE Kill Points economy — external C# build passes, but no Unity Editor validation yet for payout panel, KP HUD, style meter, or payout -> reward-card handoff.
 - Concrete check-list:
   - F9-spam upgrades, post-bugfix: weapon, dash, HP, orb radius/heal still scale; `F11` resets cleanly.
   - Clear arena → 3 cards appear with rarity colours + previews; player frozen but not falling; cursor unlocked; pick → upgrade applies + exits unlock; Esc → exits unlock without reward.
   - Same `runConfig.runSeed` produces identical 10-stage layout + identical card sequence (TZ scenario S2).
   - Stage 4 / 7 show 3 doors with distinct category colours (Combat / Shop / Rest).
   - Elite arenas with `eliteModifier` assigned use bumped budget + HP.
+  - Clear Combat arena 1: payout panel shows Base +12 KP, style breakdown, Total >=12, then reward cards appear only after the panel dismisses.
+  - KP HUD block pulses on award, KP persists across arenas, and `StartRun` / restart resets KP to 0.
+  - Style meter appears only during combat, ticks silently on kills, includes Brute / glory / streak / no-hit / fast-clear bonuses in the payout breakdown, and does not show per-kill KP floaters.
 - Fix direction: replay through one full 10-room run, jot any regressions, then close together.
 
-## 22. Triggered-effect upgrades unimplemented (Phase 4 backlog)
+## 22. Phase 4 PR 4.PF Shop Room pending Editor playtest
+
+- Status: Open
+- Severity: Medium
+- Affected:
+  - `Assets/Scripts/Progression/ShopController.cs`
+  - `Assets/Scripts/Progression/ShopInventoryGenerator.cs`
+  - `Assets/Scripts/Progression/ShopCanvas.cs`
+  - `Assets/Scripts/Progression/ShopTerminalTrigger.cs`
+  - `Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs`
+  - `Assets/Scripts/ProceduralArena/Run/RunController.cs`
+- Exact problem:
+  - Shop Room code compiles externally, but Unity Editor runtime behavior has not been verified yet.
+- Concrete check-list:
+  - Enter a Shop room and confirm no enemies, no payout panel, no reward cards.
+  - Shop platform/kiosk appears in the room with soft glow and upward particles, and Shop UI opens only when the player steps onto the platform.
+  - Shop UI appears with current KP, one heal offer, and two upgrade offers.
+  - Affordable heal/upgrade purchases subtract KP and apply immediately; purchased offer becomes `SOLD`.
+  - Unaffordable buttons are disabled and show `NOT ENOUGH KP`.
+  - Reroll spends 8 / 14 / 22 KP, changes inventory, and remains deterministic for the same seed/reroll count.
+  - Esc closes UI, player movement/cursor lock restore, staying on the platform does not instantly reopen UI, stepping off/on reopens it, and exits remain usable.
+- Fix direction:
+  - Run one Shop visit in a normal 10-room run. If the platform does not appear, inspect `ArenaBuilder.BuildSingleShopTerminal`. If glow/particles are too strong or missing, tune `ShopPlatform_SoftGlow`, `ShopPlatform_GlowLine_X/Z`, `ShopPlatform_Light`, `CreateShopGlowMaterial`, and `SpawnShopPlatformParticles` in `ArenaBuilder.BuildSingleShopTerminal`. If the UI does not open, inspect `RunController.OnArenaBuilt` category routing and `ShopTerminalTrigger.OnTriggerEnter`. If purchases fail, inspect `KillPointsWallet.TrySpend`, `UpgradeSystem.AddUpgrade`, and `GameManager.playerHealth` resolution.
+
+## 23. Triggered-effect upgrades unimplemented (Phase 4 backlog)
 
 - Status: Planned
 - Severity: Low (no breakage; upgrades currently exist as data only).

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VoidSurvivor.ProceduralArena.Arena;
 using VoidSurvivor.ProceduralArena.Encounter;
+using VoidSurvivor.Progression;
 
 // Phase 4 / PR 4.PC — orchestrator that gates exit barriers behind a 3-card
 // reward selection (TZ §6.4). Owns:
@@ -27,6 +29,9 @@ public class RunProgressionController : MonoBehaviour
     EncounterController watchedEncounter;
     int watchedArenaIndex;
     bool watchedIsElite;
+    ArenaCategory watchedCategory = ArenaCategory.Combat;
+    StyleBreakdown lastStyleSnapshot;
+    bool hasStyleSnapshot;
 
     PlayerController playerController;
     WeaponManager weaponManager;
@@ -34,6 +39,7 @@ public class RunProgressionController : MonoBehaviour
 
     CursorLockMode prevCursorLock;
     bool prevCursorVisible;
+    bool cursorOverridden;
 
     public static RunProgressionController Instance
     {
@@ -64,24 +70,52 @@ public class RunProgressionController : MonoBehaviour
     {
         if (s_instance == this) s_instance = null;
         if (watchedEncounter != null) watchedEncounter.Cleared -= OnEncounterCleared;
+        var st = StylePointsTracker.Instance;
+        if (st != null) st.OnArenaFinalized -= OnStyleFinalized;
     }
 
     /// <summary>Called by RunController.OnArenaBuilt to wire the new encounter.</summary>
-    public void WatchEncounter(EncounterController enc, int visitedArenaIndex, bool isElite)
+    public void WatchEncounter(EncounterController enc, int visitedArenaIndex, bool isElite,
+        ArenaCategory category = ArenaCategory.Combat)
     {
         if (watchedEncounter != null)
         {
             watchedEncounter.Cleared -= OnEncounterCleared;
         }
+        // Detach style tracker subscription from any prior arena.
+        var st = StylePointsTracker.Instance;
+        if (st != null) st.OnArenaFinalized -= OnStyleFinalized;
+
         watchedEncounter = enc;
         watchedArenaIndex = visitedArenaIndex;
         watchedIsElite = isElite;
+        watchedCategory = category;
+        hasStyleSnapshot = false;
+        lastStyleSnapshot = default;
+
         if (enc == null) return;
-        if (!ShouldShowRewardForArena(enc, visitedArenaIndex)) return;
+
+        // PR 4.PE — start style tracking for any encounter that has a clear
+        // condition (Start/Shop/Rest auto-clear with None and don't pay out).
+        bool payoutEligible = (category == ArenaCategory.Combat || category == ArenaCategory.Elite)
+                              && enc.clearCondition != ClearCondition.None;
+        if (payoutEligible && st != null)
+        {
+            st.WatchEncounter(enc);
+            st.OnArenaFinalized += OnStyleFinalized;
+        }
+
+        if (!ShouldShowRewardForArena(enc, visitedArenaIndex) && !payoutEligible) return;
         // Hold barriers up-front so FinishCleared() doesn't open them before
         // we wire the UI — Cleared fires synchronously inside FinishCleared.
         enc.HoldBarriers = true;
         enc.Cleared += OnEncounterCleared;
+    }
+
+    void OnStyleFinalized(StyleBreakdown breakdown)
+    {
+        lastStyleSnapshot = breakdown;
+        hasStyleSnapshot = true;
     }
 
     bool ShouldShowRewardForArena(EncounterController enc, int visitedArenaIndex)
@@ -97,7 +131,46 @@ public class RunProgressionController : MonoBehaviour
     {
         if (watchedEncounter == null) return;
         if (activeCanvas != null) return; // already showing
+
+        // PR 4.PE — KP payout flows BEFORE the reward card UI. For Combat and
+        // Elite arenas: compute payout, award KP, show payout panel, then chain
+        // to ShowReward via the panel's onComplete.
+        bool payoutEligible = watchedCategory == ArenaCategory.Combat
+                              || watchedCategory == ArenaCategory.Elite;
+        if (payoutEligible)
+        {
+            // StylePointsTracker.OnArenaFinalized is fired synchronously from
+            // EncounterController.Cleared; if we got here without a snapshot,
+            // it's a defensive default (no kills, nothing tracked).
+            var snap = hasStyleSnapshot ? lastStyleSnapshot : default;
+            var payout = ArenaPayoutCalculator.Compute(watchedCategory, watchedArenaIndex, snap);
+            KillPointsWallet.Instance?.Add(payout.totalKp);
+            // Block the player so they don't run into the closed barrier or
+            // start firing through the panel.
+            ResolvePlayerRefs();
+            FreezePlayer();
+            UnlockCursor();
+            PayoutPanel.Show(payout, OnPayoutDismissed);
+            return;
+        }
+
         ShowReward();
+    }
+
+    void OnPayoutDismissed()
+    {
+        // Continue to the reward card phase if this arena has a card pool;
+        // otherwise release the gate and restore input. Reward UI will re-call
+        // FreezePlayer/UnlockCursor itself, but they're idempotent.
+        if (watchedEncounter != null && pool != null && pool.Length > 0
+            && ShouldShowRewardForArena(watchedEncounter, watchedArenaIndex))
+        {
+            ShowReward();
+            return;
+        }
+        UnfreezePlayer();
+        RestoreCursor();
+        ReleaseGate();
     }
 
     void ShowReward()
@@ -115,6 +188,8 @@ public class RunProgressionController : MonoBehaviour
         if (picks == null || picks.Length == 0)
         {
             Debug.LogWarning("[RunProgressionController] Generator returned 0 cards — unlocking exits with no reward.");
+            UnfreezePlayer();
+            RestoreCursor();
             ReleaseGate();
             return;
         }
@@ -180,15 +255,21 @@ public class RunProgressionController : MonoBehaviour
 
     void UnlockCursor()
     {
-        prevCursorLock = Cursor.lockState;
-        prevCursorVisible = Cursor.visible;
+        if (!cursorOverridden)
+        {
+            prevCursorLock = Cursor.lockState;
+            prevCursorVisible = Cursor.visible;
+            cursorOverridden = true;
+        }
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
     void RestoreCursor()
     {
+        if (!cursorOverridden) return;
         Cursor.lockState = prevCursorLock;
         Cursor.visible = prevCursorVisible;
+        cursorOverridden = false;
     }
 }

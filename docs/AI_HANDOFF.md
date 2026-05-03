@@ -10,9 +10,9 @@ For stable architecture / roadmap / known issues, see:
 
 ---
 
-## Current Status (2026-05-02)
+## Current Status (2026-05-03)
 
-**Phase 4 Roguelike Progression — PR 4.PA + PR 4.PB + PR 4.PC + PR 4.PD code landed.** All four PRs build clean, three user-reported bugs from PR 4.PC + PR 4.PD playtest fixed in same-day pass. Detailed scope in [PROGRESS.md](./PROGRESS.md) Phase 4 section + changelog block 2026-05-02.
+**Phase 4 Roguelike Progression — PR 4.PA + PR 4.PB + PR 4.PC + PR 4.PD + PR 4.PE + PR 4.PF code landed.** PR 4.PE adds the Kill Points economy layer; PR 4.PF adds the first Shop Room implementation with deterministic heal/upgrade offers and reroll. Latest PR 4.PF polish adds a generated soft-glow platform insert, glow cross-lines with dedicated `ShopPlatformGlow(Runtime)` material, no-shadow point light, and upward particles from the Shop platform. `dotnet build Assembly-CSharp.csproj --no-restore` passes with 0 errors. Detailed scope in [PROGRESS.md](./PROGRESS.md) Phase 4 section + changelog block 2026-05-03.
 
 **Master spec:** [PHASE_4_ROGUELIKE_PROGRESSION_TZ.md](./PHASE_4_ROGUELIKE_PROGRESSION_TZ.md) revision v3.
 
@@ -21,15 +21,17 @@ For stable architecture / roadmap / known issues, see:
 - **PR 4.PB — Runtime modifier hooks.** `WeaponBase.EffectiveDamage / EffectiveFireCooldown / EffectiveReloadDuration`. 4 fire modes use `weapon.EffectiveDamage`. `PlayerController.MaxDashCharges / EffectiveDashCooldown` + top-up listener. `PlayerStats` baseline+resolver (`GetOrbHealAmount` / `GetGloryHealAmount` / `GetOrbMagnetRadius` + `MaxHpFlat` listener). `HealthPickup`, `GloryKillDetector`, `GloryKillExecutor`, `GameManager` notify hooks. 8 baseline `UpgradeData` YAML in `Assets/Resources/Progression/Upgrades/`. `UpgradeDebugProbe` auto-attached via `GameManager.ResolveReferences` (F9 add / F10 log / F11 reset).
 - **PR 4.PC — Reward cards + reward-gated exits.** `EncounterController.HoldBarriers` + idempotent `OpenBarriers()`. `RewardCardGenerator` (seeded weighted-without-replacement). `RewardPreview.Build` for 8 effect types. `RewardCardCanvas` (procedural sortingOrder 6000, rarity-coloured borders, Skip button, 1/2/3 + Esc input via new Input System). `RunProgressionController` orchestrator with player freeze + cursor unlock + seeded reward counter. `RunController.OnArenaBuilt` calls `WatchEncounter`; `StartRun` calls `UpgradeSystem.ResetForNewRun()`.
 - **PR 4.PD — 10-room run graph + door preview + Elite modifier.** `RunGraphNode.stageIndex` (0..9) + `Category` shortcut. `RunGraphGenerator` rewritten on hardcoded 10-stage `StageTemplates[]` with shared-subtree wiring. `RunConfig.combatPool / elitePool / shopPool / restPool`. `DefaultRunConfig.asset` updated YAML wiring all 4 pools. `EliteEncounterModifier` SO (`Assets/Scripts/ProceduralArena/Arena/EliteEncounterModifier.cs`) — budget × HP × tempo multipliers + guaranteed `EnemySpawnEntry[]`. `ArenaTypeProfile.eliteModifier` slot + `ArenaFlowController` propagation. `EnemySpawnComposer.Compose` accepts `budgetMultiplier`. `EncounterController.SpawnEnemiesViaGameManager` applies modifier and prepends guaranteed enemies. `DoorChoiceLabel` 2-line category-coloured preview per TZ §6.3. `RunController` Boss check uses `Category == Boss`.
+- **PR 4.PE — Kill Points economy.** `KillPointsWallet` run-scoped auto-singleton (`Add` / `TrySpend` / `ResetForNewRun` + `OnTotalChanged`). `StylePointsTracker` tracks kills, Brute kills, glory kills, streak>=5 bonus kills, no-hit, clear time, and emits a finalized `StyleBreakdown`. `ArenaPayoutCalculator` implements TZ §12.3/§12.4 clear reward + style cap formulas. `PayoutPanel` shows Base / Combat Style / Elite Bonus / Total before reward cards. `CombatHUDController` now builds `KillPointsBlock` and `StyleMeterBlock`. `Health.AnyDeath` global event added for style tracking. `RunProgressionController.WatchEncounter` now receives `ArenaCategory`, awards KP on Combat/Elite clear, shows payout first, then chains to reward cards. `RunController.StartRun` resets `KillPointsWallet`. Follow-up fail-safe fixed: if reward generation returns 0 cards after payout, the player is unfrozen, cursor restored, and exits opened.
+- **PR 4.PF — Shop Room.** `ShopOffer` + `ShopInventoryGenerator` produce one heal offer and two upgrade offers from the upgrade pool using deterministic `System.Random`, `canAppearInShop`, `minArenaIndex`, and max-stack filtering. `ShopController` prepares inventory for `ArenaCategory.Shop`, derives shop/reroll seeds from run seed + arena index, spends `KillPointsWallet`, applies `UpgradeSystem.AddUpgrade` or `Health.Heal`, and freezes/unfreezes the player around UI. `ArenaBuilder` auto-spawns a visible `ShopTerminal` platform/kiosk in Shop rooms; the platform includes `ShopPlatform_SoftGlow`, glow cross-lines, dedicated `ShopPlatformGlow(Runtime)` material, a cheap point light, and upward `ShopPlatformParticles`. `ShopTerminalTrigger` opens the prepared shop when the player steps onto the platform. `ShopCanvas` builds runtime KP/offer/reroll/close UI with 1/2/3/R/Esc input. Closing with Esc/close restores input; to reopen, step off and back onto the platform. Shop keeps `ClearCondition.None`: no enemies, no payout, no reward cards, exits stay usable after closing UI.
 
 **Bugfix pass (same day):**
 1. Reward UI was dropping player through the floor (skybox visible) — `playerController.enabled = false` stopped `controller.Move()` so CharacterController fell, AND SendMessage input callbacks still fired through disabled scripts. Fix: `PlayerController.IsFrozen` flag + `SetFrozen(bool)`. `Update()` early-returns with `controller.Move(Vector3.zero)`. Every `OnXxx` input callback checks `IsFrozen` and no-ops. `OnFire` additionally force-clears `weaponManager.SetFireHeld(false)` + an `isTriggerHeldExternal` shadow.
 2. Weapon stutter / invisible tracers after taking any reward card — same root cause (LMB on cards reached `OnFire`), same fix. `RunProgressionController.FreezePlayer/UnfreezePlayer` switched to `SetFrozen` and unfreeze additionally calls `SetFireHeld(false)` for safety.
 3. `ArenaRuntimeDebugOverlay` top-left counter `Arena: N/5` → `Arena: N/10` to match new Standard Run length; dropped legacy `current.stage` enum print, kept category.
 
-**Editor playtest still pending for the entire Phase 4 stack.** User has informally confirmed PR 4.PA/PR 4.PB/PR 4.PC happy paths work; the bugfix pass has not been retested yet.
+**Editor playtest status:** user reported they already ran the PR 4.PE playtest and then asked to continue. No specific PR 4.PE regressions were reported in this thread. User later reported the basic PR 4.PF Shop platform interaction looked good; the new glow/particle polish still needs a focused Unity Editor visual check.
 
-**Suggested next direction:** PR 4.PE — Kill Points economy (KP runtime state + clear reward + style points + payout UI per TZ §12). KP is a prerequisite for PR 4.PF Shop. Alternatively, formalize a playtest pass on the post-bugfix PR 4.PC/D before adding more economy systems.
+**Suggested next direction:** run one focused Unity Editor playtest for PR 4.PF Shop. After that, continue with PR 4.PG — Rest Room + Final Prep.
 
 **Known follow-ups deferred from Phase 4 so far:**
 - Author at least one `EliteEncounterModifier.asset` and drop into `Arena_Elite_L.eliteModifier` (user did this in their playtest session).
@@ -229,29 +231,25 @@ Captured 2026-04-26 from the user's sketch, then cancelled 2026-04-30. Do not im
 
 ## Current Goal
 
-**Arena Complex is cancelled.** No Unity Editor setup or playtest is needed for PR 3.5. Continue with the existing single-arena pipeline.
+**Phase 4 PR 4.PF — Unity Editor playtest.** Shop Room code compiles, but needs runtime validation in `test.unity` before PR 4.PG Rest starts.
 
-**Phase 3 PR 3.F — Editor playtest.** Verify pooling lifecycle in `test.unity`:
-
-Post-review note (2026-04-30): rerun this checklist after the pooling lifecycle fixes above. Pay special attention to enemies returning under `EnemyPool`, recycled staggered enemies not keeping outline material slots, and no `NavMeshAgent` active-state errors on reused enemies.
-
-1. `GameManager.useEncounterMode = true`. Start a fresh run (Ctrl+P).
-2. Play through the full 5-arena loop **twice** (Start → Mid×3 → Boss → Restart → again). Each arena spawns ~5–14 enemies, so by the end of run 2 you've spawned ~80–140 enemies.
-3. **Hierarchy check:** open the Scene Hierarchy. There should be a single `EnemyPool` GameObject and a single `EnemyProjectilePool` GameObject under the scene root, holding all the disabled (greyed-out) recycled instances. No loose disabled enemy GameObjects should be accumulating outside those pool roots.
-4. **Kill count integrity:** every enemy that dies fires `GameManager.OnEnemyKilled` exactly once. Watch the kill-streak speed boost — if it ever fires twice for one death (or doesn't fire at all on a recycled enemy), the Remove+Add pattern in `GameManager.SpawnEncounterEnemy` got broken.
-5. **Recycled enemy state:** when an enemy is rented from the pool, it must start at full HP with no red stagger pulse stuck on, and the NavMeshAgent must walk normally from the new spawn point.
-6. **HP-orb drop on every death:** the `EnemyLootTable.rolled` reset must be working — every Drone/Crawler kill drops an HP orb (not just the first life of each pooled instance).
-7. **Fair-spawn delay on recycled enemies:** spawn an enemy near the player (e.g. arena with the player standing on a spawn point) — recycled instance should still hold for ~0.6s with the telegraph pulse before chasing.
-8. **Projectile trail:** Spitter plasma should leave a clean trail from the muzzle on every shot, including recycled projectiles. If you see a jump from the previous shot's last position to the new muzzle, `EnemyProjectile.ResetForPool` `TrailRenderer.Clear()` regressed.
-9. **Profiler optional:** open the Memory Profiler before and after a 2-loop run. Total `GameObject` count and `MonoBehaviour` count should plateau, not climb linearly.
+1. `GameManager.useEncounterMode = true`. Start a fresh run (Ctrl+P) and reach a Shop door (stage 4 / 7 / 8).
+2. Enter Shop. Expected: safe room, no enemies, no payout panel, no reward cards, visible Shop platform/kiosk appears near room center with soft glow and upward particles.
+3. Step onto the Shop platform. Expected: Shop UI appears with current KP and 3 offers: one heal and two upgrades. Buttons for unaffordable offers are disabled / marked `NOT ENOUGH KP`.
+4. Buy an affordable heal: KP decreases, player HP heals by the listed fraction, offer becomes `SOLD`.
+5. Buy an affordable upgrade: KP decreases, `UpgradeSystem` stack applies, offer becomes `SOLD`.
+6. Press `R` / reroll: reroll spends 8 KP first, then 14, then 22; inventory changes and remains deterministic for the same seed + reroll count.
+7. Press `Esc` / Close: UI closes, player movement and cursor lock restore, held fire is cleared.
+8. Stay on the platform: UI should not instantly reopen. Step off and back onto the platform: UI opens again.
+9. Walk to an exit. Expected: exits are already open because Shop keeps `ClearCondition.None`; leaving the room works normally.
 
 If anything regresses, likely suspects:
-- Pool not creating → check Hierarchy after the first spawn for `EnemyPool` GameObject.
-- Recycled enemy at 0 HP → `PooledEnemy.PrepareForReuse` ordering vs `Health.ResetForPool`.
-- Listener accumulation → verify `Remove+Add` pattern in both `SpawnEnemy` and `SpawnEncounterEnemy`.
-- Trail jump → confirm `TrailRenderer.Clear()` runs **after** `transform.SetPositionAndRotation` (it does — `EnemyProjectilePool.Rent` sets position before calling `ResetForPool`).
-
-After PR 3.F is accepted, **Phase 3 is complete** modulo the optional Gravity Node (zoner). Next phase: Phase 4 (boss) or Phase 5 (audio/VFX polish), per GDD priorities.
+- Shop platform does not appear -> check `ArenaBuilder.BuildSingleShopTerminal`;
+- Shop UI does not open -> check `RunController.OnArenaBuilt` category routing to `ShopController.PrepareForArena` and `ShopTerminalTrigger.OnTriggerEnter`;
+- purchases do nothing -> check `KillPointsWallet.TrySpend`, `UpgradeSystem.AddUpgrade`, and `GameManager.playerHealth`;
+- reroll not deterministic -> check seed derivation in `ShopController.RegenerateOffers`;
+- player remains frozen -> check `ShopController.CloseShop` / `ShopCanvas.RequestClose`.
+- glow/particles are too strong or missing -> tune `ShopPlatform_SoftGlow`, `ShopPlatform_GlowLine_X/Z`, `ShopPlatform_Light`, `CreateShopGlowMaterial`, and `SpawnShopPlatformParticles` in `ArenaBuilder.BuildSingleShopTerminal`.
 
 ### Earlier Phase 3 plan (kept for reference)
 
@@ -341,9 +339,9 @@ Scene wiring reference (`test.unity`):
 
 ## Recommended Next Task
 
-Next is a focused **PR 3.F + polish lifecycle Editor playtest**. Use the *Current Goal* checklist above and also verify the 2026-04-30 fixes: pooled enemies return under `EnemyPool`, no stuck stagger outline slot after reuse, camera shake settles back to the expected local position, and no `NavMeshAgent` active-state errors appear on reused enemies.
+Next is a focused **Phase 4 PR 4.PF Shop Room Editor playtest**. Use the *Current Goal* checklist above and verify shop platform triggering, purchases, reroll pricing, cursor/movement restore, reopen behavior, and exit behavior.
 
-After PR 3.F is accepted, **Phase 3 is complete** modulo the optional Gravity Node (zoner). Then choose between Phase 4 boss work and Phase 5 audio/VFX polish based on the current GDD priority.
+After the PR 4.PF playtest is accepted, continue with **PR 4.PG — Rest Room + Final Prep**: one-choice rest UI, heal/max-HP/reward-boost options, and final-prep node behavior before Boss.
 
 ### Earlier-PR notes (kept for context — PR 3.D playtest steps)
 
@@ -451,13 +449,26 @@ PR 3.A Editor steps (now done — Drone/Crawler):
 
 ## Files Most Relevant For The Next Task
 
-- [Assets/test/SimpleEnemyAI.cs](C:/Users/assam/DiplomGame/Assets/test/SimpleEnemyAI.cs)
 - [Assets/test/GameManager.cs](C:/Users/assam/DiplomGame/Assets/test/GameManager.cs)
 - [Assets/test/Health.cs](C:/Users/assam/DiplomGame/Assets/test/Health.cs)
-- [Assets/Prefabs/Enemy.prefab](C:/Users/assam/DiplomGame/Assets/Prefabs/Enemy.prefab)
+- [Assets/Scripts/Progression/RunProgressionController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/RunProgressionController.cs)
+- [Assets/Scripts/Progression/KillPointsWallet.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/KillPointsWallet.cs)
+- [Assets/Scripts/Progression/StylePointsTracker.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/StylePointsTracker.cs)
+- [Assets/Scripts/Progression/ArenaPayoutCalculator.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ArenaPayoutCalculator.cs)
+- [Assets/Scripts/Progression/PayoutPanel.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/PayoutPanel.cs)
+- [Assets/Scripts/Progression/ShopController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ShopController.cs)
+- [Assets/Scripts/Progression/ShopInventoryGenerator.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ShopInventoryGenerator.cs)
+- [Assets/Scripts/Progression/ShopOffer.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ShopOffer.cs)
+- [Assets/Scripts/Progression/ShopTerminalTrigger.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ShopTerminalTrigger.cs)
+- [Assets/Scripts/Progression/ShopCanvas.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Progression/ShopCanvas.cs)
+- [Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Build/ArenaBuilder.cs)
+- [Assets/Scripts/Combat/Player/HUD/CombatHUDController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Player/HUD/CombatHUDController.cs)
+- [Assets/Scripts/Combat/Player/HUD/KillPointsBlock.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Player/HUD/KillPointsBlock.cs)
+- [Assets/Scripts/Combat/Player/HUD/StyleMeterBlock.cs](C:/Users/assam/DiplomGame/Assets/Scripts/Combat/Player/HUD/StyleMeterBlock.cs)
+- [Assets/Scripts/ProceduralArena/Run/RunController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/RunController.cs)
 - [Assets/Scripts/ProceduralArena/Encounter/EncounterController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Encounter/EncounterController.cs)
 - [Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Run/ArenaFlowController.cs)
-- [Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs](C:/Users/assam/DiplomGame/Assets/Scripts/ProceduralArena/Arena/ArenaVerticalityPlanner.cs)
+- [docs/PHASE_4_ROGUELIKE_PROGRESSION_TZ.md](C:/Users/assam/DiplomGame/docs/PHASE_4_ROGUELIKE_PROGRESSION_TZ.md)
 - [KNOWN_ISSUES.md](C:/Users/assam/DiplomGame/docs/KNOWN_ISSUES.md)
 
 ---
