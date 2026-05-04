@@ -24,8 +24,12 @@ public class RunProgressionController : MonoBehaviour
     [Tooltip("Run seed used for reward determinism. Set by the run controller; defaults to system time.")]
     public int runSeed;
 
+    [Tooltip("Phase 4 / PR 4.PH — log per-arena reward seeding + picks for tuning.")]
+    public bool debugLog;
+
     UpgradeData[] pool;
     int rewardCounter;
+    bool pendingRareBoost;
     EncounterController watchedEncounter;
     int watchedArenaIndex;
     bool watchedIsElite;
@@ -72,6 +76,18 @@ public class RunProgressionController : MonoBehaviour
         if (watchedEncounter != null) watchedEncounter.Cleared -= OnEncounterCleared;
         var st = StylePointsTracker.Instance;
         if (st != null) st.OnArenaFinalized -= OnStyleFinalized;
+    }
+
+    /// <summary>PR 4.PG — Rest Room "Prime Reward" sets a one-shot rarity boost
+    /// applied to the next reward card draw, then auto-consumed.</summary>
+    public void QueueRareRewardBoost() => pendingRareBoost = true;
+    public bool HasPendingRareBoost => pendingRareBoost;
+
+    /// <summary>Wipe per-run state. RunController.StartRun calls this.</summary>
+    public void ResetForNewRun()
+    {
+        pendingRareBoost = false;
+        rewardCounter = 0;
     }
 
     /// <summary>Called by RunController.OnArenaBuilt to wire the new encounter.</summary>
@@ -144,6 +160,7 @@ public class RunProgressionController : MonoBehaviour
             // it's a defensive default (no kills, nothing tracked).
             var snap = hasStyleSnapshot ? lastStyleSnapshot : default;
             var payout = ArenaPayoutCalculator.Compute(watchedCategory, watchedArenaIndex, snap);
+            if (debugLog) Debug.Log($"[RPC] payout arena={watchedArenaIndex} cat={watchedCategory} clear={payout.clearReward} style={payout.cappedStyle}/{payout.styleCap} (raw {payout.rawStyle}) total={payout.totalKp} (fast={snap.fastClear} noHit={snap.noHit})");
             KillPointsWallet.Instance?.Add(payout.totalKp);
             // Block the player so they don't run into the closed barrier or
             // start firing through the panel.
@@ -182,8 +199,23 @@ public class RunProgressionController : MonoBehaviour
         rewardCounter++;
         var rng = new System.Random(seed);
 
+        bool consumeRareBoost = pendingRareBoost;
         UpgradeData[] picks = RewardCardGenerator.Generate(
-            rng, pool, UpgradeSystem.Instance, Mathf.Max(1, watchedArenaIndex), watchedIsElite, 3);
+            rng, pool, UpgradeSystem.Instance, Mathf.Max(1, watchedArenaIndex), watchedIsElite, 3,
+            consumeRareBoost);
+        if (consumeRareBoost) pendingRareBoost = false;
+
+        if (debugLog)
+        {
+            var names = new System.Text.StringBuilder();
+            for (int i = 0; i < picks.Length; i++)
+            {
+                if (i > 0) names.Append(", ");
+                names.Append(picks[i] != null ? picks[i].id : "null");
+                if (picks[i] != null) names.Append('(').Append(picks[i].rarity).Append(')');
+            }
+            Debug.Log($"[RPC] reward arena={watchedArenaIndex} elite={watchedIsElite} rareBoost={consumeRareBoost} seed={seed:X8} picks=[{names}]");
+        }
 
         if (picks == null || picks.Length == 0)
         {

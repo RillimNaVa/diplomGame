@@ -32,6 +32,7 @@ namespace VoidSurvivor.ProceduralArena.Run
 
         Canvas screenCanvas;
         Text screenText;
+        Text statsText;
         Button screenButton;
 
         public RunState State => state;
@@ -70,6 +71,10 @@ namespace VoidSurvivor.ProceduralArena.Run
             enc.Cleared += () =>
             {
                 if (logTransitions) Debug.Log($"[Run] encounter cleared stage={node.stage} cat={node.typeProfile?.category}");
+                var cat = node != null && node.typeProfile != null
+                    ? node.typeProfile.category
+                    : VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Combat;
+                VoidSurvivor.Progression.RunStatsTracker.Instance?.NotifyArenaCleared(cat);
                 NotifyArenaClearedIfReady();
             };
 
@@ -98,6 +103,17 @@ namespace VoidSurvivor.ProceduralArena.Run
                     node != null ? node.arenaIndex : 0,
                     graph != null ? graph.runSeed : 0);
             }
+
+            // Phase 4 / PR 4.PG — Rest rooms gate exits behind a one-shot
+            // choice (Heal / +10 Max HP / Prime next reward). Barriers stay
+            // closed until RestRoomController.OpenBarriers() is called.
+            if (category == VoidSurvivor.ProceduralArena.Arena.ArenaCategory.Rest)
+            {
+                RestRoomController.Instance?.PrepareForArena(
+                    category,
+                    node != null ? node.arenaIndex : 0,
+                    enc);
+            }
         }
 
         IEnumerator Start()
@@ -122,8 +138,14 @@ namespace VoidSurvivor.ProceduralArena.Run
             UpgradeSystem.Instance?.ResetForNewRun();
             // Phase 4 / PR 4.PE — wipe Kill Points; new run, fresh wallet (TZ §16).
             KillPointsWallet.Instance?.ResetForNewRun();
+            // Phase 4 / PR 4.PH — reset run-scoped stats tracker.
+            VoidSurvivor.Progression.RunStatsTracker.Instance?.ResetForNewRun();
             var rpc = RunProgressionController.Instance;
-            if (rpc != null) rpc.runSeed = runSeed;
+            if (rpc != null)
+            {
+                rpc.runSeed = runSeed;
+                rpc.ResetForNewRun();
+            }
             graph = RunGraphGenerator.Build(runSeed, runConfig);
             current = graph.startNode;
             if (logTransitions) Debug.Log($"[Run] start seed={graph.runSeed} nodes={graph.nodes.Count}");
@@ -204,14 +226,29 @@ namespace VoidSurvivor.ProceduralArena.Run
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(canvasGo.transform, false);
             screenText = textGo.AddComponent<Text>();
-            screenText.alignment = TextAnchor.MiddleCenter;
+            screenText.alignment = TextAnchor.UpperCenter;
             screenText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            screenText.fontSize = 72;
+            screenText.fontSize = 64;
+            screenText.fontStyle = FontStyle.Bold;
             screenText.color = Color.white;
             var trt = screenText.rectTransform;
-            trt.anchorMin = new Vector2(0.2f, 0.4f);
-            trt.anchorMax = new Vector2(0.8f, 0.7f);
+            trt.anchorMin = new Vector2(0.15f, 0.78f);
+            trt.anchorMax = new Vector2(0.85f, 0.94f);
             trt.offsetMin = Vector2.zero; trt.offsetMax = Vector2.zero;
+
+            var statsGo = new GameObject("Stats");
+            statsGo.transform.SetParent(canvasGo.transform, false);
+            statsText = statsGo.AddComponent<Text>();
+            statsText.alignment = TextAnchor.UpperLeft;
+            statsText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            statsText.fontSize = 24;
+            statsText.color = new Color(0.9f, 0.95f, 1f, 1f);
+            statsText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            statsText.verticalOverflow = VerticalWrapMode.Overflow;
+            var srt = statsText.rectTransform;
+            srt.anchorMin = new Vector2(0.22f, 0.3f);
+            srt.anchorMax = new Vector2(0.78f, 0.78f);
+            srt.offsetMin = Vector2.zero; srt.offsetMax = Vector2.zero;
 
             var btnGo = new GameObject("Button");
             btnGo.transform.SetParent(canvasGo.transform, false);
@@ -253,7 +290,41 @@ namespace VoidSurvivor.ProceduralArena.Run
             screenText.text = title;
             var txt = screenButton.GetComponentInChildren<Text>(true);
             if (txt != null && txt != screenText) txt.text = buttonLabel;
+            if (statsText != null)
+            {
+                var tracker = VoidSurvivor.Progression.RunStatsTracker.Instance;
+                if (tracker != null) tracker.StopRun();
+                statsText.text = tracker != null ? FormatStats(tracker.Snapshot()) : "";
+            }
             screenCanvas.enabled = true;
+        }
+
+        static string FormatStats(VoidSurvivor.Progression.RunStatsSnapshot s)
+        {
+            int minutes = Mathf.FloorToInt(s.runDurationSeconds / 60f);
+            int seconds = Mathf.FloorToInt(s.runDurationSeconds - minutes * 60f);
+            var sb = new System.Text.StringBuilder(384);
+            sb.Append("Time: ").Append(minutes).Append(':').Append(seconds.ToString("D2")).Append('\n');
+            sb.Append("Arenas cleared: ").Append(s.arenasCleared).Append('\n');
+            sb.Append("Kills: ").Append(s.totalKills)
+              .Append("   Brute: ").Append(s.bruteKills)
+              .Append("   Glory: ").Append(s.gloryKills).Append('\n');
+            sb.Append("Damage taken: ").Append(s.damageTaken).Append('\n');
+            sb.Append("Kill Points: +").Append(s.kpEarned).Append("  /  -").Append(s.kpSpent).Append('\n');
+            sb.Append("Visits: Shop ").Append(s.shopVisits)
+              .Append("   Rest ").Append(s.restVisits)
+              .Append("   Elite ").Append(s.eliteVisits).Append('\n');
+            sb.Append('\n').Append("Upgrades:");
+            if (s.upgradesTaken == null || s.upgradesTaken.Length == 0)
+            {
+                sb.Append(" (none)");
+            }
+            else
+            {
+                for (int i = 0; i < s.upgradesTaken.Length; i++)
+                    sb.Append("\n  - ").Append(s.upgradesTaken[i]);
+            }
+            return sb.ToString();
         }
 
         void HideScreen()

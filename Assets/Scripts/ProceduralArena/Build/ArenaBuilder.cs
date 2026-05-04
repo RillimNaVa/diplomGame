@@ -45,6 +45,7 @@ namespace VoidSurvivor.ProceduralArena.Build
             BuildSingleArchitecture(room, cfg, wh, mats, root.transform);
             BuildSingleFloorPatterns(room, cfg, mats, root.transform);
             BuildSingleShopTerminal(room, cfg, mats, root.transform);
+            BuildSingleRestTerminal(room, cfg, mats, root.transform);
             BuildSingleDecor(room, cfg, wh, mats, root.transform);
             BuildSingleAtmosphere(room, cfg, wh, mats, root.transform);
             BuildSingleEdgeStrips(room, cfg, mats, root.transform);
@@ -531,6 +532,182 @@ namespace VoidSurvivor.ProceduralArena.Build
             trigger.isTrigger = true;
             trigger.size = new Vector3(m * 1.55f, 2f, m * 1.55f);
             triggerGo.AddComponent<ShopTerminalTrigger>();
+        }
+
+        static void BuildSingleRestTerminal(ArenaRoomData room, ArenaRunConfig cfg, ArenaBuildMaterials mats, Transform parent)
+        {
+            if (room.category != ArenaCategory.Rest || cfg == null || mats == null) return;
+
+            var root = new GameObject("RestTerminal");
+            root.transform.SetParent(parent, false);
+
+            float m = cfg.macroCellMeters;
+            Vector3 center = BoundsCenter(room.boundsCells, m, 0.08f);
+            Material plateMat = mats.floorAccent != null ? mats.floorAccent : mats.floor;
+            Material propMat = mats.prop != null ? mats.prop : mats.cover;
+            Color restGlow = new Color(0.45f, 1f, 0.7f);
+            Material glowMat = CreateRestGlowMaterial(restGlow);
+
+            BuildUtils.SpawnBox(root.transform, "RestPlatform_Base",
+                center,
+                new Vector3(m * 1.6f, 0.10f, m * 1.6f),
+                plateMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "RestPlatform_SoftGlow",
+                center + new Vector3(0f, 0.115f, 0f),
+                new Vector3(m * 1.28f, 0.025f, m * 1.28f),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "RestPlatform_GlowCross_X",
+                center + new Vector3(0f, 0.145f, 0f),
+                new Vector3(m * 1.05f, 0.025f, m * 0.08f),
+                glowMat,
+                false);
+            BuildUtils.SpawnBox(root.transform, "RestPlatform_GlowCross_Z",
+                center + new Vector3(0f, 0.15f, 0f),
+                new Vector3(m * 0.08f, 0.025f, m * 1.05f),
+                glowMat,
+                false);
+
+            // Bench-style props on either side of the platform.
+            BuildUtils.SpawnBox(root.transform, "RestBench_W",
+                center + new Vector3(-m * 0.78f, 0.22f, 0f),
+                new Vector3(0.18f, 0.44f, m * 1.0f),
+                propMat,
+                true);
+            BuildUtils.SpawnBox(root.transform, "RestBench_E",
+                center + new Vector3(m * 0.78f, 0.22f, 0f),
+                new Vector3(0.18f, 0.44f, m * 1.0f),
+                propMat,
+                true);
+
+            // Standing console at the far edge of the platform.
+            Vector3 kioskBase = center + new Vector3(0f, 0f, -m * 0.95f);
+            BuildUtils.SpawnBox(root.transform, "RestKiosk_Base",
+                kioskBase + new Vector3(0f, 0.45f, 0f),
+                new Vector3(m * 0.42f, 0.9f, m * 0.28f),
+                propMat,
+                true);
+            BuildUtils.SpawnBox(root.transform, "RestKiosk_Screen",
+                kioskBase + new Vector3(0f, 1.05f, m * 0.16f),
+                new Vector3(m * 0.62f, 0.36f, 0.05f),
+                glowMat,
+                false);
+
+            AttachPointLight(root.transform, "RestPlatform_Light",
+                center + new Vector3(0f, 0.35f, 0f),
+                restGlow,
+                2.0f,
+                Mathf.Max(5f, m * 2.2f));
+            SpawnRestPlatformParticles(root.transform, center, m, restGlow);
+
+            var triggerGo = new GameObject("RestPlatformTrigger");
+            triggerGo.transform.SetParent(root.transform, false);
+            triggerGo.transform.position = center + new Vector3(0f, 1f, 0f);
+            var trigger = triggerGo.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(m * 1.55f, 2f, m * 1.55f);
+            triggerGo.AddComponent<RestTerminalTrigger>();
+        }
+
+        static Material CreateRestGlowMaterial(Color tint)
+        {
+            Color glow = tint.maxColorComponent > 0.05f ? tint : new Color(0.45f, 1f, 0.7f);
+            Color visible = Color.Lerp(Color.white, glow, 0.7f);
+            visible.a = 1f;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Color");
+            if (shader == null) shader = Shader.Find("Standard");
+
+            var mat = new Material(shader) { name = "RestPlatformGlow(Runtime)" };
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", visible * 1.6f);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", visible * 1.6f);
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", glow * 2.4f);
+            }
+            mat.enableInstancing = true;
+            WorldUVDensityRegistry.Register(mat, 0.5f);
+            return mat;
+        }
+
+        static void SpawnRestPlatformParticles(Transform parent, Vector3 center, float m, Color tint)
+        {
+            var go = new GameObject("RestPlatformParticles");
+            go.transform.SetParent(parent, false);
+            go.transform.position = center + new Vector3(0f, 0.16f, 0f);
+
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = ResolveShopParticleMaterial();
+                renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                renderer.sortingFudge = 0.1f;
+            }
+
+            Color particleColor = Color.Lerp(Color.white, tint, 0.6f);
+            particleColor.a = 0.5f;
+
+            var main = ps.main;
+            main.playOnAwake = false;
+            main.duration = 4f;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.6f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f);
+            main.startColor = particleColor;
+            main.gravityModifier = 0f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 70;
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 14f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(m * 1.1f, 0.04f, m * 1.1f);
+
+            var velocity = ps.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.World;
+            velocity.x = new ParticleSystem.MinMaxCurve(-0.06f, 0.06f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0.4f, 0.85f);
+            velocity.z = new ParticleSystem.MinMaxCurve(-0.06f, 0.06f);
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(particleColor, 0f),
+                    new GradientColorKey(particleColor, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.55f, 0.25f),
+                    new GradientAlphaKey(0.4f, 0.75f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(grad);
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(
+                    new Keyframe(0f, 0.7f),
+                    new Keyframe(0.45f, 1f),
+                    new Keyframe(1f, 0.2f)));
+
+            ps.Play();
         }
 
         static Color ResolveShopGlowColor(ArenaBuildMaterials mats)

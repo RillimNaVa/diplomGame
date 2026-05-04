@@ -49,7 +49,9 @@ namespace VoidSurvivor.ProceduralArena.Encounter
         void Start()
         {
             // Lock barriers up-front for conditions that require clearing.
-            bool lockBarriers = clearCondition != ClearCondition.None;
+            // PR 4.PG — also keep them locked when a controller (RestRoomController)
+            // pre-set HoldBarriers=true even for ClearCondition.None.
+            bool lockBarriers = clearCondition != ClearCondition.None || HoldBarriers;
             for (int i = 0; i < barriers.Count; i++)
             {
                 if (barriers[i] == null) continue;
@@ -58,7 +60,9 @@ namespace VoidSurvivor.ProceduralArena.Encounter
             }
 
             // For arenas with no clear condition (Start / Shop / Rest) the exit is
-            // immediately available; no BeginEncounter wait needed.
+            // immediately available; no BeginEncounter wait needed. Cleared still
+            // fires synchronously so listeners can hook in (RunProgressionController
+            // is no-op for these via ShouldShowRewardForArena).
             if (clearCondition == ClearCondition.None)
             {
                 state = State.Done;

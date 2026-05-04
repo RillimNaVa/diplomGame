@@ -11,6 +11,9 @@ public class ShopController : MonoBehaviour
     [Tooltip("Resource path under Assets/Resources/. Default = 'Progression/Upgrades'.")]
     public string resourcePath = "Progression/Upgrades";
 
+    [Tooltip("Phase 4 / PR 4.PH — log shop seed, inventory, and purchases for tuning.")]
+    public bool debugLog;
+
     UpgradeData[] pool;
     ShopOffer[] offers;
     int runSeed;
@@ -85,6 +88,20 @@ public class ShopController : MonoBehaviour
             pool,
             UpgradeSystem.Instance,
             Mathf.Max(1, arenaIndex));
+
+        if (debugLog && offers != null)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < offers.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var o = offers[i];
+                if (o == null) { sb.Append("null"); continue; }
+                sb.Append(o.kind == ShopOfferKind.Heal ? "HEAL" : (o.upgrade != null ? o.upgrade.id : "upgrade"));
+                sb.Append('@').Append(o.price);
+            }
+            Debug.Log($"[Shop] arena={arenaIndex} reroll={rerollCount} seed={rerollSeed:X8} offers=[{sb}]");
+        }
     }
 
     void ShowCanvas()
@@ -115,6 +132,12 @@ public class ShopController : MonoBehaviour
         }
 
         offer.purchased = true;
+        if (debugLog)
+        {
+            string label = offer.kind == ShopOfferKind.Heal ? "heal"
+                : (offer.upgrade != null ? offer.upgrade.id : "upgrade");
+            Debug.Log($"[Shop] purchase {label} @{offer.price} KP, wallet={KillPointsWallet.Instance?.Total ?? 0}");
+        }
         activeCanvas?.Refresh(offers, rerollCount);
     }
 

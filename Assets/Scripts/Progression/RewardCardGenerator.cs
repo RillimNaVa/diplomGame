@@ -16,7 +16,8 @@ public static class RewardCardGenerator
         UpgradeSystem upgradeSystem,
         int visitedArenaIndex,
         bool eliteBonus,
-        int cardCount = 3)
+        int cardCount = 3,
+        bool rareBoost = false)
     {
         if (pool == null || pool.Count == 0 || rng == null)
             return new UpgradeData[0];
@@ -37,7 +38,7 @@ public static class RewardCardGenerator
 
         // 2) Per-rarity weights from TZ §10.3, indexed by visitedArenaIndex
         //    clamped to the table range.
-        float[] rarityWeights = ResolveRarityWeights(visitedArenaIndex, eliteBonus);
+        float[] rarityWeights = ResolveRarityWeights(visitedArenaIndex, eliteBonus, rareBoost);
 
         // 3) Weighted sample WITHOUT replacement.
         int picks = cardCount < eligible.Count ? cardCount : eligible.Count;
@@ -62,7 +63,7 @@ public static class RewardCardGenerator
         return result;
     }
 
-    static float[] ResolveRarityWeights(int visitedArenaIndex, bool eliteBonus)
+    static float[] ResolveRarityWeights(int visitedArenaIndex, bool eliteBonus, bool rareBoost = false)
     {
         // TZ §10.3 — rows correspond to arena index 1..8.
         // Index 0 (Start room) reuses row 1; index >8 clamps to row 8.
@@ -93,6 +94,15 @@ public static class RewardCardGenerator
             w[1] += 0.10f;
             w[2] += 0.04f;
             w[3] += 0.01f;
+        }
+
+        if (rareBoost)
+        {
+            // PR 4.PG — Rest Room "Prime Reward" stacks on top of Elite bonus.
+            w[0] = System.Math.Max(0f, w[0] - 0.20f);
+            w[1] += 0.12f;
+            w[2] += 0.06f;
+            w[3] += 0.02f;
         }
 
         // Normalize.
